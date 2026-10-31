@@ -1,9 +1,11 @@
 // Steam Glass installer and updater, per user (no admin rights).
 //
-// Downloads the latest release from GitHub, installs the helper to
-// %LOCALAPPDATA%\Programs\SteamGlass, copies the Glossy Glass theme into Steam's
-// Millennium skins folder (steamui\skins\GlossyGlass), starts the helper at sign-in,
-// adds a Start Menu shortcut and an entry under Settings > Apps, then starts the helper.
+// Downloads the latest release from GitHub, installs the helper (which carries the Glossy
+// Glass theme and loads it into Steam itself) to %LOCALAPPDATA%\Programs\SteamGlass, turns
+// on Steam's local developer port that the helper loads the theme through (an empty
+// .cef-enable-remote-debugging file in Steam's folder, read when Steam starts), starts the
+// helper at sign-in, adds a Start Menu shortcut and an entry under Settings > Apps, then
+// starts the helper and offers to restart Steam.
 //
 //     SteamGlassUpdater.exe               install, or update to the newest release
 //     SteamGlassUpdater.exe --from-app    the same, started from the helper's tray menu
@@ -33,7 +35,8 @@ static class Setup
     public const string App = "SteamGlass";
     public const string Name = "Steam Glass";
     public const string AssetSuffix = "-win64.zip";
-    public const string MillenniumUrl = "https://steambrew.app";
+    public const string PortFlag = ".cef-enable-remote-debugging";
+    public const int Port = 8080;
     public const string UninstallKey = @"Software\Microsoft\Windows\CurrentVersion\Uninstall\" + App;
     public const string RunKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
 
@@ -82,29 +85,62 @@ static class Setup
         }
     }
 
-    public static string SkinDir()
+    static string SteamRoot()
     {
-        string steam = TestMode ? Path.Combine(InstallDir, "steam-test") : SteamDir();
-        return steam == null ? null : Path.Combine(steam, "steamui", "skins", "GlossyGlass");
+        return TestMode ? Path.Combine(InstallDir, "steam-test") : SteamDir();
     }
 
-    /// <summary>Millennium is the Steam mod loader that loads themes from steamui\skins.</summary>
-    public static bool HasMillennium()
+    /// <summary>
+    /// Turn on Steam's developer port (from its next start). Also removes the Millennium copy
+    /// of the theme that 1.0.0 installed: the helper loads the theme itself now, and two
+    /// copies would fight. Returns false without Steam.
+    /// </summary>
+    public static bool EnablePort()
+    {
+        string steam = SteamRoot();
+        if (steam == null) return false;
+        Directory.CreateDirectory(steam);
+        string flag = Path.Combine(steam, PortFlag);
+        if (!File.Exists(flag)) File.WriteAllBytes(flag, new byte[0]);
+        string oldSkin = Path.Combine(steam, "steamui", "skins", "GlossyGlass");
+        if (Directory.Exists(oldSkin)) Remove(oldSkin);
+        return true;
+    }
+
+    /// <summary>Whether Steam is answering on its developer port right now.</summary>
+    public static bool PortOpen()
+    {
+        try
+        {
+            var req = (HttpWebRequest)WebRequest.Create("http://127.0.0.1:" + Port + "/json/version");
+            req.Timeout = 1500;
+            req.Proxy = null;
+            using (req.GetResponse()) return true;
+        }
+        catch (Exception) { return false; }
+    }
+
+    public static bool SteamRunning()
+    {
+        Process[] procs = Process.GetProcessesByName("steam");
+        foreach (Process p in procs) p.Dispose();
+        return procs.Length > 0;
+    }
+
+    /// <summary>Close Steam the polite way and start it again, so it opens its developer port.</summary>
+    public static void RestartSteam()
     {
         string steam = SteamDir();
-        return steam != null && File.Exists(Path.Combine(steam, "millennium.dll"));
-    }
-
-    /// <summary>Copy the theme (the zip's skin folder) into Steam. Returns where, or null without Steam.</summary>
-    public static string InstallTheme()
-    {
-        string src = Path.Combine(InstallDir, "skin"), dest = SkinDir();
-        if (dest == null || !Directory.Exists(src)) return null;
-        Directory.CreateDirectory(dest);
-        foreach (string old in Directory.GetFiles(dest)) File.Delete(old);   // drop files an older version had
-        foreach (string f in Directory.GetFiles(src))
-            File.Copy(f, Path.Combine(dest, Path.GetFileName(f)), true);
-        return dest;
+        if (steam == null) return;
+        string exe = Path.Combine(steam, "steam.exe");
+        if (SteamRunning())
+        {
+            Process.Start(new ProcessStartInfo(exe, "-shutdown") { UseShellExecute = false }).Dispose();
+            var end = DateTime.UtcNow.AddSeconds(40);
+            while (SteamRunning() && DateTime.UtcNow < end) Thread.Sleep(500);
+            Thread.Sleep(1500);   // let its helper processes go too
+        }
+        Process.Start(new ProcessStartInfo(exe) { WorkingDirectory = steam, UseShellExecute = false }).Dispose();
     }
 
     // ----------------------------------------------------------------------- GitHub
@@ -359,9 +395,13 @@ static class Setup
             if (removeSettings)
                 try { Directory.Delete(SettingsDir, true); } catch (Exception) { }
         }
-        string skin = SkinDir();
-        if (skin != null && Directory.Exists(skin))
-            Remove(skin);
+        string steam = SteamRoot();
+        if (steam != null)
+        {
+            string flag = Path.Combine(steam, PortFlag), oldSkin = Path.Combine(steam, "steamui", "skins", "GlossyGlass");
+            try { File.Delete(flag); } catch (Exception) { }   // Steam closes the port from its next start
+            if (Directory.Exists(oldSkin)) Remove(oldSkin);
+        }
         if (Directory.Exists(InstallDir))
             Remove(InstallDir);   // Main moved us out of this folder first, so nothing in it is running
     }
@@ -388,12 +428,6 @@ static class Setup
                 if (!SamePath(f, Self))
                     try { File.Delete(f); } catch (Exception) { }
         }
-        catch (Exception) { }
-    }
-
-    public static void OpenUrl(string url)
-    {
-        try { Process.Start(new ProcessStartInfo(url) { UseShellExecute = true }).Dispose(); }
         catch (Exception) { }
     }
 }
@@ -545,31 +579,29 @@ class Window : Form
             Setup.CloseRunning();
             Post(delegate { detail.Text = "Installing…"; });
             Setup.InstallZip(tmp, latest);
-            string skin = Setup.InstallTheme();
+            bool steam = Setup.EnablePort();
             Setup.Register(latest);
             try { File.Delete(tmp); } catch (Exception) { }
             Post(delegate { detail.Text = "Starting the helper…"; });
             Setup.Launch();
-            bool millennium = Setup.HasMillennium();
+            bool needRestart = steam && Setup.SteamRunning() && !Setup.PortOpen();
             Post(delegate
             {
                 title.Text = Setup.Name + " " + latest + " is installed.";
                 Done(true);
-                if (skin == null)
+                if (!steam)
                 {
-                    detail.Text = "Steam wasn't found, so the theme wasn't copied. Install Steam, then run this again.";
+                    detail.Text = "Steam wasn't found. Install Steam, then run this again.";
                     SetButtons(Btn("Close", Close));
                 }
-                else if (!millennium)
+                else if (needRestart)
                 {
-                    detail.Text = "Steam needs Millennium to load the theme. Install it, then pick Glossy Glass "
-                                  + "in Steam > Millennium > Themes.";
-                    SetButtons(Btn("Get Millennium", delegate { Setup.OpenUrl(Setup.MillenniumUrl); Close(); }),
-                               Btn("Close", Close));
+                    detail.Text = "Steam needs one restart to take the glass theme. Pick the glass in the tray icon.";
+                    SetButtons(Btn("Restart Steam", RestartSteam), Btn("Later", Close));
                 }
                 else
                 {
-                    detail.Text = "Restart Steam to load the new theme. Pick the glass in the tray icon.";
+                    detail.Text = "The glass is on Steam now. Pick Frosted, Clear or Liquid in the tray icon.";
                     SetButtons(Btn("Close", Close));
                     CloseAfter(6000);
                 }
@@ -581,6 +613,30 @@ class Window : Form
         }
     }
 
+    void RestartSteam()
+    {
+        title.Text = "Restarting Steam…";
+        detail.Text = "Waiting for Steam to close.";
+        Busy();
+        SetButtons();
+        new Thread(delegate ()
+        {
+            try
+            {
+                Setup.RestartSteam();
+                Post(delegate
+                {
+                    title.Text = "Steam is restarting with the glass theme.";
+                    detail.Text = "Pick Frosted, Clear or Liquid in the tray icon.";
+                    Done(true);
+                    SetButtons(Btn("Close", Close));
+                    CloseAfter(5000);
+                });
+            }
+            catch (Exception exc) { Fail("Couldn't restart Steam", exc); }
+        }) { IsBackground = true }.Start();
+    }
+
     void WorkUninstall(bool removeSettings)
     {
         try
@@ -589,7 +645,7 @@ class Window : Form
             Post(delegate
             {
                 title.Text = Setup.Name + " was removed.";
-                detail.Text = "Restart Steam to drop the theme.";
+                detail.Text = "Steam is back to its normal look.";
                 Done(true);
                 SetButtons(Btn("Close", Close));
                 CloseAfter(4000);
@@ -624,7 +680,7 @@ static class Program
             {
                 Setup.CloseRunning();
                 Setup.InstallZip(argv[i + 1], argv[i + 2]);
-                Setup.InstallTheme();
+                Setup.EnablePort();
                 Setup.Register(argv[i + 2]);
                 if (!argv.Contains("--no-launch")) Setup.Launch();
                 return 0;
@@ -647,7 +703,7 @@ static class Program
         if (argv.Contains("--uninstall"))
         {
             string caption = "Uninstall " + Setup.Name;
-            if (MessageBox.Show("Remove " + Setup.Name + " and the Glossy Glass theme from this PC (for your user)?",
+            if (MessageBox.Show("Remove " + Setup.Name + " from this PC (for your user)? Steam goes back to its normal look.",
                                 caption, MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
                 return 0;
             bool keep = MessageBox.Show("Keep your glass setting in case you install it again?",

@@ -1,7 +1,7 @@
 {
     "name": "Glossy Glass",
     "author": "ASQUALL-hub",
-    "description": "DiscTray's Glossy Glass look for the Steam client: see-through glass windows with a wet gloss, bright double rims and tinted candy buttons. The Steam Glass helper (installed with SteamGlassUpdater.exe from github.com/ASQUALL-hub/steam-glossy-glass) does the see-through part.",
+    "description": "DiscTray's Glossy Glass look for the Steam client: see-through glass windows with a wet gloss, bright double rims and tinted candy buttons. The Steam Glass helper (SteamGlassUpdater.exe from github.com/ASQUALL-hub/steam-glossy-glass) loads this theme into Steam by itself and does the see-through part; Millennium is optional.",
     "version": "1.2.0",
     "tags": ["Glass", "Glossy", "Aero", "Nostalgic", "Transparent"],
 

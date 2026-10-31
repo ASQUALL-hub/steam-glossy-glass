@@ -1,7 +1,16 @@
 """Steam Glass helper: gives Steam's windows real see-through glass.
 
-The Glossy Glass theme makes Steam's pages transparent; this helper tells Windows
-what to show behind them. It watches for Steam windows (main window, friends,
+The Glossy Glass theme makes Steam's pages transparent; this helper loads it into
+Steam and tells Windows what to show behind the pages.
+
+The theme goes in through Steam's own local developer port (Chromium remote
+debugging on 127.0.0.1:8080), which Steam opens when its folder holds an empty
+.cef-enable-remote-debugging file; the helper creates that file, and Steam reads
+it when it starts. Every Steam page gets the theme's CSS (plus Liquid's script in
+the main and friends windows), put back when a page reloads or the glass changes.
+No Millennium needed.
+
+It watches for Steam windows (main window, friends,
 settings, menus) and treats each one as it appears. The kind of glass is picked
 in glass-mode.txt next to this file (changes apply live):
 
@@ -19,13 +28,21 @@ window back to normal without starting the helper.
 
 Installed builds (SteamGlass.exe, put there by SteamGlassUpdater.exe) keep
 glass-mode.txt in %APPDATA%\SteamGlass and add "Check for updates…" to the menu."""
-__version__ = "1.0.0"
+__version__ = "1.0.1"
 
+import base64
 import ctypes
+import hashlib
+import json
 import math
 import os
+import socket
+import struct
 import sys
+import threading
 import time
+import urllib.parse
+import urllib.request
 from ctypes import wintypes as wt
 
 user32 = ctypes.WinDLL("user32", use_last_error=True)
@@ -61,6 +78,11 @@ SETTINGS_DIR = os.path.join(os.environ.get("APPDATA", HERE), "SteamGlass") if FR
 MODE_FILE = os.path.join(SETTINGS_DIR, "glass-mode.txt")
 UPDATER = os.path.join(HERE, "SteamGlassUpdater.exe")   # only next to an installed build
 PIPE = "SteamGlass-" + os.environ.get("USERNAME", "user")   # the updater asks us to quit through it
+THEME_DIR = os.path.join(HERE, "skin") if FROZEN else HERE   # the installer unpacks the theme to skin/
+CEF_PORT = 8080   # Steam's developer port, on 127.0.0.1 only
+CEF_FLAG = ".cef-enable-remote-debugging"   # in Steam's folder: Steam opens the port when it starts
+STYLE_ID = "steam-glass-theme"
+WATER_WINDOWS = {"Steam", "Friends List"}   # Liquid's water runs in these
 
 
 class MARGINS(ctypes.Structure):
@@ -352,18 +374,175 @@ def squircle_points_f(w: float, h: float, corner: float, n: float = SQUIRCLE_N, 
             + [(c - c * si, h - c + c * co) for co, si in q] + [(c - c * co, c - c * si) for co, si in q])
 
 
-def theme_folder() -> str:
-    """Where Steam keeps the theme (Millennium's skins folder), else this folder."""
+# --------------------------------------------------------------------------- theme
+
+def steam_dir():
     try:
         import winreg
         with winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Software\Valve\Steam") as k:
-            steam = winreg.QueryValueEx(k, "SteamPath")[0].replace("/", "\\")
-        skin = os.path.join(steam, "steamui", "skins", "GlossyGlass")
-        if os.path.isdir(skin):
-            return skin
+            path = os.path.normpath(winreg.QueryValueEx(k, "SteamPath")[0])
+        return path if os.path.isdir(path) else None
     except OSError:
-        pass
-    return HERE
+        return None
+
+
+def enable_theme_port() -> bool:
+    """Make sure Steam opens its developer port when it starts. True if the flag is there."""
+    steam = steam_dir()
+    if not steam:
+        return False
+    flag = os.path.join(steam, CEF_FLAG)
+    try:
+        if not os.path.exists(flag):
+            open(flag, "w").close()
+        return True
+    except OSError:
+        return False
+
+
+def ws_eval(url: str, expression: str, timeout: float = 3.0):
+    """Evaluate JavaScript in one Steam page over its DevTools WebSocket (a minimal
+    RFC 6455 client: one masked text frame out, frames in until our reply)."""
+    u = urllib.parse.urlparse(url)
+    with socket.create_connection((u.hostname, u.port or 80), timeout) as sock:
+        key = base64.b64encode(os.urandom(16)).decode()
+        sock.sendall((f"GET {u.path} HTTP/1.1\r\nHost: {u.netloc}\r\nUpgrade: websocket\r\n"
+                      f"Connection: Upgrade\r\nSec-WebSocket-Key: {key}\r\nSec-WebSocket-Version: 13\r\n\r\n")
+                     .encode())
+        buf = b""
+        while b"\r\n\r\n" not in buf:
+            chunk = sock.recv(4096)
+            if not chunk:
+                raise ConnectionError("closed during handshake")
+            buf += chunk
+        status, buf = buf.split(b"\r\n", 1)[0], buf.split(b"\r\n\r\n", 1)[1]
+        if b" 101 " not in status:
+            raise ConnectionError(status.decode(errors="replace"))
+
+        payload = json.dumps({"id": 1, "method": "Runtime.evaluate",
+                              "params": {"expression": expression, "returnByValue": True}}).encode()
+        n = len(payload)
+        frame = bytearray([0x81])   # FIN, text
+        if n < 126:
+            frame.append(0x80 | n)
+        elif n < 65536:
+            frame += bytes([0x80 | 126]) + struct.pack(">H", n)
+        else:
+            frame += bytes([0x80 | 127]) + struct.pack(">Q", n)
+        mask = os.urandom(4)
+        frame += mask + bytes(b ^ mask[i % 4] for i, b in enumerate(payload))
+        sock.sendall(frame)
+
+        def take(k):
+            nonlocal buf
+            while len(buf) < k:
+                chunk = sock.recv(65536)
+                if not chunk:
+                    raise ConnectionError("closed")
+                buf += chunk
+            out, buf = buf[:k], buf[k:]
+            return out
+
+        message = b""
+        while True:
+            b0, b1 = take(2)
+            size = b1 & 0x7F
+            if size == 126:
+                size = struct.unpack(">H", take(2))[0]
+            elif size == 127:
+                size = struct.unpack(">Q", take(8))[0]
+            data = take(size)
+            if b0 & 0x0F not in (0x0, 0x1):
+                continue   # ping/pong/binary: not ours
+            message += data
+            if b0 & 0x80:   # last fragment of a message
+                reply, message = json.loads(message), b""
+                if reply.get("id") == 1:
+                    return reply.get("result", {}).get("result", {}).get("value")
+
+
+class Theme:
+    """Puts the theme into every Steam page and keeps it there. Runs on its own
+    thread (Steam can be slow to answer); set `mode` to switch the glass."""
+
+    def __init__(self):
+        self.mode = read_mode()
+        self.answered = False   # Steam has answered on its developer port
+        self._stop = threading.Event()
+        self._thread = threading.Thread(target=self._run, daemon=True)
+
+    def start(self):
+        self._thread.start()
+
+    @staticmethod
+    def bundle(mode: str):
+        """(css for library pages, css for friends pages, Liquid's script, key)."""
+        if mode == "off":
+            return "", "", "", ""
+
+        def read(name):
+            with open(os.path.join(THEME_DIR, name), encoding="utf-8") as f:
+                return f.read()
+
+        extra = {"clear": "glass-clear.css", "liquid": "liquid.css"}.get(mode)
+        extra = read(extra) if extra else ""
+        lib, friends = read("libraryroot.custom.css") + extra, read("friends.custom.css") + extra
+        js = read("liquid.js") if mode == "liquid" else ""
+        key = hashlib.sha1((lib + friends + js).encode()).hexdigest()[:16]
+        return lib, friends, js, key
+
+    def apply_all(self, mode: str):
+        """One pass over Steam's pages. Raises OSError if Steam's port doesn't answer."""
+        with urllib.request.urlopen(f"http://127.0.0.1:{CEF_PORT}/json", timeout=2) as r:
+            pages = json.load(r)
+        self.answered = True
+        lib, friends, js, key = self.bundle(mode)
+        for t in pages:
+            url = t.get("url", "")
+            if t.get("type") != "page" or "webSocketDebuggerUrl" not in t or t.get("title") == "SharedJSContext":
+                continue
+            if url.startswith(("http:", "https:")) and "steamloopback" not in url:
+                continue   # store and community pages are real websites: leave them be
+            water = js if t.get("title") in WATER_WINDOWS else ""
+            want = key + ("w" if water else "")
+            try:
+                have = ws_eval(t["webSocketDebuggerUrl"],
+                               f"(document.getElementById({STYLE_ID!r}) || {{dataset: {{}}}}).dataset.key || ''")
+                if have == want:
+                    continue
+                ws_eval(t["webSocketDebuggerUrl"], f"""(() => {{
+                    let s = document.getElementById({STYLE_ID!r});
+                    if (window.__ggLiquid) window.__ggLiquid.stop();
+                    if (!{json.dumps(want)}) {{ if (s) s.remove(); return; }}
+                    if (!s) {{ s = document.createElement("style"); s.id = {STYLE_ID!r};
+                              (document.head || document.documentElement).appendChild(s); }}
+                    s.textContent = document.querySelector(".friendsui-container") ? {json.dumps(friends)} : {json.dumps(lib)};
+                    s.dataset.key = {json.dumps(want)};
+                    {water}
+                }})()""", timeout=5)
+            except (OSError, ValueError):
+                pass   # that page went away mid-pass; the next pass catches up
+
+    def _run(self):
+        while not self._stop.wait(1.0):
+            try:
+                self.apply_all(self.mode)
+            except (OSError, ValueError):
+                pass   # Steam isn't running, or was started before its port was turned on
+
+    def stop(self):
+        """Take the theme out of Steam's pages (quitting puts Steam back to normal)."""
+        self._stop.set()
+        self._thread.join(timeout=3)
+        try:
+            self.apply_all("off")
+        except (OSError, ValueError):
+            pass
+
+
+def theme_folder() -> str:
+    """The theme files the helper loads into Steam."""
+    return THEME_DIR
 
 
 def main():
@@ -381,6 +560,9 @@ def main():
 
     app = QApplication(sys.argv)
     app.setQuitOnLastWindowClosed(False)
+    port_on = enable_theme_port()
+    theme = Theme()
+    theme.start()
     glass = Glass()
     timer = QTimer()
     timer.timeout.connect(glass.tick)
@@ -414,12 +596,14 @@ def main():
 
     def choose(mode):
         write_mode(mode)
+        theme.mode = mode
         glass.last_scan = 0.0   # apply now, not at the next scan
         glass.tick()
         show(mode)
 
     def quit_helper():
         timer.stop()
+        theme.stop()
         restore_all()
         tray.hide()
         app.quit()
@@ -435,8 +619,17 @@ def main():
     server.newConnection.connect(on_connection)
 
     def sync():   # the file can also be edited by hand
-        if not actions[read_mode()].isChecked():
-            show(read_mode())
+        mode = read_mode()
+        theme.mode = mode
+        if not actions[mode].isChecked():
+            show(mode)
+        if (not theme.answered and port_on and not sync.told and steam_windows()
+                and time.monotonic() - sync.started > 10):
+            sync.told = True   # Steam was already running when its port was turned on
+            tray.showMessage("Steam Glass", "Restart Steam once to load the glass theme.",
+                             tray_icon(mode), 8000)
+
+    sync.told, sync.started = False, time.monotonic()
 
     quit_action.triggered.connect(quit_helper)
     tray.setContextMenu(menu)
