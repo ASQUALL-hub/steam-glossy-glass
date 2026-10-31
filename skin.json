@@ -1,0 +1,28 @@
+{
+    "name": "Glossy Glass",
+    "author": "ASQUALL-hub",
+    "description": "DiscTray's Glossy Glass look for the Steam client: see-through glass windows with a wet gloss, bright double rims and tinted candy buttons. The Steam Glass helper (installed with SteamGlassUpdater.exe from github.com/ASQUALL-hub/steam-glossy-glass) does the see-through part.",
+    "version": "1.2.0",
+    "tags": ["Glass", "Glossy", "Aero", "Nostalgic", "Transparent"],
+
+    "UseDefaultPatches": true,
+
+    "Conditions": {
+        "Glass": {
+            "description": "Frosted blurs what is behind Steam, with Windows' rounded corners. Clear is fully see-through with DiscTray's squircle corners. Liquid is DiscTray's Liquid: water that sloshes when you drag the window. Pick the same in the Steam Glass tray icon.",
+            "default": "Frosted",
+            "values": {
+                "Frosted": {
+                    "TargetCss": { "affects": [".*"], "src": "glass-frosted.css" }
+                },
+                "Clear": {
+                    "TargetCss": { "affects": [".*"], "src": "glass-clear.css" }
+                },
+                "Liquid": {
+                    "TargetCss": { "affects": [".*"], "src": "liquid.css" },
+                    "TargetJs": { "affects": ["^Steam$", "^Friends List$"], "src": "liquid.js" }
+                }
+            }
+        }
+    }
+}

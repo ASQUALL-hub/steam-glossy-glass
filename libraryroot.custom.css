@@ -1,0 +1,507 @@
+/* Glossy Glass for Steam: DiscTray's "Glossy Glass" card style, in CSS.
+   Panels float as glass cards over a bright backdrop: a faint dark tint, a wet
+   gloss over the top, light bouncing up from the bottom edge, a sparkle in the
+   top-left corner and a bright double rim.
+
+   Steam's class names are generated hashes. They hold for months, but a big
+   client update can rename some; the section comments say what each one is. */
+
+:root {
+  --gg-tint: rgba(8, 10, 22, 0.30);         /* glass body over the backdrop */
+  --gg-tint-deep: rgba(6, 8, 18, 0.52);     /* glass where text sits on busy art */
+
+  --gg-radius: 16px;
+  --gg-gap: 6px;
+  --gg-rim: rgba(255, 255, 255, 0.50);      /* outer rim (DiscTray rim=2.0) */
+  --gg-rim-inner: rgba(255, 255, 255, 0.18);/* second rim 2.5px inside */
+  --gg-chip: rgba(255, 255, 255, 0.10);
+  --gg-chip-lit: rgba(255, 255, 255, 0.19);
+  --gg-accent: #5cc0ff;
+
+  /* the window's own tint. It is see-through: the Steam Glass helper
+     (steamglass.pyw) has Windows blur whatever is behind the window under it.
+     Without the helper the see-through parts show as black, so this stays a
+     deep blue either way. */
+  --gg-backdrop:
+    radial-gradient(70% 90px at 50% calc(100% + 24px), rgba(255, 255, 255, 0.16), transparent 100%),
+    radial-gradient(38% 30% at 12% 8%, rgba(110, 200, 255, 0.30), transparent 70%),
+    radial-gradient(34% 32% at 88% 14%, rgba(160, 110, 255, 0.24), transparent 70%),
+    radial-gradient(46% 40% at 72% 96%, rgba(0, 210, 190, 0.20), transparent 70%),
+    radial-gradient(30% 28% at 22% 82%, rgba(255, 120, 210, 0.16), transparent 70%),
+    linear-gradient(160deg, rgba(11, 27, 60, 0.50) 0%, rgba(18, 48, 94, 0.34) 42%, rgba(14, 23, 54, 0.50) 100%);
+
+  /* tinted glass for coloured buttons */
+  --gg-green: rgba(60, 205, 70, 0.52);
+  --gg-blue: rgba(30, 145, 255, 0.55);
+  --gg-grey: rgba(150, 160, 175, 0.30);
+}
+
+/* the page itself is clear glass */
+html, body,
+._27qasW5wLU4h4nUgawpo1q,
+._1mfQu39T7gxcr0KSHso6_A {
+  background: transparent !important;
+}
+
+/* ---------------------------------------------------------------- backdrop */
+
+/* window frame (was solid black with a black 1px border) */
+._1ENHEsrSLcTRtPQFl1F-wL {
+  background: var(--gg-backdrop) !important;
+  background-attachment: fixed !important;
+}
+
+/* everything that painted Steam's flat slate goes clear so the scene shows */
+._3Z7VQ1IMk4E3HsHvrkLNgo,                 /* title bar + menus + nav */
+._2CmrnGY-Amtd83ScJkFvx2,                 /* strip under the nav */
+.UkR3sY319PuaUNuUWks2K,                  /* store/community url strip */
+._3vCzSrrXZzZjVJFZNg9SGu,                 /* bottom bar */
+._2TKEazUUS3TlniZfpc8OOe,                 /* library: Home button row */
+._2Dd4T78PcCTUVgOtDGFY5j,                 /* library: right panel */
+._3VQUewWB8g6Z5qB4C7dGFr,                 /* library home */
+._17uEBe5Ri8TMsnfELvs8-N,                 /* library home: What's New */
+._3Sb2o_mQ30IDRh0C72QUUu {                /* library home: shelves */
+  background: transparent !important;
+}
+
+/* ------------------------------------------------------------- glass cards */
+
+._3x1HklzyDs4TEjACrRO2tB,                 /* library: game list column */
+._2Dd4T78PcCTUVgOtDGFY5j,                 /* library: right panel */
+._3vCzSrrXZzZjVJFZNg9SGu {                /* bottom bar */
+  position: relative;
+  border-radius: var(--gg-radius);
+  background:
+    /* sparkle in the top-left corner */
+    radial-gradient(14px 14px at calc(var(--gg-radius) * 0.5) calc(var(--gg-radius) * 0.42),
+      rgba(255, 255, 255, 0.66), transparent 100%) no-repeat,
+    /* wet gloss: an ellipse hanging from above the card, with a crisp lower edge */
+    radial-gradient(98% 150px at 50% -56px,
+      rgba(255, 255, 255, 0.38) 0%, rgba(255, 255, 255, 0.14) 66%,
+      rgba(255, 255, 255, 0.07) 98.5%, transparent 100%) no-repeat,
+    /* light bouncing up from the bottom edge */
+    radial-gradient(80% 120px at 50% calc(100% + 30px),
+      rgba(255, 255, 255, 0.16), transparent 100%) no-repeat,
+    linear-gradient(rgba(255, 255, 255, 0.10), transparent 120px) no-repeat,
+    linear-gradient(var(--gg-tint), var(--gg-tint)) !important;
+  box-shadow:
+    inset 0 0 0 1px var(--gg-rim),
+    inset 0 1px 0 1px rgba(255, 255, 255, 0.22),
+    inset 0 0 16px rgba(255, 255, 255, 0.05),
+    0 10px 28px rgba(0, 0, 0, 0.38) !important;
+}
+
+/* second, fainter rim just inside the first */
+._3x1HklzyDs4TEjACrRO2tB::after,
+._2Dd4T78PcCTUVgOtDGFY5j::after,
+._3vCzSrrXZzZjVJFZNg9SGu::after {
+  content: "";
+  position: absolute;
+  inset: 2.5px;
+  border-radius: calc(var(--gg-radius) - 2.5px);
+  border: 1px solid var(--gg-rim-inner);
+  pointer-events: none;
+  z-index: 50;
+}
+
+/* specular glints on the rim: top-left catches the light, bottom-right bounces it */
+._3x1HklzyDs4TEjACrRO2tB::before,
+._2Dd4T78PcCTUVgOtDGFY5j::before,
+._3vCzSrrXZzZjVJFZNg9SGu::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  padding: 1px;
+  border-radius: var(--gg-radius);
+  background: conic-gradient(from 90deg,
+    transparent 0deg, rgba(255, 255, 255, 0.16) 86deg, rgba(255, 255, 255, 0.60) 119deg,
+    rgba(255, 255, 255, 0.85) 135deg, rgba(255, 255, 255, 0.60) 151deg,
+    rgba(255, 255, 255, 0.12) 187deg, transparent 223deg, transparent 295deg,
+    rgba(255, 255, 255, 0.28) 310deg, rgba(255, 255, 255, 0.44) 315deg,
+    rgba(255, 255, 255, 0.28) 320deg, transparent 335deg);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  z-index: 51;
+}
+
+/* cards float with a gap around them */
+._3xRRJfD2xy95i9NhJxLTp0 {                /* library: columns */
+  padding: var(--gg-gap) var(--gg-gap) 0;
+  gap: var(--gg-gap);
+}
+._3vCzSrrXZzZjVJFZNg9SGu {
+  margin: var(--gg-gap);
+  overflow: hidden;
+}
+._2Dd4T78PcCTUVgOtDGFY5j { overflow: hidden; }
+._3x1HklzyDs4TEjACrRO2tB { overflow: hidden; }
+
+/* the old splitter line between the columns is just a gap now (still draggable) */
+._276E6ijBpjMA2_iTxNhhjc { background: transparent !important; }
+
+/* ------------------------------------------------------------- title bar */
+
+._3Z7VQ1IMk4E3HsHvrkLNgo {
+  position: relative;
+  background:
+    radial-gradient(98% 60px at 50% -24px, rgba(255, 255, 255, 0.20), transparent 100%) no-repeat,
+    linear-gradient(rgba(255, 255, 255, 0.08), transparent) !important;
+  box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.16);
+}
+
+/* glossy lettering on the big nav tabs: bright top half, cooler lower half */
+._19axKcqYRuaJ8vdYKYmtTQ {
+  background: linear-gradient(#ffffff 0%, #f6faff 47%, #c4d4ec 53%, #e2ecfc 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent !important;
+  filter: drop-shadow(0 1px 0 rgba(10, 14, 30, 0.55)) drop-shadow(0 2px 2px rgba(0, 0, 0, 0.30));
+}
+/* the selected tab keeps a blue glass tint */
+._1gqEjB5QsKT_NftD1dEsdZ ._19axKcqYRuaJ8vdYKYmtTQ {
+  background: linear-gradient(#e8f6ff 0%, #a6dcff 47%, #4fb2f5 53%, #86cbff 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+/* small title-bar buttons (announcements, bell, account) become glass chips */
+._2Szzh5sKyGgnLUR870zbDE,
+._3yD46y5pd3zOGR7CzKs0mC {
+  border-radius: 9px !important;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 0.06)),
+    var(--gg-chip) !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.30), inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+/* the blue "news" button stays blue, but glassy */
+._5wILZhsLODVwGfcJ0hKmJ {
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.45), rgba(255, 255, 255, 0.05) 50%, rgba(255, 255, 255, 0.12)),
+    rgba(40, 150, 255, 0.70) !important;
+}
+
+/* ------------------------------------------------------------- library */
+
+/* Home button and collection dropdown/search: glass chips */
+a._3pSPluBgf0NeR1kkCLWMhR,
+._2PF_m-I5yte3WnQhpcz8RC,
+._20QAC4WMXm8qFE8waUT5oo {
+  border-radius: 10px !important;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.20), rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 0.05)),
+    var(--gg-chip) !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+._20QAC4WMXm8qFE8waUT5oo input { background: transparent !important; }
+
+/* grid-view toggle and the small sort buttons */
+a._30KGSfPjPskFlnrSxBfkiK,
+.uE7Pj4tb2n3_Bx4vjEX0a svg {
+  border-radius: 10px !important;
+  border-color: rgba(255, 255, 255, 0.24) !important;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.20), rgba(255, 255, 255, 0) 50%, rgba(255, 255, 255, 0.05)),
+    var(--gg-chip) !important;
+}
+
+/* game list rows: soft glass on hover, blue glass when selected */
+._2-O4ZG0KrnSrzISHBKctFQ { border-radius: 7px; }
+._2-O4ZG0KrnSrzISHBKctFQ:hover {
+  background: linear-gradient(rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.05)) !important;
+}
+._2-O4ZG0KrnSrzISHBKctFQ._1UBpAXP408Ez_L_mXhW5Q9 {
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0.06) 50%, rgba(255, 255, 255, 0.12)),
+    rgba(40, 140, 255, 0.42) !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.32);
+  color: #fff !important;
+}
+
+/* collection headers in the list (e.g. "FAVORITES (12)") */
+._2sYIghGVXJr6tsQVvcryy8 {
+  border-radius: 7px;
+  background: linear-gradient(rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.02)) !important;
+  color: rgba(225, 235, 255, 0.8) !important;
+}
+
+/* What's New / shelf headings: glossy text */
+._17uEBe5Ri8TMsnfELvs8-N,
+._3Sb2o_mQ30IDRh0C72QUUu {
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
+}
+
+/* event tiles and capsules get rounded glass corners and a rim */
+._3Rb_j3lgHaVVIud4Gla7_m,
+._2d1hSvdpY5L2-GN1EnUb9Z {
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.22), 0 6px 16px rgba(0, 0, 0, 0.35);
+}
+._3_xMyCJAh_Dv99KgZ54P3j {                /* event game-name chips */
+  border-radius: 7px !important;
+  background: linear-gradient(rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.04)) !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.20);
+}
+
+/* ------------------------------------------------------------- game page */
+
+/* scroll body of home and game pages (game page painted a dark slate here) */
+._3lDczhulqraStjCitLYJ1K { background: transparent !important; }
+
+/* the shade under the hero art fades into the glass instead of slate */
+.Jbe--NUNw7sxbxGsMSjVa {
+  background: linear-gradient(rgba(8, 10, 22, 0.05) 0%, rgba(8, 10, 22, 0.32) 82px, rgba(8, 10, 22, 0.12) 100%) !important;
+}
+
+/* play bar: a glass shelf with a lit top edge */
+._3fLo166MlaNqP8r8tTyRz {
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.03) 55%, rgba(255, 255, 255, 0.06)),
+    rgba(8, 10, 22, 0.22) !important;
+  backdrop-filter: blur(16px) saturate(160%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.40), inset 0 -1px 0 rgba(255, 255, 255, 0.12);
+}
+
+/* Play / Install / Update: tinted glass candy buttons (green for Play, blue
+   for the rest, grey when disabled) with a wet gloss over the top half.
+   The play button and its dropdown arrow read as one pill. */
+._3ydigb6zZAjJ0JCDgHwSYA,                 /* play button */
+._2q-gZ3XJzlvSGHSF-GvSmi {                /* its dropdown arrow */
+  --gg-btn: var(--gg-blue);
+  position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(10px) saturate(180%);
+  background:
+    radial-gradient(70% 60% at 50% 120%, rgba(255, 255, 255, 0.30), transparent 100%),
+    linear-gradient(var(--gg-btn), var(--gg-btn)) !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.45), inset 0 -1px 2px rgba(255, 255, 255, 0.20),
+    0 4px 14px rgba(0, 0, 0, 0.30) !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+}
+._3cI5TXsFX3bvpR-7EBOtxq ._3ydigb6zZAjJ0JCDgHwSYA,
+._3cI5TXsFX3bvpR-7EBOtxq ._2q-gZ3XJzlvSGHSF-GvSmi { --gg-btn: var(--gg-green); }
+._1Pb6PMh_3L5p5NzuUz0Pp9 ._3ydigb6zZAjJ0JCDgHwSYA,
+._1Pb6PMh_3L5p5NzuUz0Pp9 ._2q-gZ3XJzlvSGHSF-GvSmi,
+._3ydigb6zZAjJ0JCDgHwSYA._1Pb6PMh_3L5p5NzuUz0Pp9 { --gg-btn: var(--gg-grey); }
+._3ydigb6zZAjJ0JCDgHwSYA { border-radius: 12px !important; }
+._1FnJ6dPuknQFQ2RTpKTI16 ._3ydigb6zZAjJ0JCDgHwSYA:not(:only-child) { border-radius: 12px 3px 3px 12px !important; }
+._2q-gZ3XJzlvSGHSF-GvSmi { border-radius: 3px 12px 12px 3px !important; margin-left: 2px; }
+._3ydigb6zZAjJ0JCDgHwSYA::after,
+._2q-gZ3XJzlvSGHSF-GvSmi::after {
+  content: "";
+  position: absolute;
+  inset: 1px 1px 50% 1px;
+  border-radius: inherit;
+  border-bottom-left-radius: 50% 6px;
+  border-bottom-right-radius: 50% 6px;
+  background: linear-gradient(rgba(255, 255, 255, 0.62), rgba(255, 255, 255, 0.14));
+  pointer-events: none;
+}
+._3ydigb6zZAjJ0JCDgHwSYA:hover,
+._2q-gZ3XJzlvSGHSF-GvSmi:hover {
+  filter: brightness(1.15) saturate(1.1);
+}
+
+/* activity, friends, achievements... sections become glass cards */
+._31ptFGGMZrSQc5BCX1e5lm._3KfxIwlXEvum7FCD_AM2_t { background: transparent !important; }  /* section row wrapper */
+._31ptFGGMZrSQc5BCX1e5lm._2G5B7o_YoI__u11--EFjal,
+._1HZy7BvOZuPT8feUwadL4W {
+  border-radius: 12px;
+  background:
+    radial-gradient(98% 90px at 50% -34px, rgba(255, 255, 255, 0.20), rgba(255, 255, 255, 0.05) 98%, transparent 100%) no-repeat,
+    linear-gradient(var(--gg-tint), var(--gg-tint)) !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.30);
+}
+
+/* "Featured" style section headers: blue glass instead of a flat blue fade */
+._1WdC0YUP8FT0dYWZ-QIVZL {
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.40), rgba(255, 255, 255, 0.06) 50%, rgba(255, 255, 255, 0.12)),
+    linear-gradient(to right, rgba(30, 150, 255, 0.85), rgba(30, 150, 255, 0.25)) !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+}
+
+/* ------------------------------------------------------------- menus */
+
+/* dropdown and right-click menus are their own small windows, so there is no
+   backdrop to blur; they get a tinted glass of their own instead */
+.PP7LM0Ow1K5qkR8WElLpt,                   /* menu window */
+._2EstNjFIIZm_WUSKm5Wt7n {                /* menu list */
+  background:
+    radial-gradient(98% 70px at 50% -26px, rgba(255, 255, 255, 0.26), rgba(255, 255, 255, 0.06) 98%, transparent 100%) no-repeat,
+    radial-gradient(80% 60px at 50% calc(100% + 20px), rgba(255, 255, 255, 0.12), transparent 100%) no-repeat,
+    linear-gradient(160deg, rgba(27, 58, 107, 0.62) 0%, rgba(20, 42, 82, 0.55) 55%, rgba(28, 35, 80, 0.62) 100%) !important;
+}
+.PP7LM0Ow1K5qkR8WElLpt {
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.40), inset 0 1px 0 1px rgba(255, 255, 255, 0.20);
+}
+.contextMenuItem {
+  margin: 0 4px;
+  border-radius: 7px;
+  color: rgba(240, 246, 255, 0.95) !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+.contextMenuItem:hover,
+.contextMenuItem.active {
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0.08) 50%, rgba(255, 255, 255, 0.16)),
+    rgba(40, 150, 255, 0.60) !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.40);
+  color: #fff !important;
+}
+._21GPYlKBCLsHQpTsHw_RL_ {                /* separators */
+  border: 0 !important;
+  height: 1px;
+  margin: 2px 10px;
+  background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.28), transparent) !important;
+}
+
+/* ------------------------------------------------------------- dialogs */
+
+/* Settings, Properties and other dialog windows: same scene, glass page list */
+body.ModalDialogBody {
+  background: var(--gg-backdrop) !important;
+}
+.DialogContentTransition,
+.DialogContent {
+  background: transparent !important;
+}
+.PageListColumn {
+  margin: var(--gg-gap);
+  border-radius: var(--gg-radius);
+  background:
+    radial-gradient(98% 150px at 50% -56px, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0.12) 66%,
+      rgba(255, 255, 255, 0.06) 98.5%, transparent 100%) no-repeat,
+    linear-gradient(var(--gg-tint), var(--gg-tint)) !important;
+  box-shadow: inset 0 0 0 1px var(--gg-rim), inset 0 1px 0 1px rgba(255, 255, 255, 0.22), 0 10px 28px rgba(0, 0, 0, 0.38);
+}
+._1-vlriAtKYDViAEunue4VO {                /* page list entries */
+  margin: 0 6px;
+  border-radius: 8px;
+}
+._1-vlriAtKYDViAEunue4VO:hover,
+._1-vlriAtKYDViAEunue4VO:focus-visible {
+  background: linear-gradient(rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.05)) !important;
+  color: #fff !important;
+}
+._1-vlriAtKYDViAEunue4VO._2DpXjzK3WWsOtUWUrcuOG7 {   /* current page */
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.36), rgba(255, 255, 255, 0.06) 50%, rgba(255, 255, 255, 0.14)),
+    rgba(40, 140, 255, 0.48) !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.36);
+  color: #fff !important;
+}
+.eKmEXJCm_lgme24Fp_HWt.Panel {           /* setting rows */
+  border-radius: 12px;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0.02) 50%, rgba(255, 255, 255, 0.04)),
+    var(--gg-tint) !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
+}
+
+/* dialog buttons: glass chips with a gloss line across the middle */
+.DialogButton {
+  border-radius: 10px !important;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.26), rgba(255, 255, 255, 0.07) 50%, rgba(255, 255, 255, 0.02) 51%, rgba(255, 255, 255, 0.10)),
+    var(--gg-chip) !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.30), inset 0 1px 0 rgba(255, 255, 255, 0.45) !important;
+  color: #fff !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+.DialogButton:hover,
+.DialogButton:focus-visible {
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.40), rgba(255, 255, 255, 0.12) 50%, rgba(255, 255, 255, 0.06) 51%, rgba(255, 255, 255, 0.16)),
+    var(--gg-chip-lit) !important;
+}
+.DialogButton:not(.Secondary) {
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.50), rgba(255, 255, 255, 0.14) 50%, rgba(255, 255, 255, 0.02) 51%, rgba(255, 255, 255, 0.16)),
+    rgba(30, 140, 255, 0.80) !important;
+}
+
+/* ------------------------------------------------------------- bottom bar */
+
+._2ohOQgahhMYnIEfAQmv9B8,                 /* buttons on notice banners */
+._2foCkpRXhqq0UGVE50BWqj,                 /* Add a Game */
+._1TdaAqMFadi0UTqilrkelR,                 /* Friends & Chat */
+.ip-YZhijAMZcuRoXBGiye {                  /* Manage Downloads */
+  border-radius: 10px;
+  transition: background 0.15s;
+  color: rgba(235, 242, 255, 0.92) !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+._3vCzSrrXZzZjVJFZNg9SGu svg,
+._3OhUxFVlQYr9W5ThxstR8k,
+._3wJnTtcTLEp0R7eQj_mK8Y,
+._1KrJ3sFAqPBN9mfpaNTU5F {
+  color: rgba(235, 242, 255, 0.85) !important;
+}
+._2foCkpRXhqq0UGVE50BWqj:hover,
+._1TdaAqMFadi0UTqilrkelR:hover,
+.ip-YZhijAMZcuRoXBGiye:hover {
+  background: linear-gradient(rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.04) 50%, rgba(255, 255, 255, 0.08)) !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.30);
+}
+
+/* the bright blue notice banner turns to blue glass */
+._2iJsgdTIX9Tj23rWnB7Q-c {
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0.04) 50%, rgba(255, 255, 255, 0.10)),
+    rgba(30, 140, 255, 0.55) !important;
+  backdrop-filter: blur(12px);
+}
+
+/* ------------------------------------------------------------- the window as one glass card */
+
+/* Like DiscTray's card surface, layered over everything in each window: the
+   bright double rim with its glints, a wet gloss band over the top with a
+   sparkle in the corner (the bounce light from the bottom edge is part of
+   --gg-backdrop). Frosted glass: Windows rounds the window 8px, so the rim
+   follows that. glass-clear.css swaps in DiscTray's squircle.
+   The corner pieces are generated SVG (gen_rim.py). */
+._1ENHEsrSLcTRtPQFl1F-wL { position: relative; border-color: transparent !important; }
+
+._1ENHEsrSLcTRtPQFl1F-wL::after,
+body.ModalDialogBody::after,
+body.ContextMenuPopupBody::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 2147483000;
+  pointer-events: none;
+  background: conic-gradient(rgba(255, 255, 255, 1.00) 0.0deg, rgba(255, 255, 255, 0.31) 3.6deg, rgba(255, 255, 255, 0.00) 90.0deg, rgba(255, 255, 255, 0.00) 115.2deg, rgba(255, 255, 255, 0.55) 129.6deg, rgba(255, 255, 255, 0.86) 135.0deg, rgba(255, 255, 255, 0.55) 140.4deg, rgba(255, 255, 255, 0.00) 154.8deg, rgba(255, 255, 255, 0.00) 226.8deg, rgba(255, 255, 255, 0.24) 262.8deg, rgba(255, 255, 255, 1.00) 298.8deg, rgba(255, 255, 255, 1.00) 315.0deg, rgba(255, 255, 255, 1.00) 331.2deg, rgba(255, 255, 255, 0.31) 360.0deg), linear-gradient(rgba(255, 255, 255, 0.50), rgba(255, 255, 255, 0.50));
+  -webkit-mask:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 8 8'%3E%3Cg transform='matrix%281 0 0 1 0 0%29' fill='none' stroke='black' stroke-width='1'%3E%3Cpath d='M0.50 8.00 L0.51 7.63 L0.54 7.26 L0.58 6.90 L0.64 6.54 L0.72 6.18 L0.82 5.82 L0.94 5.47 L1.07 5.13 L1.22 4.79 L1.39 4.46 L1.57 4.14 L1.76 3.83 L1.98 3.53 L2.20 3.24 L2.44 2.96 L2.70 2.70 L2.96 2.44 L3.24 2.20 L3.53 1.98 L3.83 1.76 L4.14 1.57 L4.46 1.39 L4.79 1.22 L5.13 1.07 L5.47 0.94 L5.82 0.82 L6.18 0.72 L6.54 0.64 L6.90 0.58 L7.26 0.54 L7.63 0.51 L8.00 0.50'/%3E%3Cpath d='M2.50 8.00 L2.51 7.73 L2.53 7.46 L2.56 7.19 L2.61 6.93 L2.66 6.66 L2.74 6.40 L2.82 6.15 L2.92 5.90 L3.03 5.65 L3.15 5.41 L3.28 5.17 L3.43 4.94 L3.58 4.72 L3.75 4.51 L3.92 4.31 L4.11 4.11 L4.31 3.92 L4.51 3.75 L4.72 3.58 L4.94 3.43 L5.17 3.28 L5.41 3.15 L5.65 3.03 L5.90 2.92 L6.15 2.82 L6.40 2.74 L6.66 2.66 L6.93 2.61 L7.19 2.56 L7.46 2.53 L7.73 2.51 L8.00 2.50' stroke-opacity='0.36'/%3E%3C/g%3E%3C/svg%3E") left top / 8px 8px no-repeat,
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 8 8'%3E%3Cg transform='matrix%28-1 0 0 1 8 0%29' fill='none' stroke='black' stroke-width='1'%3E%3Cpath d='M0.50 8.00 L0.51 7.63 L0.54 7.26 L0.58 6.90 L0.64 6.54 L0.72 6.18 L0.82 5.82 L0.94 5.47 L1.07 5.13 L1.22 4.79 L1.39 4.46 L1.57 4.14 L1.76 3.83 L1.98 3.53 L2.20 3.24 L2.44 2.96 L2.70 2.70 L2.96 2.44 L3.24 2.20 L3.53 1.98 L3.83 1.76 L4.14 1.57 L4.46 1.39 L4.79 1.22 L5.13 1.07 L5.47 0.94 L5.82 0.82 L6.18 0.72 L6.54 0.64 L6.90 0.58 L7.26 0.54 L7.63 0.51 L8.00 0.50'/%3E%3Cpath d='M2.50 8.00 L2.51 7.73 L2.53 7.46 L2.56 7.19 L2.61 6.93 L2.66 6.66 L2.74 6.40 L2.82 6.15 L2.92 5.90 L3.03 5.65 L3.15 5.41 L3.28 5.17 L3.43 4.94 L3.58 4.72 L3.75 4.51 L3.92 4.31 L4.11 4.11 L4.31 3.92 L4.51 3.75 L4.72 3.58 L4.94 3.43 L5.17 3.28 L5.41 3.15 L5.65 3.03 L5.90 2.92 L6.15 2.82 L6.40 2.74 L6.66 2.66 L6.93 2.61 L7.19 2.56 L7.46 2.53 L7.73 2.51 L8.00 2.50' stroke-opacity='0.36'/%3E%3C/g%3E%3C/svg%3E") right top / 8px 8px no-repeat,
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 8 8'%3E%3Cg transform='matrix%28-1 0 0 -1 8 8%29' fill='none' stroke='black' stroke-width='1'%3E%3Cpath d='M0.50 8.00 L0.51 7.63 L0.54 7.26 L0.58 6.90 L0.64 6.54 L0.72 6.18 L0.82 5.82 L0.94 5.47 L1.07 5.13 L1.22 4.79 L1.39 4.46 L1.57 4.14 L1.76 3.83 L1.98 3.53 L2.20 3.24 L2.44 2.96 L2.70 2.70 L2.96 2.44 L3.24 2.20 L3.53 1.98 L3.83 1.76 L4.14 1.57 L4.46 1.39 L4.79 1.22 L5.13 1.07 L5.47 0.94 L5.82 0.82 L6.18 0.72 L6.54 0.64 L6.90 0.58 L7.26 0.54 L7.63 0.51 L8.00 0.50'/%3E%3Cpath d='M2.50 8.00 L2.51 7.73 L2.53 7.46 L2.56 7.19 L2.61 6.93 L2.66 6.66 L2.74 6.40 L2.82 6.15 L2.92 5.90 L3.03 5.65 L3.15 5.41 L3.28 5.17 L3.43 4.94 L3.58 4.72 L3.75 4.51 L3.92 4.31 L4.11 4.11 L4.31 3.92 L4.51 3.75 L4.72 3.58 L4.94 3.43 L5.17 3.28 L5.41 3.15 L5.65 3.03 L5.90 2.92 L6.15 2.82 L6.40 2.74 L6.66 2.66 L6.93 2.61 L7.19 2.56 L7.46 2.53 L7.73 2.51 L8.00 2.50' stroke-opacity='0.36'/%3E%3C/g%3E%3C/svg%3E") right bottom / 8px 8px no-repeat,
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 8 8'%3E%3Cg transform='matrix%281 0 0 -1 0 8%29' fill='none' stroke='black' stroke-width='1'%3E%3Cpath d='M0.50 8.00 L0.51 7.63 L0.54 7.26 L0.58 6.90 L0.64 6.54 L0.72 6.18 L0.82 5.82 L0.94 5.47 L1.07 5.13 L1.22 4.79 L1.39 4.46 L1.57 4.14 L1.76 3.83 L1.98 3.53 L2.20 3.24 L2.44 2.96 L2.70 2.70 L2.96 2.44 L3.24 2.20 L3.53 1.98 L3.83 1.76 L4.14 1.57 L4.46 1.39 L4.79 1.22 L5.13 1.07 L5.47 0.94 L5.82 0.82 L6.18 0.72 L6.54 0.64 L6.90 0.58 L7.26 0.54 L7.63 0.51 L8.00 0.50'/%3E%3Cpath d='M2.50 8.00 L2.51 7.73 L2.53 7.46 L2.56 7.19 L2.61 6.93 L2.66 6.66 L2.74 6.40 L2.82 6.15 L2.92 5.90 L3.03 5.65 L3.15 5.41 L3.28 5.17 L3.43 4.94 L3.58 4.72 L3.75 4.51 L3.92 4.31 L4.11 4.11 L4.31 3.92 L4.51 3.75 L4.72 3.58 L4.94 3.43 L5.17 3.28 L5.41 3.15 L5.65 3.03 L5.90 2.92 L6.15 2.82 L6.40 2.74 L6.66 2.66 L6.93 2.61 L7.19 2.56 L7.46 2.53 L7.73 2.51 L8.00 2.50' stroke-opacity='0.36'/%3E%3C/g%3E%3C/svg%3E") left bottom / 8px 8px no-repeat,
+    linear-gradient(#000, #000) left 8px top 0 / calc(100% - 16px) 1px no-repeat,
+    linear-gradient(rgba(0,0,0,.36), rgba(0,0,0,.36)) left 8px top 2px / calc(100% - 16px) 1px no-repeat,
+    linear-gradient(#000, #000) left 8px bottom 0 / calc(100% - 16px) 1px no-repeat,
+    linear-gradient(rgba(0,0,0,.36), rgba(0,0,0,.36)) left 8px bottom 2px / calc(100% - 16px) 1px no-repeat,
+    linear-gradient(#000, #000) left 0 top 8px / 1px calc(100% - 16px) no-repeat,
+    linear-gradient(rgba(0,0,0,.36), rgba(0,0,0,.36)) left 2px top 8px / 1px calc(100% - 16px) no-repeat,
+    linear-gradient(#000, #000) right 0 top 8px / 1px calc(100% - 16px) no-repeat,
+    linear-gradient(rgba(0,0,0,.36), rgba(0,0,0,.36)) right 2px top 8px / 1px calc(100% - 16px) no-repeat;
+}
+
+/* wet gloss: an ellipse hanging from above the window, crisp along its lower
+   edge; its top corners follow the window's */
+._1ENHEsrSLcTRtPQFl1F-wL::before,
+body.ModalDialogBody::before {
+  content: "";
+  position: fixed;
+  inset: 0 0 auto 0;
+  height: 96px;
+  z-index: 2147482999;
+  pointer-events: none;
+  border-radius: 8px 8px 0 0;
+  background:
+    radial-gradient(16px 16px at 22px 18px, rgba(255, 255, 255, 0.60), transparent 100%) no-repeat,
+    linear-gradient(rgba(255, 255, 255, 0.30), rgba(255, 255, 255, 0.10) 62%, rgba(255, 255, 255, 0.04));
+  -webkit-mask: radial-gradient(98% 136px at 50% -40px, #000 99.2%, transparent 100%);
+}

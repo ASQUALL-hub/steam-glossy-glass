@@ -1,0 +1,32 @@
+/* Glossy Glass: Liquid option (liquid.css), after DiscTray's Liquid style.
+   Built from liquid.src.css plus the generated window edge; run build.ps1.
+   Frosted glass with Liquid's sky tint, the plain glass edge, and water in the
+   lower part of the main and friends windows (liquid.js, which sloshes when
+   you drag the window around). */
+
+html:root {
+  /* DiscTray's Liquid sky: teal up top, pale grey through the middle, dusk below */
+  --gg-backdrop: linear-gradient(rgba(70, 160, 172, 0.275) 0%, rgba(205, 210, 214, 0.18) 45%, rgba(36, 38, 44, 0.353) 100%);
+  --gg-tint: rgba(8, 12, 18, 0.22);
+}
+
+/* the water (liquid.js) lies behind the window's contents but in front of its
+   tint: the frame (main window) and the page (friends) become their own layer */
+._1ENHEsrSLcTRtPQFl1F-wL,
+html.friendsui-container body {
+  isolation: isolate;
+}
+
+/* the panels stay plain glass: no wet gloss, sparkle or inner rim (Liquid has none) */
+._3x1HklzyDs4TEjACrRO2tB,
+._2Dd4T78PcCTUVgOtDGFY5j,
+._3vCzSrrXZzZjVJFZNg9SGu,
+.PageListColumn {
+  background: linear-gradient(var(--gg-tint), var(--gg-tint)) !important;
+}
+._3x1HklzyDs4TEjACrRO2tB::after,
+._2Dd4T78PcCTUVgOtDGFY5j::after,
+._3vCzSrrXZzZjVJFZNg9SGu::after {
+  display: none !important;
+}
+
