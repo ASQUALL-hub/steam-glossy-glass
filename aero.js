@@ -201,49 +201,56 @@
     // ---------------------------------------------------------------- clouds
     // a cumulus: soft overlapping puffs, a blue-grey body lit white where the sun
     // (up and to the right) catches the tops, and a flat, shaded base
+    // a thin, see-through cloud, grown per pixel: a loose, flattened body made mostly of
+    // noise stretched sideways, so it breaks into soft streaks and patches with the sky
+    // showing through; lit gently by looking toward the sun (up and to the right)
+    const clamp01 = v => v < 0 ? 0 : v > 1 ? 1 : v;
     const cumulus = (w, h) => {
-      const pad = 40, cv = canvas2d(w + 2 * pad, h + 2 * pad), c = cv.getContext("2d");
-      c.translate(pad, pad);
-      const base = h * 0.92, puffs = [];
-      for (let i = 0, n = Math.round(40 + w / 4); i < n; i++) {   // many small puffs: a billowing edge
-        const u = rnd(), dome = Math.sin(Math.PI * (0.04 + 0.92 * u)) ** 0.8;
-        const r = (0.06 + 0.15 * dome) * h * rr(0.55, 1.2);
-        const x = w * (0.05 + 0.9 * u), y = base - r * 0.55 - rnd() ** 0.7 * dome * (h * 0.9 - r);
-        puffs.push({ x, y, r });
+      const side = 0.12 * w, top = 0.5 * h, W2 = w + 2 * side, H2 = h + top + 0.08 * h;   // room for billows to rise
+      const cw = Math.ceil(W2 * q), ch = Math.ceil(H2 * q);
+      const cv = canvas2d(cw, ch), c = cv.getContext("2d"), img = c.createImageData(cw, ch), d = img.data;
+      const noise = makeNoise(cw, Math.max(6, 0.2 * cw), 6, 1.7);   // flattened: streaky, not lumpy
+      const base = (top + h * 0.9) * q, hq = h * q, blobs = [];
+      const k = 5 + Math.floor(rnd() * 4);
+      for (let i = 0; i < k; i++) {   // billows: tallest in the middle, flattened on the base
+        const u = (i + 0.5) / k + rr(-0.05, 0.05), dome = Math.sin(Math.PI * clamp01(u)) ** 0.7;
+        const r = (0.2 + 0.22 * dome) * hq * rr(0.8, 1.15);
+        blobs.push({ x: (side + w * (0.1 + 0.8 * u)) * q, y: base - r * rr(0.5, 0.9) - dome * hq * 0.12, r2: r * r });
       }
-      puffs.sort((a, b) => b.y - a.y);
-      for (const p of puffs) {   // body in shade
-        const b = c.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r);
-        b.addColorStop(0, "rgba(148,170,204,1)"); b.addColorStop(0.65, "rgba(170,190,220,0.95)");
-        b.addColorStop(1, "rgba(190,208,230,0)");
-        c.fillStyle = b; c.beginPath(); c.arc(p.x, p.y, p.r, 0, TAU); c.fill();
+      const field = (x, y) => {   // above 1 inside the billows, falling off outside: a smooth union of them
+        let f = 0;
+        for (const b of blobs) { const dx = (x - b.x) * 0.55, dy = y - b.y, v = b.r2 / (dx * dx + dy * dy + 1); f += v * v * v * v; }
+        return Math.sqrt(Math.sqrt(f));
+      };
+      const body = (F, n) => 0.55 * Math.max(-1, Math.min(1, (F - 1) * 0.6)) + 0.75 * n;
+      const dens = (x, y) => body(field(x, y), noise(x, y));
+      const fadeX = 0.1 * cw, fadeTop = 0.12 * ch;   // never reach the box's edges
+      const sx = 0.04 * cw, sy = -0.07 * ch;
+      for (let y = 0, i = 0; y < ch; y++) {
+        const floor = clamp01((base + 0.04 * hq - y) / (0.22 * hq));   // a soft, flat-ish underside
+        const under = clamp01((y - (base - 0.55 * hq)) / (0.55 * hq));  // darker toward the base
+        for (let x = 0; x < cw; x++, i += 4) {
+          if (floor <= 0) continue;
+          const F = field(x, y), D = body(F, noise(x, y));
+          const edge = clamp01(Math.min(x, cw - 1 - x) / fadeX) * clamp01(y / fadeTop) * clamp01((F - 0.1) / 0.5);
+          const a = clamp01((D - 0.02) / 0.75) * floor * 0.8 * edge;   // thin: never fully solid
+          if (a < 0.01) continue;
+          const lit = clamp01(1.5 - 0.7 * dens(x + sx, y + sy)) * (1 - 0.25 * under);
+          d[i] = 205 + 50 * lit; d[i + 1] = 218 + 37 * lit; d[i + 2] = 236 + 19 * lit;
+          d[i + 3] = 255 * a;
+        }
       }
-      for (const p of puffs) {   // sunlit tops
-        const lx = p.x + p.r * 0.28, ly = p.y - p.r * 0.36, lr = p.r * 0.8;
-        const l = c.createRadialGradient(lx, ly, 0, lx, ly, lr);
-        l.addColorStop(0, "rgba(255,255,255,1)"); l.addColorStop(0.55, "rgba(252,254,255,0.85)");
-        l.addColorStop(1, "rgba(250,252,255,0)");
-        c.fillStyle = l; c.beginPath(); c.arc(lx, ly, lr, 0, TAU); c.fill();
-      }
-      c.globalCompositeOperation = "source-atop";   // shade toward the base
-      const sh = c.createLinearGradient(0, base - h * 0.45, 0, base);
-      sh.addColorStop(0, "rgba(120,150,190,0)"); sh.addColorStop(1, "rgba(118,146,186,0.42)");
-      c.fillStyle = sh; c.fillRect(-pad, -pad, w + 2 * pad, h + 2 * pad);
-      c.globalCompositeOperation = "destination-out";   // a flat bottom that fades out
-      const cut = c.createLinearGradient(0, base - h * 0.06, 0, base + h * 0.04);
-      cut.addColorStop(0, "rgba(0,0,0,0)"); cut.addColorStop(1, "rgba(0,0,0,1)");
-      c.fillStyle = cut; c.fillRect(-pad, base - h * 0.06, w + 2 * pad, h + pad);
-      return cv;
+      c.putImageData(img, 0, 0);
+      return { cv, W2, H2, side, top };
     };
     const cloudBand = (y0, h, n, size, tall, speed, wind, alpha, mirror) => band(y0, h, speed, c => {
-      c.filter = `blur(${Math.max(0.4, 0.6 * s)}px)`;
       for (let i = 0; i < n; i++) {
-        const w = size * rr(0.55, 1.4) * s, ch = Math.min(h * 0.95, w * tall * rr(0.7, 1.3)), sprite = cumulus(w, ch);
-        const x = (i + rr(0.15, 0.85)) * lap / n, y = y0 + (h - ch) * rr(0.15, 1);
-        c.globalAlpha = alpha * rr(0.85, 1);
-        wrapped(x, w / 2 + 40, xx => c.drawImage(sprite, xx - w / 2 - 40, y - 40));
+        const w = size * rr(0.55, 1.35) * s, ch = Math.min(h * 0.9, w * tall * rr(0.7, 1.25)), sp = cumulus(w, ch);
+        const x = (i + rr(0.1, 0.9)) * lap / n, y = y0 + (h - ch) * rr(0.1, 1);
+        c.globalAlpha = alpha * rr(0.88, 1);
+        wrapped(x, sp.W2 / 2, xx => c.drawImage(sp.cv, xx - sp.W2 / 2, y - sp.top, sp.W2, sp.H2));
       }
-      c.filter = "none";
+      c.globalAlpha = 1;
     }, { wind: wind * s, mirror });
     band(0.03 * H, 0.32 * H, 0.02, c => {   // thin wisps high up
       c.filter = `blur(${3 * s}px)`;
@@ -255,8 +262,12 @@
       c.filter = "none";
     }, { wind: 3 * s });
     const tw = Math.ceil(lap * q);   // a tile's width in pixels: the noise repeats on it
-    cloudBand(hz - 0.2 * H, 0.2 * H, 8, 220, 0.4, 0.04, 5, 0.9, true);   // low clouds along the horizon
-    cloudBand(0.02 * H, 0.52 * H, 5, 500, 0.6, 0.07, 10, 1, true);       // big towering ones
+    // clouds in a few groups, each on its own breeze, so they drift past one another
+    cloudBand(hz - 0.14 * H, 0.14 * H, 6, 170, 0.28, 0.04, 3.5, 0.8, true);   // thin low ones along the horizon
+    cloudBand(hz - 0.14 * H, 0.14 * H, 6, 150, 0.28, 0.04, 6.5, 0.75, true);
+    cloudBand(0.04 * H, 0.38 * H, 4, 340, 0.34, 0.07, 7, 0.95, true);         // wispy fair-weather clouds higher up
+    cloudBand(0.04 * H, 0.38 * H, 4, 300, 0.34, 0.07, 10.5, 0.9, true);
+    cloudBand(0.04 * H, 0.38 * H, 3, 320, 0.34, 0.07, 14, 0.9, true);
 
     // ---------------------------------------------------------------- mountains
     const range = (top, keys, speed, colTop, colBottom, haze, shade) => band(hz - top - 10 * s, top + 14 * s, speed, c => {
@@ -305,8 +316,9 @@
           });
         }
       }
-      const mist = c.createLinearGradient(0, hz - 0.14 * H, 0, hz);
-      mist.addColorStop(0, "rgba(220,240,255,0.15)"); mist.addColorStop(1, "rgba(225,243,255,0.8)");
+      const mist = c.createLinearGradient(0, hz - 0.24 * H, 0, hz);
+      mist.addColorStop(0, "rgba(220,240,255,0)"); mist.addColorStop(0.42, "rgba(220,240,255,0.15)");
+      mist.addColorStop(1, "rgba(225,243,255,0.8)");
       c.fillStyle = mist; c.fillRect(0, hz - 0.24 * H, lap, 0.24 * H + 2 * s);
     }, { mirror: true });
 
@@ -316,21 +328,38 @@
     // ---------------------------------------------------------------- shores
     // meadows with turbines, open water, a forested cliff with a waterfall, wooded shore
     const top = loopKeys([[0, 0.045], [0.08, 0.08], [0.18, 0.055], [0.27, 0.02], [0.33, 0.008], [0.5, 0.01],
-                          [0.56, 0.06], [0.62, 0.17], [0.74, 0.18], [0.8, 0.12], [0.86, 0.03], [0.94, 0.035]]);
+                          [0.57, 0.05], [0.6, 0.11], [0.64, 0.175], [0.7, 0.165], [0.75, 0.15], [0.79, 0.1],
+                          [0.83, 0.045], [0.94, 0.035]]);
     const foot = loopKeys([[0, 0.03], [0.08, 0.042], [0.2, 0.035], [0.3, 0.012], [0.5, 0.008], [0.58, 0.03],
                            [0.66, 0.05], [0.8, 0.045], [0.88, 0.024]]);
     const jag = wave([[0.004 * H, 37, 0.3], [0.002 * H, 71, 2]]);
-    const landTop = x => hz - top(x) * H + jag(x), landFoot = x => hz + foot(x) * H;
+    const lumpy = wave([[0.009 * H, 43, 0.3], [0.006 * H, 71, 1.9], [0.004 * H, 127, 0.7], [0.002 * H, 211, 2.6]]);
+    const hillness = x => { const u = ((x / lap) % 1 + 1) % 1; return clamp01(1 - Math.abs(u - 0.69) / 0.14); };
+    const landTop = x => hz - top(x) * H + jag(x) + hillness(x) * lumpy(x), landFoot = x => hz + foot(x) * H;
     const cliffAt = x => { const u = ((x / lap) % 1 + 1) % 1; return u > 0.585 && u < 0.81; };
     // the gorge the waterfall has cut: bare rock, widening toward the foot, with a ragged edge
-    const ragged = wave([[0.006, 29, 1.1], [0.004, 53, 0.2], [0.003, 97, 2.4]]);
+    const ragged = wave([[0.008, 29, 1.1], [0.006, 53, 0.2], [0.004, 97, 2.4], [0.003, 173, 0.9]]);
     const gorgeHalf = y => {   // half its width at height y, as a share of the lap
       const depth = Math.max(0, Math.min(1, (y - (hz - 0.17 * H)) / (0.22 * H)));
-      return 0.024 + 0.026 * depth + ragged(0.69 * lap + 7 * y);
+      return 0.024 + 0.026 * depth + ragged(0.69 * lap + 1.1 * y);   // edges wander slowly down the face
     };
     const gorge = (x, y) => Math.abs(((x / lap) % 1 + 1) % 1 - 0.69) < gorgeHalf(y);
     const falls = { x: 0.69 * lap, w: 34 * s };
     falls.top = hz - 0.165 * H; falls.foot = landFoot(falls.x);
+    falls.edge = [];   // [y, left, right] down the fall, offsets from its centre line
+    for (let y = falls.top, p1 = rr(0, TAU), p2 = rr(0, TAU); y <= falls.foot + 1; y += 4 * s) {
+      const u = (y - falls.top) / (falls.foot - falls.top), half = falls.w * (0.36 + 0.36 * u * u);
+      const sway = Math.sin(u * 5 + p1) * 2.5 * s, ragL = Math.sin(y / (5 * s) + p2) * 1.6 * s + Math.sin(y / (2.3 * s)) * 0.9 * s;
+      const ragR = Math.sin(y / (4.4 * s) + p1) * 1.6 * s + Math.sin(y / (1.9 * s) + 1) * 0.9 * s;
+      falls.edge.push([y, sway - half * (1 + 0.12 * Math.sin(u * 9 + p2)) + ragL, sway + half * (1 + 0.1 * Math.sin(u * 7 + p1)) + ragR]);
+    }
+    const fallPath = (c, x) => {
+      c.beginPath();
+      falls.edge.forEach(([y, l], i) => i ? c.lineTo(x + l, y) : c.moveTo(x + l, y));
+      for (let i = falls.edge.length - 1; i >= 0; i--) c.lineTo(x + falls.edge[i][2], falls.edge[i][0]);
+      c.closePath();
+    };
+    falls.path = fallPath;
     const turbines = [];
     {   // streaks of white water, lit on one side, repeating every texH so it can scroll forever
       const texW = Math.ceil(falls.w * 1.5), texH = Math.ceil(0.22 * H);
@@ -376,15 +405,19 @@
       for (let i = 0; i < 520; i++) {   // rock: angular slabs, lit on top, with dark cracks
         const x = rr(0.635, 0.745) * lap, y = rr(landTop(x) + 8 * s, landFoot(x)), w = rr(4, 16) * s, h = rr(2, 8) * s;
         const tone = rr(0, 1);
+        if (!gorge(x, y) || !gorge(x + w, y + h)) continue;
         c.fillStyle = tone < 0.45 ? `rgba(58,72,66,${rr(0.15, 0.35)})` : `rgba(200,212,200,${rr(0.1, 0.28)})`;
         c.beginPath();
         c.moveTo(x, y); c.lineTo(x + w, y + rr(-2, 2) * s); c.lineTo(x + w * rr(0.7, 1), y + h); c.lineTo(x + w * rr(0, 0.3), y + h * rr(0.6, 1));
         c.fill();
       }
       for (let i = 0; i < 160; i++) {   // moss and ferns clinging to ledges
-        const x = rr(0.635, 0.745) * lap, y = rr(landTop(x) + 6 * s, landFoot(x)), r = rr(1.5, 5) * s;
-        c.fillStyle = `rgba(${rr(50, 90)},${rr(120, 160)},${rr(50, 70)},${rr(0.4, 0.75)})`;
-        c.beginPath(); c.ellipse(x, y, r * 1.6, r * 0.7, 0, 0, TAU); c.fill();
+        const x = rr(0.635, 0.745) * lap, y = rr(landTop(x) + 6 * s, landFoot(x)), r = rr(0.8, 2.6) * s;
+        if (!gorge(x, y)) continue;
+        c.fillStyle = `rgba(${rr(60, 100)},${rr(110, 140)},${rr(55, 75)},${rr(0.25, 0.55)})`;
+        c.beginPath();
+        for (let k = 0; k < 4; k++) { const ax = x + rr(-2, 2) * r, ay = y + rr(-0.6, 0.6) * r; c.moveTo(ax + r, ay); c.arc(ax, ay, r * rr(0.5, 1), 0, TAU); }
+        c.fill();
       }
       // sun on the fields: a soft light band over each crest
       const sheen = c.createLinearGradient(0, hz - 0.1 * H, 0, hz + 0.02 * H);
@@ -411,16 +444,17 @@
         const y = atCrest ? landTop(x) + rr(0, 0.018) * H : landFoot(x) - rr(0, 0.014) * H;
         tree(x, y, rr(2.2, cl ? 7 : 5.5) * s * (0.6 + t * 4));
       }
-      for (let i = 0; i < 1500; i++) {   // the hillside around the gorge is wooded all the way down
+      for (let i = 0; i < 2600; i++) {   // the hillside around the gorge is wooded all the way down
         const x = rr(0.585, 0.81) * lap, y = rr(landTop(x) + 4 * s, landFoot(x) - 2 * s);
         if (gorge(x, y)) continue;
-        tree(x, y, rr(3, 7.5) * s);
+        tree(x, y, rr(2, 5.5) * s);
       }
-      for (const [pass, k, ox, oy] of [[0, 1, -0.1, 0.18], [1, 0.8, 0.08, -0.08], [2, 0.42, 0.3, -0.36]]) {
+      c.filter = `blur(${Math.max(0.3, 0.45 * s * q)}px)`;   // soft at this distance
+      for (const [pass, k, ox, oy] of [[0, 1, -0.06, 0.12], [1, 0.85, 0.05, -0.06], [2, 0.42, 0.28, -0.34]]) {
         for (const t of crowns) {
-          c.fillStyle = pass === 0 ? `hsl(${118 + t.hue}, 48%, 20%)`
-                      : pass === 1 ? `hsl(${108 + t.hue}, 52%, ${30 + (t.hue + 12) * 0.3}%)`
-                      : `hsla(${88 + t.hue}, 62%, 58%, 0.85)`;
+          c.fillStyle = pass === 0 ? `hsl(${120 + t.hue}, 32%, ${22 + (t.hue + 12) * 0.2}%)`
+                      : pass === 1 ? `hsl(${108 + t.hue}, 36%, ${31 + (t.hue + 12) * 0.35}%)`
+                      : `hsla(${86 + t.hue}, 42%, 55%, 0.6)`;
           wrapped(t.x, t.r * 3, xx => {
             c.beginPath();
             for (const [dx, dy, lr] of t.lumps) {
@@ -432,6 +466,7 @@
           });
         }
       }
+      c.filter = "none";
       for (let i = 0; i < 6; i++) {   // turbine towers on the meadow crests
         const x = (0.03 + i * 0.045 + rr(-0.01, 0.01)) * lap, base = landTop(x) + 3 * s, h = rr(42, 56) * s;
         turbines.push({ x, top: base - h, len: h * 0.55, phase: rr(0, TAU), rate: rr(0.5, 0.8) });
@@ -451,27 +486,28 @@
         sheet.addColorStop(0.4, "rgba(255,255,255,0.97)"); sheet.addColorStop(0.75, "rgba(222,242,255,0.92)");
         sheet.addColorStop(0.9, "rgba(180,220,245,0.6)"); sheet.addColorStop(1, "rgba(170,215,240,0)");
         c.fillStyle = sheet;
-        c.beginPath();   // narrow at the lip, spreading as it falls
-        c.moveTo(xx - falls.w * 0.4, falls.top);
-        c.bezierCurveTo(xx - falls.w * 0.3, falls.top - 3 * s, xx + falls.w * 0.3, falls.top - 3 * s, xx + falls.w * 0.4, falls.top);
-        c.quadraticCurveTo(xx + falls.w * 0.48, (falls.top + falls.foot) / 2, xx + falls.w * 0.7, falls.foot);
-        c.lineTo(xx - falls.w * 0.7, falls.foot);
-        c.quadraticCurveTo(xx - falls.w * 0.48, (falls.top + falls.foot) / 2, xx - falls.w * 0.4, falls.top);
+        falls.path(c, xx);   // the same uneven outline as the moving water
         c.fill();
         const lip = c.createLinearGradient(0, falls.top - 2 * s, 0, falls.top + 10 * s);   // light on the lip
         lip.addColorStop(0, "rgba(255,255,255,0.9)"); lip.addColorStop(1, "rgba(255,255,255,0)");
         c.fillStyle = lip; c.fillRect(xx - falls.w * 0.42, falls.top - 2 * s, falls.w * 0.84, 12 * s);
       });
       c.globalAlpha = 1;
+      c.filter = "none";
+      c.globalCompositeOperation = "source-atop";   // the air between us and the shore: paler and bluer
+      const air = c.createLinearGradient(0, hz - 0.2 * H, 0, hz + 0.06 * H);
+      air.addColorStop(0, "rgba(196,224,244,0.34)"); air.addColorStop(1, "rgba(196,224,244,0.12)");
+      c.fillStyle = air; c.fillRect(0, hz - 0.22 * H, lap, 0.3 * H);
+      c.globalCompositeOperation = "source-over";
     }, { mirror: true, turbines, falls });
     {   // grain: big patches of lighter and darker field, fine grass, rough rock, falling water
       const patches = makeNoise(tw, 90 * q, 3), fine = makeNoise(tw, 5 * q, 3);
-      const rock = makeNoise(tw, 9 * q, 4, 0.3), ledges = makeNoise(tw, 40 * q, 3, 6), streaks = makeNoise(tw, 3 * q, 3, 0.08);
+      const rock = makeNoise(tw, 9 * q, 4, 0.6), streaks = makeNoise(tw, 3 * q, 3, 0.08);
       const fx0 = (falls.x - falls.w * 0.75) / lap * tw, fx1 = (falls.x + falls.w * 0.75) / lap * tw;
       grain(shore.cv, 1, (x, y) => {
         if (x > fx0 && x < fx1 && y > (falls.top - shore.y0) * q) return 0.3 * streaks(x, y);
-        const u = x / tw, onRock = u > 0.63 && u < 0.75;   // rock in vertical columns, broken by ledges
-        return 0.12 * patches(x, y) + (onRock ? 0.3 * rock(x, y) + 0.12 * ledges(x, y) : 0.05 * fine(x, y));
+        const onRock = gorge(x / tw * lap, shore.y0 + y / q);   // rough rock only where the rock is
+        return 0.12 * patches(x, y) + (onRock ? 0.22 * rock(x, y) : 0.05 * fine(x, y));
       });
     }
 
@@ -637,12 +673,7 @@
         for (let x = f.x - off; x < W + lap; x += lap) {
           if (x < -150 * s || x > W + 150 * s) continue;
           ctx.save();
-          ctx.beginPath();   // narrow at the lip, fanning out as it falls
-          ctx.moveTo(x - f.w * 0.4, f.top);
-          ctx.bezierCurveTo(x - f.w * 0.3, f.top - 3 * s, x + f.w * 0.3, f.top - 3 * s, x + f.w * 0.4, f.top);
-          ctx.quadraticCurveTo(x + f.w * 0.48, (f.top + f.foot) / 2, x + f.w * 0.72, f.foot);
-          ctx.lineTo(x - f.w * 0.72, f.foot);
-          ctx.quadraticCurveTo(x - f.w * 0.48, (f.top + f.foot) / 2, x - f.w * 0.4, f.top);
+          f.path(ctx, x);   // narrow at the lip, fanning out unevenly as it falls
           ctx.clip();
           const sheet = ctx.createLinearGradient(x - f.w * 0.72, 0, x + f.w * 0.72, 0);
           sheet.addColorStop(0, "rgba(190,225,245,0.15)"); sheet.addColorStop(0.3, "rgba(230,245,255,0.55)");
@@ -764,5 +795,6 @@
 
   window.__ggAero = {
     stop() { cancelAnimationFrame(raf); canvas.remove(); delete window.__ggAero; },
+    seed: SEED,     // this scene: set window.__ggAeroSeed to it to draw the same one again
   };
 })();

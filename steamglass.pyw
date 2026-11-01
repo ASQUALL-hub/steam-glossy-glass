@@ -34,7 +34,7 @@ window back to normal without starting the helper.
 Installed builds (SteamGlass.exe, put there by SteamGlassUpdater.exe) keep
 glass-mode.txt in %APPDATA%\SteamGlass and add "Check for updates…" to the menu.
 "Start with Windows" in the menu adds or removes the helper under the Run key."""
-__version__ = "1.1.0"
+__version__ = "1.1.1"
 
 import base64
 import ctypes

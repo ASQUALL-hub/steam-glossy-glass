@@ -17,6 +17,11 @@
   const s = document.createElement("script");
   s.src = "../aero.js";
   s.onload = () => {
+    if (!args.get("seed")) {   // show this scene's number in the address, so it can be kept
+      args.set("seed", window.__ggAero.seed);
+      history.replaceState(null, "", "?" + args.toString());
+    }
+    document.title = "Aero preview " + window.__ggAero.seed;
     const zoom = Number(args.get("zoom") || 1), [ax, ay] = (args.get("at") || "50,50").split(",");
     if (zoom > 1) document.getElementById("gg-aero").style.transform = `scale(${zoom})`,
                   document.getElementById("gg-aero").style.transformOrigin = `${ax}% ${ay}%`;
