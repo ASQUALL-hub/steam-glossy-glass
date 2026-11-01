@@ -1,0 +1,126 @@
+/* Glossy Glass: Frutiger Aero option (aero.css).
+   A sunny panorama of a glass city, lakes and fields drifts by behind the main
+   and friends windows (aero.js). The panels over it are Windows 7 style blue
+   glass that blurs the scene, with bright white rims, and the buttons are clear
+   glass bubbles: almost no colour, a wet gloss over the top half and a soft glow
+   welling up from below (green under Play). */
+
+html:root {
+  /* shown for a moment before aero.js draws the scene, and in dialogs */
+  --gg-backdrop:
+    radial-gradient(60% 50% at 78% 12%, rgba(255, 255, 240, 0.65), transparent 70%),
+    linear-gradient(#0b5fcf 0%, #4aa6f0 38%, #bfe7ff 50%, #8fd65e 51%, #3f9a33 100%);
+  --gg-tint: rgba(16, 68, 132, 0.38);
+  --gg-tint-deep: rgba(10, 46, 96, 0.58);
+  --gg-rim: rgba(255, 255, 255, 0.72);
+  --gg-rim-inner: rgba(255, 255, 255, 0.26);
+  --gg-chip: rgba(255, 255, 255, 0.12);
+  --gg-chip-lit: rgba(255, 255, 255, 0.24);
+
+  /* clear glass buttons: a breath of colour in the glass, the real colour in the glow */
+  --gg-green: rgba(150, 240, 160, 0.14);
+  --gg-blue: rgba(160, 215, 255, 0.14);
+  --gg-grey: rgba(255, 255, 255, 0.05);
+}
+
+/* the scene (aero.js) lies behind the window's contents: the frame (main
+   window) and the page (friends) become their own layer */
+._1ENHEsrSLcTRtPQFl1F-wL,
+html.friendsui-container body {
+  isolation: isolate;
+}
+
+/* ------------------------------------------------------------- blue glass panels */
+
+/* No live blur on the big panels here: blurring a moving scene every frame costs
+   Steam most of a CPU core (it draws on the CPU). Tinted glass without blur keeps
+   it to a fraction of that; only the small buttons blur what's behind them. */
+._3fLo166MlaNqP8r8tTyRz,                  /* game page: play bar */
+._2iJsgdTIX9Tj23rWnB7Q-c {                /* notice banner */
+  backdrop-filter: none !important;
+}
+
+/* the game list and bottom bar: deep blue glass, so names read over the bright scene */
+._3x1HklzyDs4TEjACrRO2tB,                 /* library: game list column */
+._3vCzSrrXZzZjVJFZNg9SGu,                 /* bottom bar */
+.PageListColumn {
+  --gg-tint: rgba(10, 52, 116, 0.66);
+}
+
+/* the big right panel is nearly clear glass: the panorama shows through it.
+   Its cards (sections, the play bar) keep the deeper glass for their text. */
+._2Dd4T78PcCTUVgOtDGFY5j {
+  --gg-tint: rgba(8, 40, 95, 0.2);
+  text-shadow: 0 0 3px rgba(0, 25, 60, 0.9), 0 1px 2px rgba(0, 25, 60, 0.8), 0 0 12px rgba(0, 40, 90, 0.5);
+}
+._2Dd4T78PcCTUVgOtDGFY5j > * {
+  --gg-tint: rgba(10, 52, 116, 0.62);
+}
+
+/* the title bar is a strip of the same glass, so the menu names read over the sky */
+._3Z7VQ1IMk4E3HsHvrkLNgo {
+  background:
+    radial-gradient(98% 60px at 50% -24px, rgba(255, 255, 255, 0.34), transparent 100%) no-repeat,
+    linear-gradient(rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.02)),
+    rgba(16, 68, 132, 0.42) !important;
+}
+
+/* white text with a soft dark halo, like Aero window captions */
+._3Z7VQ1IMk4E3HsHvrkLNgo,
+._3x1HklzyDs4TEjACrRO2tB,
+._2Dd4T78PcCTUVgOtDGFY5j,
+._3vCzSrrXZzZjVJFZNg9SGu {
+  text-shadow: 0 1px 2px rgba(0, 30, 70, 0.55), 0 0 10px rgba(0, 40, 90, 0.30);
+}
+
+/* ------------------------------------------------------------- clear glass buttons */
+
+._3ydigb6zZAjJ0JCDgHwSYA,                 /* play button */
+._2q-gZ3XJzlvSGHSF-GvSmi {                /* its dropdown arrow */
+  --gg-glow: rgba(150, 215, 255, 0.55);
+  background:
+    radial-gradient(85% 75% at 50% 118%, var(--gg-glow), transparent 100%),
+    linear-gradient(rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02)),
+    linear-gradient(var(--gg-btn), var(--gg-btn)) !important;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.80),
+    inset 0 0 0 2px rgba(255, 255, 255, 0.12),
+    inset 0 -3px 8px rgba(255, 255, 255, 0.22),
+    0 2px 12px rgba(0, 40, 90, 0.35) !important;
+  color: #fff !important;
+  text-shadow: 0 1px 2px rgba(0, 40, 80, 0.65), 0 0 8px rgba(0, 60, 120, 0.4);
+}
+._3cI5TXsFX3bvpR-7EBOtxq ._3ydigb6zZAjJ0JCDgHwSYA,
+._3cI5TXsFX3bvpR-7EBOtxq ._2q-gZ3XJzlvSGHSF-GvSmi { --gg-glow: rgba(120, 255, 135, 0.62); }
+._1Pb6PMh_3L5p5NzuUz0Pp9 ._3ydigb6zZAjJ0JCDgHwSYA,
+._1Pb6PMh_3L5p5NzuUz0Pp9 ._2q-gZ3XJzlvSGHSF-GvSmi,
+._3ydigb6zZAjJ0JCDgHwSYA._1Pb6PMh_3L5p5NzuUz0Pp9 { --gg-glow: rgba(255, 255, 255, 0.16); }
+/* the wet gloss over the top half: brighter and crisper than Glossy Glass's */
+._3ydigb6zZAjJ0JCDgHwSYA::after,
+._2q-gZ3XJzlvSGHSF-GvSmi::after {
+  inset: 2px 3px 52% 3px;
+  background: linear-gradient(rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.28)) !important;
+}
+
+/* dialog buttons and the glass chips: the same clear bubble, smaller */
+.DialogButton,
+.DialogButton:not(.Secondary),
+a._3pSPluBgf0NeR1kkCLWMhR,
+._2PF_m-I5yte3WnQhpcz8RC,
+._2Szzh5sKyGgnLUR870zbDE,
+._3yD46y5pd3zOGR7CzKs0mC {
+  background:
+    radial-gradient(85% 75% at 50% 120%, rgba(150, 215, 255, 0.45), transparent 100%),
+    linear-gradient(rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.14) 50%, rgba(255, 255, 255, 0.02) 51%, rgba(255, 255, 255, 0.06)),
+    rgba(255, 255, 255, 0.06) !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.70), inset 0 1px 0 1px rgba(255, 255, 255, 0.35),
+    0 1px 6px rgba(0, 40, 90, 0.25) !important;
+}
+.DialogButton:hover,
+.DialogButton:focus-visible,
+a._3pSPluBgf0NeR1kkCLWMhR:hover {
+  background:
+    radial-gradient(85% 75% at 50% 120%, rgba(170, 225, 255, 0.70), transparent 100%),
+    linear-gradient(rgba(255, 255, 255, 0.65), rgba(255, 255, 255, 0.20) 50%, rgba(255, 255, 255, 0.06) 51%, rgba(255, 255, 255, 0.12)),
+    rgba(255, 255, 255, 0.10) !important;
+}

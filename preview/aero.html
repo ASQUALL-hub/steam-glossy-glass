@@ -1,0 +1,26 @@
+<!doctype html>
+<!-- The Aero panorama on its own, for working on aero.js in a browser:
+     python -m http.server 8765, then open http://localhost:8765/preview/aero.html
+     ?picture=some.jpg   pan a picture (next to this page) instead
+     ?skip=444           start that many seconds into the pan (instead of a random place)
+     ?seed=20090722      draw that scene (instead of a random one)
+     ?zoom=3&at=50,40    magnify around a point (percent across, down) -->
+<meta charset="utf-8">
+<title>Aero preview</title>
+<style>html, body { margin: 0; height: 100%; overflow: hidden; } body { isolation: isolate; }</style>
+<body>
+<script>
+  const args = new URLSearchParams(location.search);
+  if (args.get("picture")) window.__ggAeroImage = args.get("picture");
+  if (args.get("skip")) window.__ggAeroSkip = Number(args.get("skip"));
+  if (args.get("seed")) window.__ggAeroSeed = Number(args.get("seed"));
+  const s = document.createElement("script");
+  s.src = "../aero.js";
+  s.onload = () => {
+    const zoom = Number(args.get("zoom") || 1), [ax, ay] = (args.get("at") || "50,50").split(",");
+    if (zoom > 1) document.getElementById("gg-aero").style.transform = `scale(${zoom})`,
+                  document.getElementById("gg-aero").style.transformOrigin = `${ax}% ${ay}%`;
+  };
+  document.body.append(s);
+</script>
+</body>

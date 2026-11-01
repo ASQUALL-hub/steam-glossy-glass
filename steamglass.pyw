@@ -20,6 +20,11 @@ in glass-mode.txt next to this file (changes apply live):
   clear    no blur, fully see-through; the window is cut to DiscTray's squircle
            (pair with the theme's "Clear" glass option, which draws the curve).
   liquid   frosted glass for the theme's "Liquid" option (water that sloshes).
+  aero     Frutiger Aero: a sunny panorama pans by behind blue glass panels.
+           aero.js draws a glass city, lakes and fields, or pans a picture:
+           yours (tray > Aero picture > Choose a picture…, kept as
+           my-aero-picture.jpg in the settings folder) or the theme's own
+           aero-picture.jpg if it has one.
   off      Steam's own windows.
 
 A tray icon switches between them (it writes glass-mode.txt). Quitting it puts
@@ -27,8 +32,9 @@ Steam back to normal. Run with pythonw (no console). `--off` puts every Steam
 window back to normal without starting the helper.
 
 Installed builds (SteamGlass.exe, put there by SteamGlassUpdater.exe) keep
-glass-mode.txt in %APPDATA%\SteamGlass and add "Check for updates…" to the menu."""
-__version__ = "1.0.1"
+glass-mode.txt in %APPDATA%\SteamGlass and add "Check for updates…" to the menu.
+"Start with Windows" in the menu adds or removes the helper under the Run key."""
+__version__ = "1.1.0"
 
 import base64
 import ctypes
@@ -82,7 +88,13 @@ THEME_DIR = os.path.join(HERE, "skin") if FROZEN else HERE   # the installer unp
 CEF_PORT = 8080   # Steam's developer port, on 127.0.0.1 only
 CEF_FLAG = ".cef-enable-remote-debugging"   # in Steam's folder: Steam opens the port when it starts
 STYLE_ID = "steam-glass-theme"
-WATER_WINDOWS = {"Steam", "Friends List"}   # Liquid's water runs in these
+SCENE_WINDOWS = {"Steam", "Friends List"}   # Liquid's water and Aero's panorama run in these
+SCENE_SCRIPTS = {"liquid": "liquid.js", "aero": "aero.js"}
+PICTURE = "aero-picture.jpg"        # the theme's own panorama picture, in THEME_DIR
+MY_PICTURE = "my-aero-picture.jpg"   # the one you chose, in SETTINGS_DIR
+PICTURE_HEIGHT = 1440          # pictures are scaled down to this height to keep them quick to send
+RUN_KEY = r"Software\Microsoft\Windows\CurrentVersion\Run"
+RUN_NAME = "SteamGlass"
 
 
 class MARGINS(ctypes.Structure):
@@ -98,7 +110,9 @@ user32.GetWindowLongW.restype = ctypes.c_long
 user32.SetWindowLongW.restype = ctypes.c_long
 
 
-MODES = {"frosted": "Frosted", "clear": "Clear", "liquid": "Liquid", "off": "Off (Steam's normal look)"}
+MODES = {"frosted": "Frosted", "clear": "Clear", "liquid": "Liquid", "aero": "Frutiger Aero",
+         "off": "Off (Steam's normal look)"}
+FROSTED_LIKE = ("frosted", "liquid", "aero")   # glass kinds Windows draws as frosted
 
 
 def read_mode() -> str:
@@ -179,7 +193,7 @@ def drifted(hwnd, mode: str) -> bool:
     real edges (where you resize it) cut away."""
     if mode != "clear" and has_region(hwnd):
         return True
-    if mode not in ("frosted", "liquid"):
+    if mode not in FROSTED_LIKE:
         return False
     style = user32.GetWindowLongW(hwnd, GWL_STYLE)
     return bool(style & WS_CAPTION) and bool(style & WS_SYSMENU)
@@ -195,10 +209,10 @@ def blur_behind(hwnd, on: bool):
 
 
 def apply(hwnd, mode: str):
-    """mode: "frosted", "clear", "liquid" or "off" (Steam's own look)."""
+    """mode: one of MODES ("off" is Steam's own look)."""
     if mode != "off":
         dword_attr(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, 1)
-    if mode == "liquid":   # Liquid's water sits behind frosted glass, like DiscTray's
+    if mode in FROSTED_LIKE:   # Liquid's water and Aero's scene sit behind frosted glass
         mode = "frosted"
     frosted = mode == "frosted"
     set_sysmenu(hwnd, not frosted)
@@ -299,8 +313,8 @@ class Glass:
 
 def tray_icon(mode: str, sizes=(16, 20, 24, 32, 48, 64)):
     """A little glossy glass squircle: deep blue when frosted, clear with a blue
-    rim when clear, Liquid's teal sky with a wave of water when liquid, grey
-    when off."""
+    rim when clear, Liquid's teal sky with a wave of water when liquid, a
+    sunny sky over a green hill when aero, grey when off."""
     from PySide6.QtCore import QPointF, QRectF, Qt
     from PySide6.QtGui import QColor, QIcon, QLinearGradient, QPainter, QPainterPath, QPen, QPixmap, QRadialGradient
 
@@ -322,6 +336,9 @@ def tray_icon(mode: str, sizes=(16, 20, 24, 32, 48, 64)):
         if mode == "liquid":   # DiscTray's Liquid sky, a bit stronger to read at icon size
             for at, rgba in ((0.0, (70, 160, 172, 235)), (0.45, (150, 170, 182, 225)), (1.0, (36, 38, 44, 235))):
                 fill.setColorAt(at, QColor(*rgba))
+        elif mode == "aero":   # Aero's sky, deep blue overhead and pale at the horizon
+            for at, rgba in ((0.0, (11, 95, 207, 255)), (0.6, (110, 190, 250, 255)), (1.0, (200, 235, 255, 255))):
+                fill.setColorAt(at, QColor(*rgba))
         else:
             top, bottom = {"frosted": ((70, 160, 255, 235), (20, 60, 150, 235)),
                            "clear": ((120, 200, 255, 90), (40, 110, 200, 70)),
@@ -329,7 +346,36 @@ def tray_icon(mode: str, sizes=(16, 20, 24, 32, 48, 64)):
             fill.setColorAt(0, QColor(*top))
             fill.setColorAt(1, QColor(*bottom))
         p.fillPath(body, fill)
-        if mode == "liquid":
+        if mode == "aero":
+            p.save()
+            p.setClipPath(body)
+            sun = QRadialGradient(QPointF(px * 0.74, px * 0.24), px * 0.34)
+            sun.setColorAt(0, QColor(255, 255, 245, 255))
+            sun.setColorAt(0.25, QColor(255, 250, 220, 200))
+            sun.setColorAt(1, QColor(255, 255, 255, 0))
+            p.fillRect(QRectF(0, 0, px, px), sun)
+            p.setPen(Qt.NoPen)
+            p.setBrush(QColor(255, 255, 255, 235))   # a puffy cloud
+            for cx, cy, r in ((0.26, 0.42, 0.11), (0.38, 0.36, 0.14), (0.5, 0.43, 0.1)):
+                p.drawEllipse(QPointF(px * cx, px * cy), px * r, px * r)
+            hill = QPainterPath()
+            hill.moveTo(0, px * 0.7)
+            hill.cubicTo(px * 0.3, px * 0.52, px * 0.62, px * 0.6, px, px * 0.66)
+            hill.lineTo(px, px)
+            hill.lineTo(0, px)
+            hill.closeSubpath()
+            grass = QLinearGradient(0, px * 0.55, 0, px)
+            grass.setColorAt(0, QColor(160, 232, 100))
+            grass.setColorAt(1, QColor(50, 150, 45))
+            p.fillPath(hill, grass)
+            band = QPainterPath()
+            band.addEllipse(QPointF(px / 2, -px * 0.22), px * 0.62, px * 0.66)
+            gloss = QLinearGradient(0, 0, 0, px * 0.46)
+            gloss.setColorAt(0, QColor(255, 255, 255, 150))
+            gloss.setColorAt(1, QColor(255, 255, 255, 20))
+            p.fillPath(band, gloss)
+            p.restore()
+        elif mode == "liquid":
             # a wave of clear water with Liquid's bright waterline (no gloss: Liquid has none)
             wave = QPainterPath()
             wave.moveTo(0, px * 0.56)
@@ -474,8 +520,22 @@ class Theme:
     def start(self):
         self._thread.start()
 
-    @staticmethod
-    def bundle(mode: str):
+    _picture = (None, None, None)   # (path, mtime, data url)
+
+    def picture(self):
+        """Aero's picture as a data URL: yours if you chose one, else the theme's, else None."""
+        for path in (os.path.join(SETTINGS_DIR, MY_PICTURE), os.path.join(THEME_DIR, PICTURE)):
+            try:
+                mtime = os.path.getmtime(path)
+            except OSError:
+                continue
+            if self._picture[:2] != (path, mtime):
+                with open(path, "rb") as f:
+                    self._picture = (path, mtime, "data:image/jpeg;base64," + base64.b64encode(f.read()).decode())
+            return self._picture[2]
+        return None
+
+    def bundle(self, mode: str):
         """(css for library pages, css for friends pages, Liquid's script, key)."""
         if mode == "off":
             return "", "", "", ""
@@ -484,10 +544,14 @@ class Theme:
             with open(os.path.join(THEME_DIR, name), encoding="utf-8") as f:
                 return f.read()
 
-        extra = {"clear": "glass-clear.css", "liquid": "liquid.css"}.get(mode)
+        extra = {"clear": "glass-clear.css", "liquid": "liquid.css", "aero": "aero.css"}.get(mode)
         extra = read(extra) if extra else ""
         lib, friends = read("libraryroot.custom.css") + extra, read("friends.custom.css") + extra
-        js = read("liquid.js") if mode == "liquid" else ""
+        js = read(SCENE_SCRIPTS[mode]) if mode in SCENE_SCRIPTS else ""
+        if mode == "aero":
+            picture = self.picture()
+            if picture:
+                js = f"window.__ggAeroImage = {json.dumps(picture)};\n" + js
         key = hashlib.sha1((lib + friends + js).encode()).hexdigest()[:16]
         return lib, friends, js, key
 
@@ -503,8 +567,8 @@ class Theme:
                 continue
             if url.startswith(("http:", "https:")) and "steamloopback" not in url:
                 continue   # store and community pages are real websites: leave them be
-            water = js if t.get("title") in WATER_WINDOWS else ""
-            want = key + ("w" if water else "")
+            scene = js if t.get("title") in SCENE_WINDOWS else ""
+            want = key + ("w" if scene else "")
             try:
                 have = ws_eval(t["webSocketDebuggerUrl"],
                                f"(document.getElementById({STYLE_ID!r}) || {{dataset: {{}}}}).dataset.key || ''")
@@ -513,12 +577,14 @@ class Theme:
                 ws_eval(t["webSocketDebuggerUrl"], f"""(() => {{
                     let s = document.getElementById({STYLE_ID!r});
                     if (window.__ggLiquid) window.__ggLiquid.stop();
+                    if (window.__ggAero) window.__ggAero.stop();
                     if (!{json.dumps(want)}) {{ if (s) s.remove(); return; }}
                     if (!s) {{ s = document.createElement("style"); s.id = {STYLE_ID!r};
                               (document.head || document.documentElement).appendChild(s); }}
                     s.textContent = document.querySelector(".friendsui-container") ? {json.dumps(friends)} : {json.dumps(lib)};
                     s.dataset.key = {json.dumps(want)};
-                    {water}
+                    delete window.__ggAeroImage;   // a picture from before must not outlive its choice
+                    {scene}
                 }})()""", timeout=5)
             except (OSError, ValueError):
                 pass   # that page went away mid-pass; the next pass catches up
@@ -538,6 +604,49 @@ class Theme:
             self.apply_all("off")
         except (OSError, ValueError):
             pass
+
+
+def startup_command() -> str:
+    if FROZEN:
+        return f'"{sys.executable}"'
+    pythonw = os.path.join(os.path.dirname(sys.executable), "pythonw.exe")
+    return f'"{pythonw if os.path.isfile(pythonw) else sys.executable}" "{os.path.abspath(__file__)}"'
+
+
+def startup_enabled() -> bool:
+    import winreg
+    try:
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, RUN_KEY) as k:
+            winreg.QueryValueEx(k, RUN_NAME)
+        return True
+    except OSError:
+        return False
+
+
+def set_startup(on: bool):
+    """Start the helper when you sign in to Windows (the same Run entry the installer makes)."""
+    import winreg
+    with winreg.OpenKey(winreg.HKEY_CURRENT_USER, RUN_KEY, 0, winreg.KEY_SET_VALUE) as k:
+        if on:
+            winreg.SetValueEx(k, RUN_NAME, 0, winreg.REG_SZ, startup_command())
+        else:
+            try:
+                winreg.DeleteValue(k, RUN_NAME)
+            except FileNotFoundError:
+                pass
+
+
+def save_picture(source: str) -> bool:
+    """Make a picture Aero's panorama: scaled down if it's big, saved as a JPEG in the settings folder."""
+    from PySide6.QtCore import Qt
+    from PySide6.QtGui import QImage
+    img = QImage(source)
+    if img.isNull():
+        return False
+    if img.height() > PICTURE_HEIGHT:
+        img = img.scaledToHeight(PICTURE_HEIGHT, Qt.SmoothTransformation)
+    os.makedirs(SETTINGS_DIR, exist_ok=True)
+    return img.save(os.path.join(SETTINGS_DIR, MY_PICTURE), "JPG", 90)
 
 
 def theme_folder() -> str:
@@ -583,6 +692,32 @@ def main():
     menu.addSeparator()
     folder = menu.addAction("Open theme folder")
     folder.triggered.connect(lambda: QDesktopServices.openUrl(QUrl.fromLocalFile(theme_folder())))
+    def choose_picture():
+        from PySide6.QtWidgets import QFileDialog, QMessageBox
+        path, _ = QFileDialog.getOpenFileName(None, "Choose a picture for Frutiger Aero", os.path.expanduser("~"),
+                                              "Pictures (*.jpg *.jpeg *.png *.webp *.bmp)")
+        if not path:
+            return
+        if not save_picture(path):
+            QMessageBox.warning(None, "Steam Glass", "That picture couldn't be opened.")
+            return
+        choose("aero")
+
+    def drawn_scene():
+        try:
+            os.remove(os.path.join(SETTINGS_DIR, MY_PICTURE))
+        except OSError:
+            pass
+        choose("aero")
+
+    pictures = menu.addMenu("Aero picture")
+    pictures.addAction("Choose a picture…", choose_picture)
+    pictures.addAction("Built-in Aero scene", drawn_scene)
+    menu.addSeparator()
+    startup = menu.addAction("Start with Windows")
+    startup.setCheckable(True)
+    startup.setChecked(startup_enabled())
+    startup.toggled.connect(lambda on: set_startup(on))
     if os.path.isfile(UPDATER):   # only in installed builds
         menu.addAction("Check for updates…", check_updates)
     menu.addAction(f"Steam Glass {__version__}").setEnabled(False)

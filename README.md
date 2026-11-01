@@ -6,7 +6,10 @@ It's one small tray app, the **Steam Glass helper**. It loads the **Glossy Glass
 - **Frosted:** a dark acrylic blur of whatever is behind Steam, with Windows' rounded corners.
 - **Clear:** fully see-through, cut to DiscTray's squircle corners.
 - **Liquid:** DiscTray's Liquid style. Water sloshes behind the game list when you drag the window, and droplets cling to the glass and run down.
+- **Frutiger Aero:** a sunny lakeside panorama drifts by behind blue glass panels and clear, glossy bubble buttons: billowing clouds and high wisps blowing across a deep blue sky, misty mountains, a hazy glass city, meadows with wind turbines, a forested cliff with a waterfall, and a wide lake that mirrors it all in rippling reflections, behind tall dewy grass and daisies, with soap bubbles and a lens flare off the sun. The view pans slowly to the right and loops seamlessly, and every time Steam opens it, the clouds, trees, city and flowers come out a little different. It's all drawn in code (`aero.js`). Tray icon → **Aero picture** can pan a wallpaper of your own instead.
 - **Off:** Steam's normal look.
+
+The tray menu also has **Start with Windows**, to start the helper when you sign in.
 
 ## Install
 
@@ -27,6 +30,7 @@ New tray icons go into the hidden **^** area on Windows 11. Pin Steam Glass unde
 
 - Needs Windows 11 (22H2 or newer) for the frosted blur.
 - Big Picture mode isn't themed.
+- Frutiger Aero animates, so it costs Steam some CPU (about a third of one core here) while its window is on screen. It pauses when Steam is minimized or covered.
 - Steam names most of its page parts with generated class names, which can change when Steam updates. If part of the theme stops applying after a Steam update, check for a theme update.
 - Quitting the helper (tray icon → **Quit**) puts Steam's windows back to normal.
 
@@ -36,6 +40,8 @@ New tray icons go into the hidden **^** area on Windows 11. Pin Steam Glass unde
 pip install PySide6
 pythonw steamglass.pyw
 ```
+
+To work on the Aero scene in a browser, serve this folder (`python -m http.server 8765`) and open `http://localhost:8765/preview/aero.html`.
 
 From source, the glass setting is kept in `glass-mode.txt` next to the script; the installed helper keeps it in `%APPDATA%\SteamGlass`.
 

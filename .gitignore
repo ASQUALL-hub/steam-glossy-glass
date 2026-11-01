@@ -4,3 +4,5 @@ __pycache__/
 *.pyc
 *.spec
 glass-mode.txt
+my-aero-picture.jpg
+preview/*.jpg

@@ -2,14 +2,14 @@
     "name": "Glossy Glass",
     "author": "ASQUALL-hub",
     "description": "DiscTray's Glossy Glass look for the Steam client: see-through glass windows with a wet gloss, bright double rims and tinted candy buttons. The Steam Glass helper (SteamGlassUpdater.exe from github.com/ASQUALL-hub/steam-glossy-glass) loads this theme into Steam by itself and does the see-through part; Millennium is optional.",
-    "version": "1.2.0",
+    "version": "1.3.0",
     "tags": ["Glass", "Glossy", "Aero", "Nostalgic", "Transparent"],
 
     "UseDefaultPatches": true,
 
     "Conditions": {
         "Glass": {
-            "description": "Frosted blurs what is behind Steam, with Windows' rounded corners. Clear is fully see-through with DiscTray's squircle corners. Liquid is DiscTray's Liquid: water that sloshes when you drag the window. Pick the same in the Steam Glass tray icon.",
+            "description": "Frosted blurs what is behind Steam, with Windows' rounded corners. Clear is fully see-through with DiscTray's squircle corners. Liquid is DiscTray's Liquid: water that sloshes when you drag the window. Frutiger Aero is a sunny panorama of a glass city, lakes and fields drifting by behind blue glass. Pick the same in the Steam Glass tray icon.",
             "default": "Frosted",
             "values": {
                 "Frosted": {
@@ -21,6 +21,10 @@
                 "Liquid": {
                     "TargetCss": { "affects": [".*"], "src": "liquid.css" },
                     "TargetJs": { "affects": ["^Steam$", "^Friends List$"], "src": "liquid.js" }
+                },
+                "Frutiger Aero": {
+                    "TargetCss": { "affects": [".*"], "src": "aero.css" },
+                    "TargetJs": { "affects": ["^Steam$", "^Friends List$"], "src": "aero.js" }
                 }
             }
         }
