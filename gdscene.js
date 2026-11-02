@@ -26,6 +26,7 @@
   const SHAKE_SETTLE = 0.12;  // seconds a shake takes to ease back to rest
   const PORTAL_REACH = 35;    // units short of a speed portal's centre where it takes the player (matched to GD's timing)
   const TOUCH_REACH = 30;     // the same for touch-activated triggers: the player's 30-unit box meets the trigger's
+  const SCREEN_K = 1.0139;    // GD's shader size factor (a global / CCDirector's screenScaleFactorW, read live for a 16:9 window)
 
   // ------------------------------------------------------------------ easing (GD / cocos2d)
   function ease(type, rate, t) {
@@ -267,11 +268,39 @@
     uniform vec4 inv;               // invert amount per channel, amount
     uniform vec4 glitch;            // slice bottom, top, its x shift, which channel to offset (0..1); top 0 = off
     uniform vec2 glitchCol;         // that channel's offset
+    uniform vec4 cg;                // chromatic glitch: rgb offset (0 = off), strength, height, y offset
+    uniform vec3 cgLine;            // and its lines' threshold (0 = none), strength; its clock
+    uniform vec4 sw;                // shockwave: phase (0 = off), strength, waves, inverted
+    uniform vec4 swT;               // its ring's edges (GD's time1..4)
+    uniform vec4 swC;               // its centre; min and max size (inverted rings)
+    uniform vec2 swMisc;            // 1 / its reach (0 = everywhere); the screen's aspect
     out vec4 frag;
+    // GD's own noise for the chromatic glitch (smoothed value noise; its rand's multiplier is 437.5854)
+    float rnd(vec2 n) { return fract(sin(dot(n, vec2(12.9898, 4.1414))) * 437.5854); }
+    float noise(vec2 n) {
+      const vec2 d = vec2(0.0, 1.0);
+      vec2 b = floor(n), f = smoothstep(vec2(0.0), vec2(1.0), fract(n));
+      return mix(mix(rnd(b), rnd(b + d.yx), f.x), mix(rnd(b + d.xy), rnd(b + d.yy), f.x), f.y);
+    }
     void main() {
       vec2 at = vUV;
+      if (sw.x > 0.0) {   // GD's shockwave: a ring of ripples pushing the picture out from its centre
+        vec2 p = (at - swC.xy) * vec2(1.0, swMisc.y);
+        float dis = max(length(p), 0.0001);
+        float k = swMisc.x != 0.0 ? clamp(1.0 - dis * swMisc.x, 0.0, 1.0) : 1.0;
+        if (sw.w > 0.5) dis = swC.w - max(dis, swC.z);
+        k *= clamp(smoothstep(swT.x, swT.y, dis) - smoothstep(swT.z, swT.w, dis), 0.0, 1.0);
+        at += k * ((p / dis) * sin(dis * sw.z - sw.x) * sw.y) * vec2(1.0, 1.0 / swMisc.y);
+      }
       if (glitch.y > 0.0) at.x += glitch.z * (step(glitch.x, at.y) - step(glitch.y, at.y));   // the slice slides
       vec4 c = texture(scene, at);
+      if (cg.x != 0.0) {   // rows slide sideways by noise, and red and blue come from either side
+        float row = (vUV.y + cg.w) * 50.0 * cg.z;
+        at.x += (noise(vec2(cgLine.z, row)) - noise(vec2(0.0, row))) * cg.y;
+        vec4 r = texture(scene, vec2(at.x - cg.x, at.y)), g = texture(scene, at), b = texture(scene, vec2(at.x + cg.x, at.y));
+        c = vec4(r.r, g.g, b.b, (r.a + g.a + b.a) * 0.3333);
+        if (cgLine.x > 0.0) c.rgb -= smoothstep(cgLine.x - 0.01, cgLine.x + 0.01, sin((vUV.y + cg.w) * 300.0 * cg.z)) * cgLine.y;
+      }
       if (glitch.y > 0.0) {   // and one colour channel comes from a little way off
         vec4 o = texture(scene, at + glitchCol);
         if (glitch.w < 0.33) c.r = o.r; else if (glitch.w < 0.66) c.g = o.g; else c.b = o.b;
@@ -516,7 +545,7 @@
       gl.linkProgram(bp);
       if (!gl.getProgramParameter(bp, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(bp));
       this.blurVao = gl.createVertexArray();
-      this.uBlur = ["scene", "center", "value", "fade", "gray", "grayLum", "grayTint", "sepia", "inv", "ccC", "ccB", "glitch", "glitchCol"]
+      this.uBlur = ["scene", "center", "value", "fade", "gray", "grayLum", "grayTint", "sepia", "inv", "ccC", "ccB", "glitch", "glitchCol", "cg", "cgLine", "sw", "swT", "swC", "swMisc"]
         .reduce((o, k) => (o[k] = gl.getUniformLocation(bp, k), o), {});
       this.target = null;   // {fb, tex, w, h}, made when first needed
       const fp = this.flatProg = gl.createProgram();
@@ -636,12 +665,15 @@
       this.pulses = [];
       this.cam = { x: 0, y: 105, zoom: 1, static: null, offX: 0, offY: 0 };
       this.shake = null;   // the running shake: see shakeOffset()
+      this.shock = null;   // the shockwave: its trigger and when it started
       // GD's shader layer state (its GJShaderState): radial blur size and fade, grayscale, sepia,
       // invert (amount, per channel rgb, clamped), edit colour (rgb * c + b)
       this.shader = { size: 0, fade: 1, gray: 0, grayLum: 0, sepia: 0, inv: 0, invR: 1, invG: 1, invB: 1, invClamp: 0,
                       cR: 1, cG: 1, cB: 1, bR: 0, bG: 0, bB: 0,
                       top: 8,   // the highest z layer the effects cover (higher ones are drawn on top)
-                      glitch: 0, glitchSpeed: 1, glitchSlice: 1, glitchX: 1, glitchColX: 1, glitchColY: 1 };
+                      glitch: 0, glitchSpeed: 1, glitchSlice: 1, glitchX: 1, glitchColX: 1, glitchColY: 1,
+                      // chromatic glitch: on, its clock, and the settings its triggers ease (height as GD keeps it, 1 / height)
+                      cg: 0, cgTime: 0, cgSpeed: 0, cgStrength: 0, cgLineStrength: 0, cgLineThick: 0, cgRgb: 0, cgHeight: 10, cgRel: 0 };
       this.shakeRnd = makeRandom(7);
       this.fired = new Set();
       this.items = new Map();   // item id -> value
@@ -800,7 +832,14 @@
         case "speed": this.speed = SPEED_OF[t.speed] ?? 1; break;
         case "spawn": {   // a group is called at most once per moment (loops would otherwise multiply)
           const due = now + (t.delay || 0), key = t.target + "@" + Math.round(due * 240);
-          if (!this.queued.has(key)) { this.queued.add(key); this.queue.push([due, t.target, t.groups]); }
+          if (this.queued.has(key)) break;
+          this.queued.add(key);
+          if (!t.ordered) { this.queue.push([due, t.target, t.groups]); break; }
+          // "spawn ordered": the group's triggers go off left to right, as if the player ran through
+          // them at the current speed from the first one
+          const ts = (this.groupTriggers.get(t.target) || []).filter(o => o.mode === "spawn");
+          const x0 = Math.min(...ts.map(o => o.x));
+          for (const o of ts) this.queue.push([due + (o.x - x0) / SPEED_UNITS[this.speed], t.target, t.groups, o]);
           break;
         }
         case "toggle": if (t.on) this.groupOff.delete(t.target); else this.groupOff.add(t.target); break;
@@ -865,13 +904,19 @@
           Object.assign(this.shader, { glitch: t.strength || 0, glitchSpeed: t.speed || 0, glitchSlice: t.slice || 0,
                                        glitchX: t.sliceX || 0, glitchColX: t.colX || 0, glitchColY: t.colY || 0 });
           break;
-        case "radialblur": case "grayscale": case "sepia": case "invert": case "editcolor": {
+        case "chromaglitch": case "radialblur": case "grayscale": case "sepia": case "invert": case "editcolor": {
           // shader triggers ease their effect's settings from where they are (a new one of a kind
           // replaces a running one); switches take effect at once
           const sh = this.shader, to = {};
           if (t.type === "radialblur") { to.size = t.size || 0; sh.fade = t.fade ?? 1; }
           else if (t.type === "grayscale") { to.gray = t.value || 0; sh.grayLum = t.useLum ? 1 : 0; }
           else if (t.type === "sepia") to.sepia = t.value || 0;
+          else if (t.type === "chromaglitch") {   // switching it on restarts its clock; disabling cuts it at once
+            if (!sh.cg) sh.cgTime = now % 1000;
+            sh.cg = t.disable ? 0 : 1; sh.cgRel = t.relative ? 1 : 0;
+            Object.assign(to, { cgSpeed: t.speed || 0, cgStrength: t.strength || 0, cgLineStrength: t.lineStrength || 0,
+                                cgLineThick: t.lineThick || 0, cgRgb: t.rgb || 0, cgHeight: 1 / Math.max(t.height || 0, 0.1) });
+          }
           else if (t.type === "invert") {
             to.inv = t.value || 0; sh.invClamp = t.clamp ? 1 : 0;
             if (t.editRGB) { to.invR = t.r || 0; to.invG = t.g || 0; to.invB = t.b || 0; }
@@ -880,6 +925,11 @@
           const from = {};
           for (const k in to) from[k] = sh[k];
           this.actions.push({ kind: "shader", of: t.type, t0: now, dur: t.dur || 0, ease: t.ease, rate: t.rate, from, to });
+          break;
+        }
+        case "shockwave": {   // GD's shockwave (2905): starts over from the centre group, settings at once
+          // (companion triggers that ease a running one aren't supported; Nullscapes has none)
+          this.shock = { t: t, t0: now, at: this.groupCenter(t.center) };
           break;
         }
         case "shake": {   // a new shake replaces the running one, starting from where the camera is now
@@ -915,6 +965,7 @@
     step(dt) {
       const prevX = this.playerX;
       this.t += dt;
+      if (this.shader.cg) this.shader.cgTime = (this.shader.cgTime + dt * this.shader.cgSpeed) % 1000;
       const tracked = this.data.playerFromCamera && this.trackX(this.t);
       // with a recorded camera that follows the player (data.playerFromCamera), the player is where
       // the camera says, a fixed distance ahead of its left edge; otherwise it runs at its speed
@@ -934,7 +985,7 @@
           const due = this.queue.filter(q => q[0] <= this.t).sort((a, b) => a[0] - b[0]);
           if (!due.length) break;
           this.queue = this.queue.filter(q => q[0] > this.t);
-          for (const [at, g] of due) for (const t of this.groupTriggers.get(g) || []) {
+          for (const [at, g, , only] of due) for (const t of only ? [only] : this.groupTriggers.get(g) || []) {
             // a call only runs the group's spawn-triggered triggers: ones the player sets off by
             // passing them (often a loop's kick-off) don't fire again
             if (t.mode !== "spawn") continue;
@@ -1054,6 +1105,27 @@
       return a[2] + (b[2] - a[2]) * u + (this.startX || 0) - tr[0][2];
     }
 
+    // the shockwave's shader uniforms with the camera at (cx, cy), half sizes hw x hh; null once
+    // its ring has left the screen. GD's values (read from the game): the ring's front at radius P²
+    // (P when inverted), P = offset / 10 + time x speed, in screen widths; its thickness is
+    // thick / 5, with fades either side; 22 / width waves
+    shockwave(cx, cy, hw, hh, zoom) {
+      const sk = this.shock && this.shock.t;
+      const at = sk && (sk.follow ? this.groupCenter(sk.center) : this.shock.at);
+      if (!at) return null;
+      const k = SCREEN_K * (sk.relative ? (zoom || 1) : 1), A = hw / hh;
+      const P = (sk.offset || 0) * 0.1 + (this.t - this.shock.t0) * (sk.speed || 0);
+      const T = Math.max(0.001, sk.thick || 0) * 0.2, fi = T * (sk.fadeIn || 0), fo = T * (sk.fadeOut || 0);
+      const R = (sk.invert ? P : P * P) - fi, waves = 22 / Math.max(0.001, sk.waveWidth || 0);
+      const c = [((at[0] - cx) / hw + 1) / 2, ((at[1] - cy) / hh + 1) / 2];
+      const far = Math.max(...[[0, 0], [1, 0], [0, 1], [1, 1]].map(([x, y]) => Math.hypot(x - c[0], (y - c[1]) * A)));
+      if (!sk.invert && (R - T - fo) * k > far) return null;
+      return { sw: [(waves * P) % (2 * Math.PI) || 1e-6, (sk.strength || 0) * 0.1 * k, waves / k, sk.invert ? 1 : 0],
+               swT: [(R + fi + 0.001) * k, R * k, (R - T + 0.001) * k, (R - T - fo) * k],
+               swC: [c[0], c[1], k * (sk.minSize || 0) * 0.5, k * (sk.maxSize || 0)],
+               misc: [sk.maxDist ? 1 / (sk.maxDist * 0.5 * k) : 0, A] };
+    }
+
     trackView(aspect) {
       const tr = this.track;
       if (!tr || !tr.length) return null;
@@ -1160,8 +1232,10 @@
       const bg = chanNow.get(1000) || [0.16, 0.49, 1];
       // GD's shader layer: while any effect is on, the scene goes to a texture and through it
       const sh = this.shader;
+      const sw = this.shockwave(cx, cy, hw, hh, view.zoom);
+      const cgOn = !!sh.cg && (sh.cgRgb !== 0 || sh.cgStrength !== 0 || sh.cgLineStrength !== 0);
       const editColor = sh.cR !== 1 || sh.cG !== 1 || sh.cB !== 1 || sh.bR !== 0 || sh.bG !== 0 || sh.bB !== 0;
-      const post = !this.noShaders && (Math.abs(sh.size) > 1e-4 || sh.gray > 0 || sh.sepia > 0 || sh.inv > 0 || editColor || sh.glitch > 0);
+      const post = !this.noShaders && (Math.abs(sh.size) > 1e-4 || sh.gray > 0 || sh.sepia > 0 || sh.inv > 0 || editColor || sh.glitch > 0 || cgOn || !!sw);
       gl.bindFramebuffer(gl.FRAMEBUFFER, post ? this.sceneTarget(W, H).fb : null);
       gl.viewport(0, 0, W, H);
       gl.clearColor(bg[0], bg[1], bg[2], 1);
@@ -1273,10 +1347,19 @@
           // and seeds, read from the game); sizes from strength, the slice's height in screen heights
           const tq = Math.floor(sh.glitchSpeed * this.t * 20), A = W / H;
           const n = seed => { const v = Math.sin(Math.fround(tq * 12.9898 + seed * 4.1414)) * 43758.5453; return v - Math.floor(v); };
-          const bot = n(2345), top = bot + n(9035) * sh.glitchSlice * sh.glitch, k = sh.glitch * 0.02;
+          const bot = n(2345), top = bot + n(9035) * sh.glitchSlice * sh.glitch, k = sh.glitch * 0.02 * SCREEN_K;
           gl.uniform4f(u.glitch, bot * A, (Math.floor(top) + top) * A, (n(9625) * 2 - 1) * sh.glitchX * k, n(9545));
           gl.uniform2f(u.glitchCol, (n(9545) * 2 - 1) * sh.glitchColX * k, (n(7205) * 2 - 1) * sh.glitchColY * k * A);
         } else gl.uniform4f(u.glitch, 0, 0, 0, 0);
+        if (cgOn) {   // GD's uniforms, in screen widths: rgb offset rgb / 100 (or a hair when 0), strength / 50,
+          // rows from 1 / height over the aspect; relative ones scale with the zoom
+          const k = SCREEN_K * (sh.cgRel ? (view.zoom || 1) : 1), A = W / H;
+          gl.uniform4f(u.cg, (sh.cgRgb ? sh.cgRgb * 0.1 : 0.001) * 0.1 * k, sh.cgStrength * 0.02 * k, sh.cgHeight / (k * A),
+                       (cy - hh) / (2 * hh));   // its rows stay put in the level as the camera rises
+          gl.uniform3f(u.cgLine, sh.cgLineStrength ? Math.max(0.001, 1 - k * sh.cgLineThick * 0.02) : 0, sh.cgLineStrength * 0.05, sh.cgTime);
+        } else gl.uniform4f(u.cg, 0, 0, 0, 0);
+        if (sw) { gl.uniform4fv(u.sw, sw.sw); gl.uniform4fv(u.swT, sw.swT); gl.uniform4fv(u.swC, sw.swC); gl.uniform2fv(u.swMisc, sw.misc); }
+        else gl.uniform4f(u.sw, 0, 0, 0, 0);
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
         if (cut >= 0) drawRuns(runs.slice(cut + 1));   // the layers above the effects, as they are
       }
