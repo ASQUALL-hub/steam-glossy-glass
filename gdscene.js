@@ -25,6 +25,7 @@
   const SHAKE_SCALE = 0.5;    // units of offset per unit of shake strength (matched to the recording)
   const SHAKE_SETTLE = 0.12;  // seconds a shake takes to ease back to rest
   const PORTAL_REACH = 35;    // units short of a speed portal's centre where it takes the player (matched to GD's timing)
+  const TOUCH_REACH = 30;     // the same for touch-activated triggers: the player's 30-unit box meets the trigger's
 
   // ------------------------------------------------------------------ easing (GD / cocos2d)
   function ease(type, rate, t) {
@@ -422,8 +423,8 @@
       // only reachable through logic GD triggers this engine doesn't run (counters, collisions,
       // events), so they fire when the player passes them instead
       const passive = new Set(["colblock", "teleport", "persist", "touch", "ondeath", "event"]);   // never fired by passing
-      // (a speed portal works as soon as the player's hitbox reaches it, short of its centre)
-      for (const t of trig) t.at = t.x - (t.type === "speed" ? PORTAL_REACH : 0);
+      // (a speed portal or touch trigger works as soon as the player's hitbox reaches it, short of its centre)
+      for (const t of trig) t.at = t.x - (t.type === "speed" ? PORTAL_REACH : t.mode === "touch" ? TOUCH_REACH : 0);
       this.xTriggers = trig.filter(t => t.mode !== "spawn" && !passive.has(t.type)).sort((a, b) => a.at - b.at);
       this.colBlocks = trig.filter(t => t.type === "colblock");
       this.groupTriggers = new Map();
@@ -644,7 +645,7 @@
     }
 
     channelColor(ch, depth = 0) {
-      const c = this.chan.get(ch) || this.chan.get(1004) || [1, 1, 1, 1, 0];
+      const c = this.chan.get(ch) || (ch < 1000 ? null : this.chan.get(1004)) || [1, 1, 1, 1, 0];   // GD's unset channels are white
       const cp = depth < 4 && this.copies && this.copies.get(ch);
       if (!cp) return c;
       const src = applyHSV(this.channelColor(cp[0], depth + 1), cp[1]);
@@ -810,7 +811,8 @@
         case "alpha": {   // replaces a fade still running on the same group (as GD), from wherever it got to
           this.actions = this.actions.filter(a => !(a.kind === "alpha" && a.g === t.target));
           const from = this.groupAlpha.has(t.target) ? this.groupAlpha.get(t.target) : 1;
-          this.actions.push({ kind: "alpha", t0: now, dur: t.dur || 0, g: t.target, from, to: t.opacity ?? 1 });
+          if (!(t.dur > 0)) { this.groupAlpha.set(t.target, t.opacity ?? 1); break; }   // instant: at once, as GD
+          this.actions.push({ kind: "alpha", t0: now, dur: t.dur, g: t.target, from, to: t.opacity ?? 1 });
           break;
         }
         case "color": {   // likewise replaces a colour change still running on the channel
@@ -820,8 +822,13 @@
           let to = [(t.r ?? 255) / 255, (t.g ?? 255) / 255, (t.b ?? 255) / 255];
           if (t.copy) to = applyHSV(this.channelColor(t.copy), parseHSV(t.hsv));
           this.copies.delete(ch);   // a colour trigger replaces any copy; a copying one sets a new one when done
-          this.actions.push({ kind: "color", t0: now, dur: t.dur || 0, ch, from, to, op: t.opacity ?? 1, blend: t.blend ? 1 : 0,
-                              copy: t.copy ? [t.copy, parseHSV(t.hsv)] : null });
+          const copy = t.copy ? [t.copy, parseHSV(t.hsv)] : null;
+          if (!(t.dur > 0)) {   // instant: set at once, so a fade fired in the same moment starts from it (as GD)
+            this.chan.set(ch, [to[0], to[1], to[2], t.opacity ?? 1, t.blend ? 1 : 0]);
+            if (copy) this.copies.set(ch, copy);
+            break;
+          }
+          this.actions.push({ kind: "color", t0: now, dur: t.dur, ch, from, to, op: t.opacity ?? 1, blend: t.blend ? 1 : 0, copy });
           break;
         }
         case "pulse": {
@@ -1122,7 +1129,7 @@
       for (const p of this.pulses) if (!p.group) (chanPulses.get(p.target) || chanPulses.set(p.target, []).get(p.target)).push(p);
       const shown = (ch, depth = 0) => {
         if (chanNow.has(ch)) return chanNow.get(ch);
-        const own = this.chan.get(ch) || this.chan.get(1004) || [1, 1, 1, 1, 0];
+        const own = this.chan.get(ch) || (ch < 1000 ? null : this.chan.get(1004)) || [1, 1, 1, 1, 0];
         const cp = depth < 4 && this.copies.get(ch);
         let c = own;
         if (cp) { const src = applyHSV(shown(cp[0], depth + 1), cp[1]); c = [src[0], src[1], src[2], own[3], own[4]]; }
@@ -1170,7 +1177,7 @@
         if (post && !aboveFrom && this.zLayer[i] > sh.top) { aboveFrom = true; runs.push(null); }
         if (sys) { m = this.drawParticles(i, sys, x, y, rot, a, m, runs); continue; }
         const ch = this.channel[i];
-        const c = chanNow.get(ch) || chanNow.get(1004) || [1, 1, 1, 1, 0];
+        const c = chanNow.get(ch) || (ch < 1000 ? null : chanNow.get(1004)) || [1, 1, 1, 1, 0];
         let col = this.objHSV[i] ? applyHSV(c, this.objHSV[i]) : c;
         for (const p of groupPulses) {
           if (!groups.includes(p.target)) continue;
