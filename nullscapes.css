@@ -51,3 +51,158 @@ html.friendsui-container body {
     radial-gradient(98% 60px at 50% -24px, rgba(255, 255, 255, 0.22), transparent 100%) no-repeat,
     rgba(12, 15, 20, 0.45) !important;
 }
+
+/* ------------------------------------------------------------- matte, low-poly glass
+   Nullscapes is fog and flat-shaded facets: nothing in it shines. So in this mode the
+   buttons are matte smoky glass with a thin hairline edge (like the level's grid lines)
+   and crisp corners, all in greys; hover lifts them like thinning fog. The gloss band,
+   sparkles and rim glints of the other modes go too. */
+html:root {
+  --gn-fill: rgba(14, 18, 24, 0.42);
+  --gn-fill-lit: rgba(70, 80, 92, 0.42);
+  --gn-edge: rgba(232, 240, 246, 0.22);
+  --gn-edge-lit: rgba(240, 246, 250, 0.42);
+  --gn-text: rgba(236, 242, 246, 0.92);
+}
+
+/* every small button */
+._2Szzh5sKyGgnLUR870zbDE,                 /* title bar: news, bell, account */
+._3yD46y5pd3zOGR7CzKs0mC,
+._5wILZhsLODVwGfcJ0hKmJ,
+a._3pSPluBgf0NeR1kkCLWMhR,                /* Home */
+._2PF_m-I5yte3WnQhpcz8RC,                 /* collection drop-down */
+._20QAC4WMXm8qFE8waUT5oo,                 /* search */
+a._30KGSfPjPskFlnrSxBfkiK,                /* grid view */
+.uE7Pj4tb2n3_Bx4vjEX0a svg,               /* sort buttons */
+._3_xMyCJAh_Dv99KgZ54P3j,                 /* event game-name chips */
+._3qDWQGB0rtwM3qpXTb11Q-,                 /* game page: settings / info / favourite */
+._1b6LYWVijW-9E4YV0keDWZ,                 /* game page tabs */
+.bACIuqv-b_9TztCczFK19,                   /* post button */
+._2EnMapnWx2CwmY0kDRc6rW,                 /* "Browse ..." shelf labels */
+._2aw5aUUo3lrK6wxJb4_ms5,                 /* Add shelf */
+._3sz4Ldugm_cV_JaHOErVR8,                 /* collapse a shelf */
+.DialogDropDown,
+.DialogButton,
+.DialogButton:not(.Secondary),
+.friendListButton,
+.addFriendButton {
+  border-radius: 3px !important;
+  background: var(--gn-fill) !important;
+  box-shadow: inset 0 0 0 1px var(--gn-edge) !important;
+  color: var(--gn-text) !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
+  backdrop-filter: none !important;
+  transition: background 0.2s, box-shadow 0.2s;
+}
+._2Szzh5sKyGgnLUR870zbDE:hover,
+._3yD46y5pd3zOGR7CzKs0mC:hover,
+a._3pSPluBgf0NeR1kkCLWMhR:hover,
+._2PF_m-I5yte3WnQhpcz8RC:hover,
+a._30KGSfPjPskFlnrSxBfkiK:hover,
+._3qDWQGB0rtwM3qpXTb11Q-:hover,
+._1b6LYWVijW-9E4YV0keDWZ:hover,
+.bACIuqv-b_9TztCczFK19:not(.disabled):hover,
+._2aw5aUUo3lrK6wxJb4_ms5:hover,
+._3sz4Ldugm_cV_JaHOErVR8:hover,
+.DialogDropDown:hover,
+.DialogButton:hover,
+.DialogButton:focus-visible,
+.friendListButton:hover,
+.addFriendButton:hover {
+  background: var(--gn-fill-lit) !important;
+  box-shadow: inset 0 0 0 1px var(--gn-edge-lit) !important;
+}
+/* the main choice in a dialog: a paler pane rather than blue */
+.DialogButton:not(.Secondary) {
+  background: rgba(200, 214, 224, 0.2) !important;
+  box-shadow: inset 0 0 0 1px rgba(240, 246, 250, 0.4) !important;
+}
+.DialogButton:not(.Secondary):hover { background: rgba(215, 228, 236, 0.3) !important; }
+
+/* Play / Install: a pale fogged pane, the corners cut like a facet. The state shows
+   as a faint cool tint (green-grey for Play), not candy colour. */
+._3ydigb6zZAjJ0JCDgHwSYA,
+._2q-gZ3XJzlvSGHSF-GvSmi {
+  --gg-btn: rgba(205, 220, 232, 0.2);
+  background: var(--gg-btn) !important;
+  box-shadow: inset 0 0 0 1px rgba(240, 246, 250, 0.45) !important;
+  backdrop-filter: none !important;
+  color: #fff !important;
+}
+._3cI5TXsFX3bvpR-7EBOtxq ._3ydigb6zZAjJ0JCDgHwSYA,
+._3cI5TXsFX3bvpR-7EBOtxq ._2q-gZ3XJzlvSGHSF-GvSmi { --gg-btn: rgba(185, 225, 205, 0.24); }
+._1Pb6PMh_3L5p5NzuUz0Pp9 ._3ydigb6zZAjJ0JCDgHwSYA,
+._1Pb6PMh_3L5p5NzuUz0Pp9 ._2q-gZ3XJzlvSGHSF-GvSmi,
+._3ydigb6zZAjJ0JCDgHwSYA._1Pb6PMh_3L5p5NzuUz0Pp9 { --gg-btn: rgba(150, 158, 168, 0.16); }
+._3ydigb6zZAjJ0JCDgHwSYA:hover,
+._2q-gZ3XJzlvSGHSF-GvSmi:hover { background: rgba(225, 236, 244, 0.32) !important; }
+._3ydigb6zZAjJ0JCDgHwSYA,
+._1FnJ6dPuknQFQ2RTpKTI16 ._3ydigb6zZAjJ0JCDgHwSYA:not(:only-child),
+._2q-gZ3XJzlvSGHSF-GvSmi { border-radius: 2px !important; }
+._3ydigb6zZAjJ0JCDgHwSYA { clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px); }
+._1FnJ6dPuknQFQ2RTpKTI16 ._3ydigb6zZAjJ0JCDgHwSYA:not(:only-child) { clip-path: polygon(10px 0, 100% 0, 100% 100%, 0 100%, 0 10px); }
+._2q-gZ3XJzlvSGHSF-GvSmi { clip-path: polygon(0 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%); }
+._3ydigb6zZAjJ0JCDgHwSYA::after,
+._2q-gZ3XJzlvSGHSF-GvSmi::after { display: none !important; }
+
+/* the selected game in the list and the active nav tab: grey light, not blue */
+._2-O4ZG0KrnSrzISHBKctFQ { border-radius: 3px; }
+._2-O4ZG0KrnSrzISHBKctFQ:hover { background: rgba(255, 255, 255, 0.1) !important; }
+._2-O4ZG0KrnSrzISHBKctFQ._1UBpAXP408Ez_L_mXhW5Q9 {
+  background: rgba(220, 232, 240, 0.22) !important;
+  box-shadow: inset 0 0 0 1px rgba(240, 246, 250, 0.36);
+}
+._19axKcqYRuaJ8vdYKYmtTQ { background: linear-gradient(#ffffff, #dfe7ee); -webkit-background-clip: text; background-clip: text; }
+._1gqEjB5QsKT_NftD1dEsdZ ._19axKcqYRuaJ8vdYKYmtTQ {
+  background: linear-gradient(#ffffff, #ffffff);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+._1gqEjB5QsKT_NftD1dEsdZ ._19axKcqYRuaJ8vdYKYmtTQ::after { background: rgba(240, 246, 250, 0.75) !important; box-shadow: none !important; }   /* the underline */
+._3AjoLnMNKxYmNTGTJCLfgs {                /* the round dismiss button on recent-game tiles */
+  background: var(--gn-fill) !important;
+  box-shadow: inset 0 0 0 1px var(--gn-edge) !important;
+  border-radius: 3px !important;
+}
+
+/* bottom bar buttons and the notice banner: matte too */
+._2foCkpRXhqq0UGVE50BWqj:hover,
+._1TdaAqMFadi0UTqilrkelR:hover,
+.ip-YZhijAMZcuRoXBGiye:hover {
+  background: var(--gn-fill-lit) !important;
+  box-shadow: inset 0 0 0 1px var(--gn-edge-lit) !important;
+  border-radius: 3px;
+}
+._2iJsgdTIX9Tj23rWnB7Q-c { background: rgba(70, 82, 96, 0.55) !important; }
+
+/* the panels: plain smoky glass with one hairline edge (no sparkle, gloss or glints) */
+._3x1HklzyDs4TEjACrRO2tB,
+._2Dd4T78PcCTUVgOtDGFY5j,
+._3vCzSrrXZzZjVJFZNg9SGu {
+  border-radius: 6px;
+  background: linear-gradient(var(--gg-tint), var(--gg-tint)) !important;
+  box-shadow: inset 0 0 0 1px rgba(232, 240, 246, 0.2), 0 10px 28px rgba(0, 0, 0, 0.3) !important;
+}
+._3x1HklzyDs4TEjACrRO2tB::before,
+._2Dd4T78PcCTUVgOtDGFY5j::before,
+._3vCzSrrXZzZjVJFZNg9SGu::before,
+._3x1HklzyDs4TEjACrRO2tB::after,
+._2Dd4T78PcCTUVgOtDGFY5j::after,
+._3vCzSrrXZzZjVJFZNg9SGu::after { display: none !important; }
+.eKmEXJCm_lgme24Fp_HWt.Panel { border-radius: 4px; background: var(--gg-tint) !important; }
+._31ptFGGMZrSQc5BCX1e5lm._2G5B7o_YoI__u11--EFjal,   /* game page section cards */
+._1HZy7BvOZuPT8feUwadL4W {
+  border-radius: 4px;
+  background: linear-gradient(var(--gg-tint), var(--gg-tint)) !important;
+  box-shadow: inset 0 0 0 1px rgba(232, 240, 246, 0.18);
+}
+._1WdC0YUP8FT0dYWZ-QIVZL { background: linear-gradient(to right, rgba(200, 214, 224, 0.28), rgba(200, 214, 224, 0.04)) !important; }
+._3ydigb6zZAjJ0JCDgHwSYA:hover,
+._2q-gZ3XJzlvSGHSF-GvSmi:hover { filter: none; }
+
+/* the window: no wet gloss band or corner sparkle, and a quieter rim */
+._1ENHEsrSLcTRtPQFl1F-wL::before,
+body.ModalDialogBody::before { display: none !important; }
+._1ENHEsrSLcTRtPQFl1F-wL::after,
+body.ModalDialogBody::after,
+body.ContextMenuPopupBody::after { opacity: 0.45; }
