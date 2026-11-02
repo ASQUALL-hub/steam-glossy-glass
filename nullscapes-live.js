@@ -1,23 +1,27 @@
 /* Glossy Glass for Steam: the "Nullscapes" glass, played live.
 
    Runs the Geometry Dash level "Nullscapes Background" behind the window with the
-   level player in gdscene.js (loaded just before this script), instead of
-   recordings: the misty mountains, then the moon over spiky grass, then back.
+   level player in gdscene.js (loaded just before this script), instead of recordings.
 
-   Everything follows the level's song (Creo - Flow, 128 BPM). Each scene is a whole
-   number of bars of the song, the stretch that plays under that part of the level
+   The song (Creo - Flow, 128 BPM) plays straight through and repeats; it is never cut
+   or nudged. It is the clock: the picture follows it. For the first 40 bars the level
+   plays exactly as GD plays it to that song (intro, misty mountains, blackout, the moon
+   coming up on the drop). After that the song's later sections pick the scene: the
+   calm stretches show the mountains, the drops show the moon from its reveal (a long
+   drop starts the moon over on a bar line). Every change of scene lands on a bar line
+   with a one-beat cross-fade between two players, one winding up its stretch of the
+   level while the other is on screen. When the song ends, song and level start over.
+
    (song time = SONG_OFFSET + SONG_RATE x level time, fitted to the level's beat
-   pulses), and the scene's clock is the song's clock, so the level's pulses, flashes
-   and shakes land on the beats. Scenes hand over on a bar line with a one-bar
-   cross-fade, music included (two players, one per scene), and the music is nudged
-   to the picture rather than the other way round, so the picture never stutters. In
-   the friends list (no music) the same clock runs silently.
+   pulses; the song's beat grid starts at GRID.)
 
-   It renders at the window's own resolution and the screen's refresh rate (up to
-   MAX_FPS). The level, its camera path and GD's sprite sheets are the player's own
-   files and stay on their PC: the Steam Glass helper hands them in as blob URLs,
-   window.__ggNullFiles = {level, camera, "sheet:<name>"...}, and window.__ggNullMusic
-   (or null when the music is switched off).
+   The scene keeps GD's 16:9 framing and covers the window like a picture, so very wide
+   or tall windows crop it rather than showing only grass. It renders at the window's
+   resolution and the screen's refresh rate (up to MAX_FPS). The level, its camera path
+   and GD's sprite sheets are the player's own files and stay on their PC: the Steam
+   Glass helper hands them in as blob URLs, window.__ggNullFiles = {level, camera,
+   "sheet:<name>"...}, and window.__ggNullMusic (or null when the music is off; the
+   friends list never gets it). Without music the same clock runs silently.
 
    Runs once per window; loading it again replaces the running copy. */
 (() => {
@@ -31,24 +35,39 @@
   const BAR = 4 * BEAT;
   const GRID = 0.0098;                            // the song time of a downbeat
   const SONG_OFFSET = 1.22, SONG_RATE = 1.003;    // song time = SONG_OFFSET + SONG_RATE * level time
+  const SONG_LENGTH = 206.2;                      // Creo - Flow, near enough: the 'ended' event has the last word
   const bar = n => GRID + n * BAR;
-  // [from, to] in song time, on bar lines: the misty mountains (12 bars), then the moon
-  // section (8 bars: the blackout bar, then the drop that brings the moon up)
-  const SCENES = [[bar(4), bar(16)], [bar(25), bar(33)]];
-  const FADE = BAR;                               // the hand-over between scenes takes one bar
+  const levelAt = song => (song - SONG_OFFSET) / SONG_RATE;
+  // the two stretches of the level that later sections reuse: where each starts, and how many bars it can run
+  const MOUNTAINS = { from: levelAt(bar(4)), bars: 18 };    // the calm misty mountains
+  const MOON = { from: levelAt(bar(26)), bars: 13 };        // the moon, from its reveal on the drop
+  // the song's sections, in bars: [first bar, end bar, what to show]
+  const SECTIONS = [[0, 40, "level"], [40, 50, MOUNTAINS], [50, 67, MOON], [67, 76, MOUNTAINS],
+                    [76, 95, MOON], [95, 111, MOUNTAINS]];
+  const FADE = BEAT;                              // a change of scene cross-fades over one beat
   const VOLUME = 0.35;
+  const ASPECT = 16 / 9;                          // GD's framing; the window crops it
+  const FOCUS = 0.45;                             // which part stays in view when the window is wider than 16:9 (0 top, 1 bottom)
   const MAX_FPS = FRIENDS ? 30 : 144;             // the friends list is small and mostly text
   const RES = FRIENDS ? 0.6 : 1;                  // render scale (1 = the window's own pixels)
-  const WIND = 1;                                 // level seconds simulated per frame while winding a hidden scene (~4 ms)
-  const levelAt = song => (song - SONG_OFFSET) / SONG_RATE;
+  const WIND = 1;                                 // level seconds simulated per frame while winding a hidden player (~4 ms)
+
+  // the schedule: song time -> which stretch of the level, as [songFrom, songTo, levelFrom]
+  const schedule = [];
+  for (const [b0, b1, what] of SECTIONS) {
+    if (what === "level") { schedule.push([0, bar(b1), 0]); continue; }
+    for (let b = b0; b < b1; b += what.bars) schedule.push([bar(b), bar(Math.min(b1, b + what.bars)), what.from]);
+  }
+  const segAt = song => { for (let k = 0; k < schedule.length; k++) if (song < schedule[k][1]) return k; return schedule.length - 1; };
+  const levelIn = (k, song) => { const [s0, , l0] = schedule[k]; return k === 0 ? levelAt(song) : l0 + (song - s0) / SONG_RATE; };
 
   const box = document.createElement("div");
   box.id = "gg-null";
   box.style.cssText = "position:fixed;inset:0;pointer-events:none;z-index:-1;overflow:hidden;" +
     "border-radius:var(--gg-window-radius, 8px);background:#0b1218";
-  const canvases = SCENES.map(() => {
+  const canvases = [0, 1].map(() => {
     const c = document.createElement("canvas");
-    c.style.cssText = `position:absolute;inset:0;width:100%;height:100%;opacity:0;transition:opacity ${FADE}s ease-in-out`;
+    c.style.cssText = `position:absolute;opacity:0;transition:opacity ${FADE}s ease-in-out`;
     box.append(c);
     return c;
   });
@@ -60,109 +79,103 @@
   const home = () => document.querySelector("._1ENHEsrSLcTRtPQFl1F-wL") || document.body;
   home().prepend(box);
 
-  // one player per scene, so the hand-over can blend two parts of the song
-  const players = SCENES.map(() => !FRIENDS && window.__ggNullMusic ? new Audio(window.__ggNullMusic) : null);
-  for (const a of players) if (a) { a.volume = 0; a.preservesPitch = true; }
+  const music = !FRIENDS && window.__ggNullMusic ? new Audio(window.__ggNullMusic) : null;
+  if (music) music.volume = VOLUME;
 
-  let stopped = false, raf = 0, timer = 0, scenes = null, current = 0, fading = null, last = 0, hiddenAt = 0;
+  // the song clock: the music's position when it plays (smoothed, since currentTime moves in
+  // steps), otherwise wall time from where it was
+  let clock = 0, clockAt = 0, paused = false;
+  const songNow = now => {
+    if (paused) return clock;
+    let t = clock + (now - clockAt) / 1000;
+    if (music && !music.paused && music.readyState >= 2) {
+      const err = music.currentTime - t;
+      t += Math.abs(err) > 0.3 ? err : err * 0.08;
+    }
+    clock = t; clockAt = now;
+    return t;
+  };
+  const restartSong = now => {
+    clock = 0; clockAt = now;
+    if (music) { music.currentTime = 0; if (!paused) music.play().catch(() => {}); }
+  };
+
+  let stopped = false, raf = 0, timer = 0, players = null, cur = 0, seg = 0, fading = null, last = 0;
   const frames = [];   // recent frame times (ms), for stats()
-  const fit = () => {
+  const fit = () => {   // cover the window with a 16:9 picture
+    const w = box.clientWidth, h = box.clientHeight;
+    let cw = w, ch = w / ASPECT;
+    if (ch < h) { ch = h; cw = h * ASPECT; }
     for (const c of canvases) {
-      const w = Math.max(1, Math.round(box.clientWidth * devicePixelRatio * RES));
-      const h = Math.max(1, Math.round(box.clientHeight * devicePixelRatio * RES));
-      if (c.width !== w || c.height !== h) { c.width = w; c.height = h; }
+      c.style.width = cw + "px"; c.style.height = ch + "px";
+      c.style.left = (w - cw) / 2 + "px"; c.style.top = (h - ch) * FOCUS + "px";
+      const pw = Math.max(1, Math.round(cw * devicePixelRatio * RES)), ph = Math.max(1, Math.round(ch * devicePixelRatio * RES));
+      if (c.width !== pw || c.height !== ph) { c.width = pw; c.height = ph; }
     }
   };
 
-  // a scene's song clock: where in the song it is now (it started at song time s.from at wall time s.wall)
-  const songNow = (s, now) => s.from + (now - s.wall) / 1000;
-
-  // a hidden scene is wound to its start a level-second per frame, so it's ready when its
-  // turn comes without stalling the one on screen
-  const wind = s => {
-    const to = levelAt(SCENES[s.index][0]);
-    if (s.ready) return;
-    if (s.t > to) s.reset();
-    s.seek(Math.min(to, s.t + WIND));
-    s.ready = s.t + 1 / 60 > to;
+  // a player waiting for segment k is wound to its first level time, a level-second per frame
+  const wind = (p, k) => {
+    const to = Math.max(0, k === 0 ? 0 : schedule[k][2]);
+    if (p.readyFor === k) return true;
+    if (p.t > to + 1e-3) p.reset();
+    p.seek(Math.min(to, p.t + WIND));
+    if (p.t + 1 / 60 > to) { p.readyFor = k; return true; }
+    return false;
+  };
+  // run a player up to where the song says it is (small steps, so triggers fire in order)
+  const advance = (p, k, song) => {
+    const target = levelIn(k, song);
+    for (let n = 0; n < 40 && p.t < target - 1e-4; n++) p.step(Math.min(1 / 120, target - p.t));
   };
 
-  // run a scene up to where its song clock is (small steps, so triggers fire in order)
-  const advance = (s, now) => {
-    const target = levelAt(songNow(s, now));
-    for (let k = 0; k < 40 && s.t < target - 1e-4; k++) s.step(Math.min(1 / 120, target - s.t));
+  const render = now => {
+    const t0 = performance.now();
+    let song = songNow(now);
+    if (song >= SONG_LENGTH && (!music || music.paused || music.ended)) { restartSong(now); song = 0; }
+    const q = players[1 - cur], segNow = segAt(song);
+    if (segNow !== seg && !fading && q.readyFor === segNow) {   // a bar line: hand over
+      fading = { at: now, from: cur };
+      cur = 1 - cur; seg = segNow;
+      canvases[cur].style.opacity = "1"; canvases[1 - cur].style.opacity = "0";
+    }
+    const a = players[cur];
+    advance(a, seg, song); a.draw();
+    if (fading) {   // the one leaving keeps running until it has faded
+      const b = players[fading.from];
+      advance(b, b.segOn ?? seg, song); b.draw();
+      if (now - fading.at > FADE * 1000) { fading = null; players[1 - cur].readyFor = -1; }
+    } else {
+      // get the waiting player ready for the next segment, or for the one due now if the song jumped
+      wind(players[1 - cur], segNow !== seg ? segNow : (seg + 1) % schedule.length);
+    }
+    a.segOn = seg;
+    frames.push(performance.now() - t0);
+    if (frames.length > 240) frames.shift();
   };
-
-  const start = (k, now) => {   // scene k begins at its first bar, music and all
-    const s = scenes[k];
-    s.from = SCENES[k][0]; s.wall = now; s.running = true;
-    const a = players[k];
-    if (a) { a.currentTime = s.from; a.playbackRate = 1; a.play().catch(() => {}); }
-  };
-  const halt = k => {
-    scenes[k].running = false; scenes[k].ready = false;   // wind it back to its start for next time
-    if (players[k]) players[k].pause();
-  };
-
-  // keep each running player on its scene's clock: big slips jump, small ones are nudged
-  // with the playback rate so nothing clicks
-  const drift = [0, 0];
-  const steer = (k, now, gain) => {
-    const a = players[k], s = scenes[k];
-    if (!a) return;
-    a.volume = VOLUME * gain;
-    if (a.paused || a.readyState < 2) return;
-    const d = a.currentTime - songNow(s, now);
-    drift[k] = d;
-    if (Math.abs(d) > 0.12) { a.currentTime = songNow(s, now); a.playbackRate = 1; }
-    else a.playbackRate = Math.min(1.03, Math.max(0.97, 1 - d * 1.5));
-  };
-
   const frame = now => {
     raf = requestAnimationFrame(frame);
-    if (document.hidden || !scenes) return;
+    if (document.hidden || !players) return;
     if (now - last < 1000 / MAX_FPS - 1) return;
     last = now;
     render(now);
   };
-  const render = now => {
-    const t0 = performance.now();
-    const s = scenes[current], other = scenes[1 - current];
-    advance(s, now); s.draw();
-    if (fading) {   // both run while they cross; the song parts cross with them (equal power)
-      advance(other, now); other.draw();
-      const u = Math.min(1, (now - fading) / (FADE * 1000));
-      steer(current, now, Math.cos(u * Math.PI / 2)); steer(1 - current, now, Math.sin(u * Math.PI / 2));
-      if (u >= 1) { halt(current); current = 1 - current; fading = null; }
-    } else {
-      steer(current, now, 1);
-      if (!other.ready) wind(other);
-      if (songNow(s, now) >= SCENES[current][1] - FADE && other.ready) {
-        fading = now;
-        start(1 - current, now);
-        canvases[1 - current].style.opacity = "1";
-        canvases[current].style.opacity = "0";
-      }
-    }
-    frames.push(performance.now() - t0);
-    if (frames.length > 240) frames.shift();
-  };
 
-  // Chromium may want a click or key press before sound plays: retry on the first input
-  const playing = () => scenes ? scenes.map((s, k) => s.running && players[k]).filter(Boolean) : [];
-  const onInput = () => { if (!document.hidden) for (const a of playing()) if (a.paused) a.play().catch(() => {}); };
+  // Chromium may want a click or key press before sound plays: retry on the first input,
+  // starting the song where the picture is
+  const onInput = () => {
+    if (!music || document.hidden || !music.paused) return;
+    music.currentTime = Math.min(clock, SONG_LENGTH - 0.1);
+    music.play().catch(() => {});
+  };
   addEventListener("pointerdown", onInput, true);
   addEventListener("keydown", onInput, true);
-  const onVisibility = () => {   // nothing to draw or hear while Steam isn't on screen; the song clock waits too
+  if (music) music.addEventListener("ended", () => restartSong(performance.now()));
+  const onVisibility = () => {   // nothing to draw or hear while Steam isn't on screen; the song waits
     const now = performance.now();
-    if (document.hidden) { hiddenAt = now; for (const a of players) if (a) a.pause(); return; }
-    if (hiddenAt && scenes) {
-      const gap = now - hiddenAt;
-      for (const s of scenes) s.wall += gap;
-      if (fading) fading += gap;
-      onInput();
-    }
-    hiddenAt = 0;
+    if (document.hidden) { songNow(now); paused = true; if (music) music.pause(); return; }
+    paused = false; clockAt = now;
+    if (music) { music.currentTime = Math.min(clock, SONG_LENGTH - 0.1); music.play().catch(() => {}); }
   };
   document.addEventListener("visibilitychange", onVisibility);
 
@@ -170,17 +183,13 @@
     const [data, track] = await Promise.all([files.level, files.camera].map(u => u ? fetch(u).then(r => r.json()) : null));
     fit();
     const made = [];
-    for (let k = 0; k < SCENES.length; k++) {
-      const s = await GDScene.create(canvases[k], { data, track, sheetUrl: n => files["sheet:" + n] });
-      s.index = k;
-      made.push(s);
-    }
+    for (const c of canvases) made.push(await GDScene.create(c, { data, track, sheetUrl: n => files["sheet:" + n] }));
     if (stopped) return;
-    scenes = made;
-    scenes[0].seek(levelAt(SCENES[0][0])); scenes[0].ready = true;
+    players = made;
+    players[0].readyFor = 0; players[1].readyFor = -1;
     canvases[0].style.opacity = "1";
-    const now = performance.now();
-    start(0, now);
+    clock = 0; clockAt = performance.now();
+    if (music) music.play().catch(() => {});
     if (document.hidden) onVisibility();
     raf = requestAnimationFrame(frame);
   })().catch(e => console.warn("Nullscapes:", e));
@@ -198,17 +207,21 @@
       removeEventListener("pointerdown", onInput, true);
       removeEventListener("keydown", onInput, true);
       for (const c of canvases) { const gl = c.getContext("webgl2"); if (gl) gl.getExtension("WEBGL_lose_context")?.loseContext(); }
-      for (const a of players) if (a) { a.pause(); a.removeAttribute("src"); a.load(); }
+      if (music) { music.pause(); music.removeAttribute("src"); music.load(); }
       box.remove();
       delete window.__ggNull;
     },
-    players,
-    scenes: () => scenes,
-    tick: now => { if (scenes) render(now); },   // one frame by hand, for testing with Steam hidden
-    // frame cost (ms, last 240 frames), where each scene is, and how far the music is from the picture (s)
+    music, schedule,
+    scenes: () => players,
+    tick: now => {   // one frame by hand, for testing with Steam hidden (the song clock runs regardless)
+      if (!players) return;
+      const was = paused; paused = false; render(now); paused = was;
+    },
+    seekSong: s => { clock = s; clockAt = performance.now(); if (music) music.currentTime = s; },
+    // frame cost (ms, last 240 frames), where the song and picture are, and the music's offset from the clock (s)
     stats: () => ({ avg: frames.reduce((a, b) => a + b, 0) / (frames.length || 1), worst: Math.max(0, ...frames),
-                    scene: current, t: scenes && scenes[current].t, drift: drift.slice(),
-                    song: scenes && scenes[current].running ? songNow(scenes[current], performance.now()) : null,
+                    song: clock, segment: seg, level: players && players[cur].t,
+                    musicOff: music && !music.paused ? music.currentTime - clock : null,
                     size: [canvases[0].width, canvases[0].height] }),
   };
 })();

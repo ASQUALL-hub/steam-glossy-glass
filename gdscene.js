@@ -180,31 +180,39 @@
   // ------------------------------------------------------------------ WebGL renderer
   const VS = `#version 300 es
     in vec2 corner;                 // -0.5..0.5 quad corner
-    in vec4 posRot;                 // world x, y, rotation (rad, clockwise), unused
+    in vec4 posRot;                 // world x, y, rotation (rad, clockwise), solid (1: firm edges)
     in vec4 size;                   // half-extents w, h (world units, signed for flips), sprite offset x, y
     in vec4 uv;                     // u0, v0, u1, v1
     in vec4 color;                  // rgba (premultiplied in the fragment shader)
     in float rotated;               // the frame is stored rotated 90 degrees in its sheet
+    in vec4 affine;                 // with posRot.w = 2: the quad's corners are posRot.xy + mat2(affine) * corner
     uniform vec4 cam;               // centre x, y, half view width, half view height
-    out vec2 vUV; out vec4 vColor;
+    out vec2 vUV; out vec4 vColor; out float vSolid;
     void main() {
       vec2 local = corner * 2.0 * size.xy + size.zw;
       float c = cos(posRot.z), s = sin(posRot.z);
-      vec2 world = posRot.xy + vec2(local.x * c + local.y * s, -local.x * s + local.y * c);
+      vec2 world = posRot.w > 1.5 ? posRot.xy + mat2(affine.xy, affine.zw) * corner
+                                  : posRot.xy + vec2(local.x * c + local.y * s, -local.x * s + local.y * c);
       gl_Position = vec4((world - cam.xy) / cam.zw, 0.0, 1.0);
       vec2 t = corner + 0.5;          // 0..1 across the sprite, y up
       vec2 st = rotated > 0.5 ? t.yx : vec2(t.x, 1.0 - t.y);   // cocos2d: a rotated frame's bottom-left is its sheet rect's top-left
       vUV = mix(uv.xy, uv.zw, st);
       vColor = color;
+      vSolid = posRot.w;
     }`;
   const FS = `#version 300 es
     precision mediump float;
-    in vec2 vUV; in vec4 vColor;
+    in vec2 vUV; in vec4 vColor; in float vSolid;
     uniform sampler2D tex;
     out vec4 frag;
     void main() {
       vec4 t = texture(tex, vUV);
-      frag = vec4(t.rgb * vColor.rgb, t.a) * vColor.a;   // premultiplied
+      if (vSolid > 0.5) {   // flat shapes that tile against each other: firm up the soft edge so seams don't let light through
+        float a = smoothstep(0.08, 0.55, t.a);
+        frag = vec4(vColor.rgb * a, a) * vColor.a;
+      } else {
+        frag = vec4(t.rgb * vColor.rgb, t.a) * vColor.a;   // premultiplied
+      }
     }`;
 
   function compile(gl, type, src) {
@@ -285,6 +293,8 @@
       this.sheet = new Uint8Array(n); this.channel = new Int32Array(n); this.blend = new Uint8Array(n);
       this.objHSV = new Array(n); this.objGroups = new Array(n); this.objAlpha = new Float32Array(n);
       this.staticSize = new Float32Array(n * 4); this.staticUV = new Float32Array(n * 4); this.staticRot = new Float32Array(n);
+      this.staticSolid = new Float32Array(n);   // 1 for flat shapes that tile (the frame's 9th entry), 2 for free shapes
+      this.staticAffine = new Float32Array(n * 4);
       this.groupObjects = new Map();
       this.emitters = new Map();   // object index -> particle settings, for custom particle objects
       for (let i = 0; i < n; i++) {
@@ -300,6 +310,8 @@
         const tw = rotated ? fh : fw, th = rotated ? fw : fh;
         this.staticUV.set([fx / tex.w, fy / tex.h, (fx + tw) / tex.w, (fy + th) / tex.h], i * 4);
         this.staticRot[i] = rotated;
+        this.staticSolid[i] = f[8] ? 1 : 0;
+        if (objects[i][13]) { this.staticSolid[i] = 2; this.staticAffine.set(objects[i][13], i * 4); }   // a free-shaped backing
         for (const g of groups) {
           if (!this.groupObjects.has(g)) this.groupObjects.set(g, []);
           this.groupObjects.get(g).push(i);
@@ -341,12 +353,12 @@
         return { buf, l, size };
       };
       this.aPos = inst("posRot", 4); this.aSize = inst("size", 4); this.aUV = inst("uv", 4);
-      this.aColor = inst("color", 4); this.aRotated = inst("rotated", 1);
+      this.aColor = inst("color", 4); this.aRotated = inst("rotated", 1); this.aAffine = inst("affine", 4);
       // per-frame arrays, filled with the visible objects in draw order
       let cap = n;   // objects plus every emitter's particles
       for (const p of this.emitters.values()) cap += p.TotalParticles | 0;
       this.fPos = new Float32Array(cap * 4); this.fSize = new Float32Array(cap * 4); this.fUV = new Float32Array(cap * 4);
-      this.fColor = new Float32Array(cap * 4); this.fRotated = new Float32Array(cap);
+      this.fColor = new Float32Array(cap * 4); this.fRotated = new Float32Array(cap); this.fAffine = new Float32Array(cap * 4);
       this.uCam = gl.getUniformLocation(prog, "cam");
       this.uTex = gl.getUniformLocation(prog, "tex");
     }
@@ -742,7 +754,7 @@
         if (!last || last[2] !== sheet || last[3] !== additive) runs.push([m, 0, sheet, additive]);
         runs[runs.length - 1][1]++;
         this.fPos[m * 4] = bx + lx * c + ly * s; this.fPos[m * 4 + 1] = by - lx * s + ly * c;
-        this.fPos[m * 4 + 2] = rot + q.rot * Math.PI / 180;
+        this.fPos[m * 4 + 2] = rot + q.rot * Math.PI / 180; this.fPos[m * 4 + 3] = 0;
         this.fSize[m * 4] = q.size / 2 * Math.abs(sx); this.fSize[m * 4 + 1] = q.size / 2 * Math.abs(sy);
         this.fSize[m * 4 + 2] = 0; this.fSize[m * 4 + 3] = 0;
         this.fUV.set(this.staticUV.subarray(i * 4, i * 4 + 4), m * 4);
@@ -803,7 +815,8 @@
         const last = runs[runs.length - 1];
         if (!last || last[2] !== sheet || last[3] !== additive) runs.push([m, 0, sheet, additive]);
         runs[runs.length - 1][1]++;
-        this.fPos[m * 4] = x; this.fPos[m * 4 + 1] = y; this.fPos[m * 4 + 2] = rot;
+        this.fPos[m * 4] = x; this.fPos[m * 4 + 1] = y; this.fPos[m * 4 + 2] = rot; this.fPos[m * 4 + 3] = this.staticSolid[i];
+        if (this.staticSolid[i] > 1.5) this.fAffine.set(this.staticAffine.subarray(i * 4, i * 4 + 4), m * 4);
         this.fSize.set(this.staticSize.subarray(i * 4, i * 4 + 4), m * 4);
         this.fUV.set(this.staticUV.subarray(i * 4, i * 4 + 4), m * 4);
         this.fColor[m * 4] = col[0]; this.fColor[m * 4 + 1] = col[1]; this.fColor[m * 4 + 2] = col[2];
@@ -815,7 +828,7 @@
       gl.bindVertexArray(this.vao);
       const up = (attr, arr, size) => { gl.bindBuffer(gl.ARRAY_BUFFER, attr.buf); gl.bufferData(gl.ARRAY_BUFFER, arr.subarray(0, m * size), gl.DYNAMIC_DRAW); };
       up(this.aPos, this.fPos, 4); up(this.aSize, this.fSize, 4); up(this.aUV, this.fUV, 4);
-      up(this.aColor, this.fColor, 4); up(this.aRotated, this.fRotated, 1);
+      up(this.aColor, this.fColor, 4); up(this.aRotated, this.fRotated, 1); up(this.aAffine, this.fAffine, 4);
       gl.uniform4f(this.uCam, cx, cy, hw, hh);
       gl.uniform1i(this.uTex, 0);
       gl.enable(gl.BLEND);
@@ -823,7 +836,7 @@
       for (const [start, count, sheet, additive] of runs) {
         gl.blendFunc(gl.ONE, additive ? gl.ONE : gl.ONE_MINUS_SRC_ALPHA);
         gl.bindTexture(gl.TEXTURE_2D, this.textures[sheet].t);
-        for (const attr of [this.aPos, this.aSize, this.aUV, this.aColor]) {
+        for (const attr of [this.aPos, this.aSize, this.aUV, this.aColor, this.aAffine]) {
           gl.bindBuffer(gl.ARRAY_BUFFER, attr.buf);
           gl.vertexAttribPointer(attr.l, 4, gl.FLOAT, false, 0, start * 16);
         }
