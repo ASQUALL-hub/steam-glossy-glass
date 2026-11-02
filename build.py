@@ -134,6 +134,9 @@ def main() -> None:
                 z.write(f, f.relative_to(DIST / "SteamGlass"))
         for name in THEME:
             z.write(ROOT / name, f"skin/{name}")
+        for f in sorted((ROOT / "levels").rglob("*")):   # the GD levels' data only (see steamglass.pyw)
+            if f.is_file():
+                z.write(f, f"skin/{f.relative_to(ROOT).as_posix()}")
 
     build_updater(ver)
 

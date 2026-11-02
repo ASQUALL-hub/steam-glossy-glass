@@ -21,15 +21,15 @@ in glass-mode.txt next to this file (changes apply live):
            (pair with the theme's "Clear" glass option, which draws the curve).
   liquid   frosted glass for the theme's "Liquid" option (water that sloshes).
   nullscapes  the Geometry Dash level "Nullscapes Background" plays behind smoky
-           glass: live, with the level player gdscene.js (nullscapes-live.js), when
-           the level's data and GD's sprite sheets are in the settings folder's
-           nullscapes\live\; otherwise two recorded scenes loop (nullscapes.js).
-           Only offered when one of those is there (they're the player's own files
-           and never ship).
+           glass, live, with the level player gdscene.js (nullscapes-live.js).
   eternalnight  the Geometry Dash level "Eternal Night" plays from start to end,
-           over and over, behind the same smoky glass (eternal-night-live.js), when
-           its data and sprite sheets are in the settings folder's
-           eternal-night\live\. Only offered when they are.
+           over and over, behind the same smoky glass (eternal-night-live.js).
+           Both levels ship as data only (skin\levels\): their pictures are
+           Geometry Dash's own sprite sheets, taken from this PC's copy of the game
+           (see built_level), and their songs are the ones GD downloaded. So they're
+           offered when Geometry Dash is installed through Steam. A level exported
+           by hand into the settings folder's <level>\live\ wins over that, and
+           Nullscapes falls back on two recorded scenes (nullscapes.js).
   aero     Frutiger Aero: a sunny panorama pans by behind blue glass panels.
            aero.js draws a glass city, lakes and fields, or pans a picture:
            yours (tray > Aero picture > Choose a picture…, kept as
@@ -46,14 +46,18 @@ window back to normal without starting the helper.
 Installed builds (SteamGlass.exe, put there by SteamGlassUpdater.exe) keep
 glass-mode.txt in %APPDATA%\SteamGlass and add "Check for updates…" to the menu.
 "Start with Windows" in the menu adds or removes the helper under the Run key."""
-__version__ = "1.3.0"
+__version__ = "1.3.1"
 
 import base64
 import ctypes
+import gzip
 import hashlib
 import json
 import math
 import os
+import plistlib
+import re
+import shutil
 import socket
 import struct
 import sys
@@ -104,21 +108,32 @@ SCENE_WINDOWS = {"Steam", "Friends List"}   # Liquid's water and Aero's panorama
 SCENE_SCRIPTS = {"liquid": "liquid.js", "aero": "aero.js", "nullscapes": "nullscapes.js"}
 NULL_DIR = os.path.join(SETTINGS_DIR, "nullscapes")   # nullscapes-mountains.mp4, nullscapes-moon.mp4
 NULL_VIDEOS = ("mountains", "moon")
-# the level itself, played live by gdscene.js (preferred over the recordings when it's there):
-# nullscapes\live\level.json, camera.json and sheets\<GD sprite sheet>.png
-NULL_LIVE = os.path.join(NULL_DIR, "live")
-NULL_MUSIC = os.path.join(NULL_DIR, "nullscapes-music.mp3")        # the level's song, optional
-# Eternal Night, played live the same way: eternal-night\live\level.json, camera.json, sheets\
-NIGHT_DIR = os.path.join(SETTINGS_DIR, "eternal-night")
-NIGHT_LIVE = os.path.join(NIGHT_DIR, "live")
-NIGHT_MUSIC = os.path.join(NIGHT_DIR, "eternal-night-music.mp3")
-LEVEL_MODES = ("nullscapes", "eternalnight")   # the GD levels (each with its song)
-LEVEL_MUSIC = {"nullscapes": NULL_MUSIC, "eternalnight": NIGHT_MUSIC}
+# The GD levels, played live by gdscene.js: mode -> (folder, its own song file, the song's Newgrounds id).
+# A level comes from your own export, <settings>\<folder>\live\ (level.json, camera.json and
+# sheets\<GD sprite sheet>.png), or else from the theme's copy of its data (skin\levels\<folder>\
+# level.json.gz, camera.json) put together with this PC's Geometry Dash in <settings>\built\<folder>\.
+# Its song is <settings>\<folder>\<song file>, or the copy GD downloaded (%LOCALAPPDATA%\GeometryDash\<id>.mp3).
+LEVELS = {"nullscapes": ("nullscapes", "nullscapes-music.mp3", "1132447"),
+          "eternalnight": ("eternal-night", "eternal-night-music.mp3", "153668")}
+LEVEL_MODES = tuple(LEVELS)
+LEVEL_DATA = os.path.join(THEME_DIR, "levels")
+BUILT_DIR = os.path.join(SETTINGS_DIR, "built")
+GD_APP = "322170"   # Geometry Dash's Steam app id
 SONG_SETTING = os.path.join(SETTINGS_DIR, "nullscapes-music.txt")   # "on" / "off": the songs (the name is from 1.2.0)
 
 
+def level_music(mode: str):
+    """The level's song: your own copy, or the one Geometry Dash downloaded; None if neither."""
+    folder, own, song_id = LEVELS[mode]
+    for path in (os.path.join(SETTINGS_DIR, folder, own),
+                 os.path.join(os.environ.get("LOCALAPPDATA", ""), "GeometryDash", song_id + ".mp3")):
+        if os.path.isfile(path):
+            return path
+    return None
+
+
 def song_on(mode: str) -> bool:
-    if not os.path.isfile(LEVEL_MUSIC.get(mode, "")):
+    if not level_music(mode):
         return False
     try:
         with open(SONG_SETTING, encoding="utf-8") as f:
@@ -156,39 +171,136 @@ MODES = {"frosted": "Frosted", "clear": "Clear", "liquid": "Liquid", "aero": "Fr
 FROSTED_LIKE = ("frosted", "liquid", "aero", "nullscapes", "eternalnight")   # glass kinds Windows draws as frosted
 
 
+_sheets_of = {}   # level.json path -> (its mtime, its sheet names): the files are big, so each is read once
+
+
 def live_files(folder):
     """[(name, path, type)] a live level in `folder` needs, or None when any is missing."""
+    path = os.path.join(folder, "level.json")
     try:
-        with open(os.path.join(folder, "level.json"), encoding="utf-8") as f:
-            sheets = json.load(f).get("sheets", [])
+        mtime = os.path.getmtime(path)
+        if _sheets_of.get(path, (None,))[0] != mtime:
+            with open(path, encoding="utf-8") as f:
+                _sheets_of[path] = (mtime, json.load(f).get("sheets", []))
+        sheets = _sheets_of[path][1]
     except (OSError, ValueError):
         return None
-    files = [("level", os.path.join(folder, "level.json"), "application/json"),
-             ("camera", os.path.join(folder, "camera.json"), "application/json")]
+    files = [("level", path, "application/json"), ("camera", os.path.join(folder, "camera.json"), "application/json")]
     files += [("sheet:" + n, os.path.join(folder, "sheets", n + ".png"), "image/png")
               for n in sheets if not n.startswith("gd:")]   # gd: textures are drawn by the script
-    return files if all(os.path.isfile(path) for _, path, _ in files) else None
+    return files if all(os.path.isfile(p) for _, p, _ in files) else None
 
 
-def nullscapes_live_files():
-    return live_files(NULL_LIVE)
+_gd = [0.0, None]   # when Geometry Dash was last looked for, and its Resources folder
 
 
-def level_files(mode):
-    """What a GD level mode streams into Steam: its live files, or Nullscapes' recordings."""
-    if mode == "eternalnight":
-        return live_files(NIGHT_LIVE)
-    return nullscapes_live_files() or ([(n, os.path.join(NULL_DIR, f"nullscapes-{n}.mp4"), "video/mp4")
-                                        for n in NULL_VIDEOS] if nullscapes_videos_ready() else None)
+def gd_resources():
+    """This PC's Geometry Dash Resources folder (its Steam copy, in any Steam library), or None.
+    Looked up at most once a minute."""
+    if time.time() - _gd[0] < 60:
+        return _gd[1]
+    found, steam = None, steam_dir()
+    libraries = [steam] if steam else []
+    try:
+        with open(os.path.join(steam, "steamapps", "libraryfolders.vdf"), encoding="utf-8") as f:
+            libraries += [p.replace("\\\\", "\\") for p in re.findall(r'"path"\s+"([^"]+)"', f.read())]
+    except (OSError, TypeError):
+        pass
+    for library in libraries:
+        try:
+            with open(os.path.join(library, "steamapps", f"appmanifest_{GD_APP}.acf"), encoding="utf-8") as f:
+                folder = re.search(r'"installdir"\s+"([^"]+)"', f.read())
+        except OSError:
+            continue
+        res = os.path.join(library, "steamapps", "common", folder.group(1) if folder else "Geometry Dash", "Resources")
+        if os.path.isfile(os.path.join(res, "GJ_GameSheet-uhd.png")):
+            found = res
+            break
+    _gd[:] = [time.time(), found]
+    return found
+
+
+_building = threading.Lock()
+
+
+def built_level(mode):
+    """The level put together from the theme's copy of its data and this PC's Geometry Dash, in
+    <settings>\\built\\<folder>\\: GD's own sprite sheets, with the level's frame table rebuilt
+    from GD's own plists by sprite name, so another GD version (or a texture pack that replaced GD's
+    files) still lines up. Done once, and again when the theme's data or GD's sheets change.
+    Returns its folder, or None."""
+    name = LEVELS[mode][0]
+    src, res = os.path.join(LEVEL_DATA, name), gd_resources()
+    data_path, out = os.path.join(src, "level.json.gz"), os.path.join(BUILT_DIR, name)
+    if not res or not os.path.isfile(data_path):
+        return None
+    number = re.compile(r"-?\d+(?:\.\d+)?")
+    with _building:
+        try:
+            stamp = json.dumps([os.path.getmtime(data_path), os.path.getmtime(os.path.join(src, "camera.json")), res,
+                                os.path.getmtime(os.path.join(res, "GJ_GameSheet-uhd.plist"))])
+            try:
+                with open(os.path.join(out, "stamp.json"), encoding="utf-8") as f:
+                    if f.read() == stamp and live_files(out):
+                        return out
+            except OSError:
+                pass
+            with gzip.open(data_path, "rt", encoding="utf-8") as f:
+                data = json.load(f)
+            sheets, here = data["sheets"], {}
+            for i, sheet in enumerate(sheets):
+                plist = os.path.join(res, sheet + "-uhd.plist")
+                if sheet.startswith("gd:") or not os.path.isfile(plist):
+                    continue   # drawn by the script, or a picture without frames (font, background, ground)
+                with open(plist, "rb") as f:
+                    for frame, fr in plistlib.load(f).get("frames", {}).items():
+                        x, y, w, h = (float(v) for v in number.findall(fr["textureRect"]))
+                        ox, oy = (float(v) for v in number.findall(fr["spriteOffset"]))
+                        here.setdefault(frame, [i, int(x), int(y), int(w), int(h), 1 if fr.get("textureRotated") else 0, ox, oy])
+            for frame, f in data["frames"].items():
+                if frame in here and not sheets[f[0]].startswith("gd:"):
+                    data["frames"][frame] = here[frame] + f[8:]   # where this GD keeps it; the rest is the level's own
+            os.makedirs(os.path.join(out, "sheets"), exist_ok=True)
+            for sheet in sheets:
+                if not sheet.startswith("gd:"):
+                    shutil.copyfile(os.path.join(res, sheet + "-uhd.png"), os.path.join(out, "sheets", sheet + ".png"))
+            shutil.copyfile(os.path.join(src, "camera.json"), os.path.join(out, "camera.json"))
+            with open(os.path.join(out, "level.json"), "w", encoding="utf-8") as f:
+                json.dump(data, f, separators=(",", ":"))
+            with open(os.path.join(out, "stamp.json"), "w", encoding="utf-8") as f:
+                f.write(stamp)
+            return out if live_files(out) else None
+        except (OSError, ValueError, KeyError, IndexError):
+            return None
 
 
 def nullscapes_videos_ready() -> bool:
     return all(os.path.isfile(os.path.join(NULL_DIR, f"nullscapes-{n}.mp4")) for n in NULL_VIDEOS)
 
 
+def level_files(mode):
+    """What a GD level mode streams into Steam: your own export, or the level put together with
+    this PC's Geometry Dash, or Nullscapes' recordings; None when there's none of them."""
+    own = live_files(os.path.join(SETTINGS_DIR, LEVELS[mode][0], "live"))
+    if own:
+        return own
+    built = built_level(mode)
+    if built:
+        return live_files(built)
+    if mode == "nullscapes" and nullscapes_videos_ready():
+        return [(n, os.path.join(NULL_DIR, f"nullscapes-{n}.mp4"), "video/mp4") for n in NULL_VIDEOS]
+    return None
+
+
 def mode_ready(mode: str) -> bool:
-    """Every mode but the GD levels is always there; those need the player's own files."""
-    return mode not in LEVEL_MODES or bool(level_files(mode))
+    """Every mode but the GD levels is always there. Those need your own export, or the theme's
+    copy of the level and Geometry Dash on this PC (checked without building anything)."""
+    if mode not in LEVELS:
+        return True
+    folder = LEVELS[mode][0]
+    return bool(live_files(os.path.join(SETTINGS_DIR, folder, "live"))
+                or (gd_resources() and os.path.isfile(os.path.join(LEVEL_DATA, folder, "level.json.gz")))
+                or (mode == "nullscapes" and nullscapes_videos_ready()))
 
 
 def read_mode() -> str:
@@ -657,13 +769,14 @@ class Theme:
             with open(os.path.join(THEME_DIR, name), encoding="utf-8") as f:
                 return f.read()
 
-        if not mode_ready(mode):
-            mode = "frosted"   # a level's files went missing: plain glass instead
+        files = level_files(mode) if mode in LEVEL_MODES else None
+        if mode in LEVEL_MODES and not files:
+            mode = "frosted"   # the level can't be put together here: plain glass instead
         extra = {"clear": "glass-clear.css", "liquid": "liquid.css", "aero": "aero.css", "nullscapes": "nullscapes.css",
                  "eternalnight": "nullscapes.css"}.get(mode)   # both GD levels wear the matte low-poly look
         extra = read(extra) if extra else ""
         lib, friends = read("libraryroot.custom.css") + extra, read("friends.custom.css") + extra
-        live = mode == "nullscapes" and nullscapes_live_files()
+        live = mode == "nullscapes" and files[0][0] == "level"   # or else the recordings
         if live:   # the level player, then the scene that drives it
             js = read("gdscene.js") + "\n" + read("nullscapes-live.js")
         elif mode == "eternalnight":
@@ -681,7 +794,7 @@ class Theme:
                       f"window.__ggNullMusic = {music};\n" + js)
             else:
                 js = f"window.__ggNightFiles = window.__ggNullBlobs || null;\nwindow.__ggNightMusic = {music};\n" + js
-            js += "".join(f"/* {n} {os.path.getmtime(path)} */" for n, path, _ in level_files(mode))
+            js += "".join(f"/* {n} {os.path.getmtime(path)} */" for n, path, _ in files)
         key = hashlib.sha1((lib + friends + js).encode()).hexdigest()[:16]
         return lib, friends, js, key
 
@@ -691,9 +804,9 @@ class Theme:
         Nullscapes' recordings) into a Steam page as blob URLs, once per page: Steam's pages
         can't load files from disk, so the bytes go over the same developer port in base64
         chunks and become Blobs there."""
-        files = list(level_files(mode))
-        if with_music and os.path.isfile(LEVEL_MUSIC[mode]):   # the song only goes to the main window
-            files.append(("music", LEVEL_MUSIC[mode], "audio/mpeg"))
+        files, song = list(level_files(mode) or []), level_music(mode)
+        if with_music and song:   # the song only goes to the main window
+            files.append(("music", song, "audio/mpeg"))
         stamp = "|".join(f"{n}:{os.path.getmtime(path)}" for n, path, _ in files)
         if ws_eval(ws_url, "window.__ggNullStamp || ''") == stamp:
             return   # this page already has these recordings
@@ -878,7 +991,7 @@ def main():
             pass
         choose("aero")
 
-    if any(mode_ready(m) and os.path.isfile(LEVEL_MUSIC[m]) for m in LEVEL_MODES):   # the GD levels' songs
+    if any(mode_ready(m) and level_music(m) for m in LEVEL_MODES):   # the GD levels' songs
         music = menu.addAction("Song toggle")
         music.setCheckable(True)
         music.setChecked(any(song_on(m) for m in LEVEL_MODES))
