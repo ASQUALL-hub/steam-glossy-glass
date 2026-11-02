@@ -420,6 +420,15 @@
       this.audio = new Map();   // object index -> [min, max]: GD's music-pulsing objects (data.pulse drives them)
       this.link = new Int32Array(n);   // link group (key 108), 0 for none
       for (const i of this.data.highDetail || []) this.highDetail[i] = 1;
+      if (!this.data.rolled) {   // pictures GD picks at random each time a level loads (its shares): once per load
+        this.data.rolled = true;
+        const rnd = this.lookSeed !== undefined ? makeRandom(this.lookSeed) : Math.random;
+        for (const o of objects) {
+          if (!o[19]) continue;
+          let r = rnd() * o[19].reduce((a, lk) => a + lk[1], 0);
+          o[0] = (o[19].find(lk => (r -= lk[1]) < 0) || o[19][0])[0];
+        }
+      }
       for (let i = 0; i < n; i++) {
         if (objects[i][12]) this.emitters.set(i, objects[i][12]);
         const [frame, x, y, rot, sx, sy, , , ch, hsv, groups, op] = objects[i];
