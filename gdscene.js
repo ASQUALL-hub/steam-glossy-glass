@@ -234,6 +234,27 @@
       vUV = p;
       gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0);
     }`;
+  // GD's screen-space layers (the background picture, the ground and ceiling): a textured
+  // rectangle given in clip space, tinted by a colour (premultiplied), adding light if asked
+  const FLAT_VS = `#version 300 es
+    uniform vec4 rect, uvRect;      // x0, y0, x1, y1 in clip space; u0, v0, u1, v1
+    out vec2 vUV;
+    void main() {
+      vec2 p = vec2(gl_VertexID & 1, gl_VertexID >> 1);
+      vUV = mix(uvRect.xy, uvRect.zw, p);
+      gl_Position = vec4(mix(rect.xy, rect.zw, p), 0.0, 1.0);
+    }`;
+  const FLAT_FS = `#version 300 es
+    precision mediump float;
+    in vec2 vUV;
+    uniform sampler2D tex;
+    uniform vec4 color;
+    uniform float add;
+    out vec4 frag;
+    void main() {
+      frag = texture(tex, vUV) * color;
+      if (add > 0.5) frag.rgb *= frag.a;
+    }`;
   const BLUR_FS = `#version 300 es
     precision highp float;
     in vec2 vUV;
@@ -318,15 +339,17 @@
       gl.attachShader(prog, compile(gl, gl.FRAGMENT_SHADER, FS));
       gl.linkProgram(prog);
       if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(prog));
+      const repeat = new Set([data.background, data.ground && data.ground.tile]);   // pictures that tile
       // one texture per sheet
-      this.textures = sheets.map(img => {
+      this.textures = sheets.map((img, k) => {
         const t = gl.createTexture();
         gl.bindTexture(gl.TEXTURE_2D, t);
         gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);   // the shader blends premultiplied; see-through texels carry colour
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        const wrap = repeat.has(data.sheets[k]) ? gl.REPEAT : gl.CLAMP_TO_EDGE;
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, wrap);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
         return { t, w: img.width, h: img.height };
       });
@@ -486,6 +509,78 @@
       this.uBlur = ["scene", "center", "value", "fade", "gray", "grayLum", "grayTint", "sepia", "inv", "ccC", "ccB"]
         .reduce((o, k) => (o[k] = gl.getUniformLocation(bp, k), o), {});
       this.target = null;   // {fb, tex, w, h}, made when first needed
+      const fp = this.flatProg = gl.createProgram();
+      gl.attachShader(fp, compile(gl, gl.VERTEX_SHADER, FLAT_VS));
+      gl.attachShader(fp, compile(gl, gl.FRAGMENT_SHADER, FLAT_FS));
+      gl.linkProgram(fp);
+      if (!gl.getProgramParameter(fp, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(fp));
+      this.uFlat = ["rect", "uvRect", "tex", "color", "add"].reduce((o, k) => (o[k] = gl.getUniformLocation(fp, k), o), {});
+    }
+
+    // one screen-space rectangle in GD's screen points (320 high, winW wide, y up), sampling
+    // texture `sheet` over uv, tinted by colour c (rgb 0..1, alpha)
+    flatRect(sheet, x0, y0, x1, y1, uv, c, a = 1, additive = false) {
+      const gl = this.gl, u = this.uFlat, W = this.winW;
+      gl.uniform4f(u.rect, x0 / W * 2 - 1, y0 / 160 - 1, x1 / W * 2 - 1, y1 / 160 - 1);
+      gl.uniform4f(u.uvRect, uv[0], uv[1], uv[2], uv[3]);
+      gl.uniform4f(u.color, c[0] * a, c[1] * a, c[2] * a, a);
+      gl.uniform1f(u.add, additive ? 1 : 0);
+      gl.blendFunc(gl.ONE, additive ? gl.ONE : gl.ONE_MINUS_SRC_ALPHA);
+      gl.bindTexture(gl.TEXTURE_2D, this.textures[sheet].t);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    }
+
+    flatBegin() {
+      const gl = this.gl;
+      gl.useProgram(this.flatProg);
+      gl.bindVertexArray(this.blurVao);
+      gl.enable(gl.BLEND);
+      gl.activeTexture(gl.TEXTURE0);
+      gl.uniform1i(this.uFlat.tex, 0);
+    }
+
+    // GD's background picture behind everything: one tile (512 points * screen width / 512 * 16/15)
+    // repeated across, a tenth of the camera's movement behind it (read from the game), tinted by
+    // the background colour
+    drawBackground(camX, camY, bg) {
+      const k = this.data.sheets.indexOf(this.data.background);
+      if (k < 0) return;
+      const S = this.winW * 16 / 15, y0 = -(camY + 10) * 0.1;
+      let x0 = -(((camX - 15) * 0.1) % S);
+      if (x0 > 0) x0 -= S;
+      this.flatBegin();
+      for (let x = x0; x < this.winW; x += S) this.flatRect(k, x, y0, x + S, y0 + S, [0, 1, 1, 0], bg);
+    }
+
+    // the ground and ceiling as recorded from the game (data.ground.track: their heights in screen
+    // points and whether they show), over the objects: 128-point tiles in the ground colour (1001)
+    // sliding with the camera, and the floor line (1002) adding light along the edge
+    drawGround(t, camX, chanNow) {
+      const g = this.data.ground;
+      if (!g) return;
+      const tr = g.track;
+      let lo = 0, hi = tr.length - 1;
+      while (lo < hi) { const m = (lo + hi + 1) >> 1; if (tr[m][0] <= t) lo = m; else hi = m - 1; }
+      const a = tr[lo], b = tr[Math.min(lo + 1, tr.length - 1)];
+      const u = b[0] > a[0] ? Math.min(1, Math.max(0, (t - a[0]) / (b[0] - a[0]))) : 0;
+      const floor = a[2] ? a[1] + (b[2] ? (b[1] - a[1]) * u : 0) : null;
+      const ceil = a[4] ? a[3] + (b[4] ? (b[3] - a[3]) * u : 0) : null;
+      if (floor === null && ceil === null) return;
+      const tile = this.data.sheets.indexOf(g.tile), W = this.winW;
+      const gc = chanNow.get(1001) || [0, 0, 0], lc = chanNow.get(1002) || [1, 1, 1];
+      const u0 = (((camX - 15) % 128) + 128) % 128 / 128, u1 = u0 + W / 128;
+      const lf = this.data.frames[g.line], lt = lf && this.textures[lf[0]];
+      const luv = lf && [lf[1] / lt.w, lf[2] / lt.h, (lf[1] + lf[3]) / lt.w, (lf[2] + lf[4]) / lt.h];
+      const lw = lf ? lf[3] * (this.data.unitsPerPx || 0.25) : 0, lh = lf ? lf[4] * (this.data.unitsPerPx || 0.25) : 0;
+      this.flatBegin();
+      if (floor !== null) {
+        if (tile >= 0) this.flatRect(tile, 0, floor - 128, W, floor, [u0, 1, u1, 0], gc);
+        if (lf) this.flatRect(lf[0], W / 2 - lw / 2, floor - lh, W / 2 + lw / 2, floor, [luv[0], luv[3], luv[2], luv[1]], lc, 1, true);
+      }
+      if (ceil !== null) {   // the same, mirrored
+        if (tile >= 0) this.flatRect(tile, 0, ceil, W, ceil + 128, [u0, 0, u1, 1], gc);
+        if (lf) this.flatRect(lf[0], W / 2 - lw / 2, ceil, W / 2 + lw / 2, ceil + lh, [luv[0], luv[1], luv[2], luv[3]], lc, 1, true);
+      }
     }
 
     // the offscreen picture the blur reads, the canvas's size
@@ -1050,6 +1145,8 @@
       gl.viewport(0, 0, W, H);
       gl.clearColor(bg[0], bg[1], bg[2], 1);
       gl.clear(gl.COLOR_BUFFER_BIT);
+      this.winW = 320 * W / H;   // GD's screen in points: always 320 high
+      this.drawBackground(cx - hw, cy - hh, bg);
       // gather visible objects in draw order
       let m = 0;
       const runs = [];   // [start, count, sheet, additive]
@@ -1132,6 +1229,7 @@
       };
       const cut = runs.indexOf(null);
       drawRuns(cut < 0 ? runs : runs.slice(0, cut));
+      this.drawGround(this.t, cx - hw, chanNow);
       if (post) {   // the finished picture through GD's shader effects, onto the canvas
         const u = this.uBlur, clamp = v => sh.invClamp ? Math.min(v, 1) : v;
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
