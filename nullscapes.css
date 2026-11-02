@@ -1,0 +1,53 @@
+/* Glossy Glass: Nullscapes option (nullscapes.css).
+   Two looping scenes recorded from the Geometry Dash level "Nullscapes Background"
+   play behind the window (nullscapes.js): bright misty mountains, then a moon over
+   dark spiky grass. The panels over them are neutral smoky glass that reads on both. */
+
+html:root {
+  --gg-backdrop: linear-gradient(#e4f1f7 0%, #c9d6dc 55%, #22282b 56%, #0b0d0e 100%);   /* until the video starts */
+  --gg-tint: rgba(16, 20, 26, 0.5);
+  --gg-tint-deep: rgba(10, 13, 18, 0.66);
+  --gg-rim: rgba(255, 255, 255, 0.5);
+  --gg-rim-inner: rgba(255, 255, 255, 0.16);
+  --gg-chip: rgba(255, 255, 255, 0.1);
+  --gg-chip-lit: rgba(255, 255, 255, 0.2);
+  --gg-green: rgba(90, 200, 110, 0.4);
+  --gg-blue: rgba(120, 170, 230, 0.4);
+  --gg-grey: rgba(150, 160, 175, 0.25);
+}
+
+/* the video lies behind the window's contents: the frame (main window) and the
+   page (friends) become their own layer */
+._1ENHEsrSLcTRtPQFl1F-wL,
+html.friendsui-container body {
+  isolation: isolate;
+}
+
+/* no live blur on the big panels: a moving scene would make Steam re-blur every frame */
+._3fLo166MlaNqP8r8tTyRz,
+._2iJsgdTIX9Tj23rWnB7Q-c {
+  backdrop-filter: none !important;
+}
+
+/* the game list and bottom bar: deeper smoky glass, so names read over the bright mountains */
+._3x1HklzyDs4TEjACrRO2tB,
+._3vCzSrrXZzZjVJFZNg9SGu,
+.PageListColumn {
+  --gg-tint: rgba(12, 15, 20, 0.62);
+}
+
+/* the big right panel stays light so the scene shows through; its cards keep the deeper glass */
+._2Dd4T78PcCTUVgOtDGFY5j {
+  --gg-tint: rgba(10, 13, 18, 0.18);
+  text-shadow: 0 0 3px rgba(0, 0, 0, 0.85), 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+._2Dd4T78PcCTUVgOtDGFY5j > * {
+  --gg-tint: rgba(12, 15, 20, 0.58);
+}
+
+/* the title bar is a strip of the same glass, so the menu names read over the sky */
+._3Z7VQ1IMk4E3HsHvrkLNgo {
+  background:
+    radial-gradient(98% 60px at 50% -24px, rgba(255, 255, 255, 0.22), transparent 100%) no-repeat,
+    rgba(12, 15, 20, 0.45) !important;
+}

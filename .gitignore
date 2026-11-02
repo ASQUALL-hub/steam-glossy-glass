@@ -6,3 +6,6 @@ __pycache__/
 glass-mode.txt
 my-aero-picture.jpg
 preview/*.jpg
+
+# Nullscapes recordings are the player's own captures of a GD level: never in the repo
+*.mp4

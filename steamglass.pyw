@@ -20,6 +20,12 @@ in glass-mode.txt next to this file (changes apply live):
   clear    no blur, fully see-through; the window is cut to DiscTray's squircle
            (pair with the theme's "Clear" glass option, which draws the curve).
   liquid   frosted glass for the theme's "Liquid" option (water that sloshes).
+  nullscapes  the Geometry Dash level "Nullscapes Background" plays behind smoky
+           glass: live, with the level player gdscene.js (nullscapes-live.js), when
+           the level's data and GD's sprite sheets are in the settings folder's
+           nullscapes\live\; otherwise two recorded scenes loop (nullscapes.js).
+           Only offered when one of those is there (they're the player's own files
+           and never ship).
   aero     Frutiger Aero: a sunny panorama pans by behind blue glass panels.
            aero.js draws a glass city, lakes and fields, or pans a picture:
            yours (tray > Aero picture > Choose a picture…, kept as
@@ -34,7 +40,7 @@ window back to normal without starting the helper.
 Installed builds (SteamGlass.exe, put there by SteamGlassUpdater.exe) keep
 glass-mode.txt in %APPDATA%\SteamGlass and add "Check for updates…" to the menu.
 "Start with Windows" in the menu adds or removes the helper under the Run key."""
-__version__ = "1.1.1"
+__version__ = "1.2.0"
 
 import base64
 import ctypes
@@ -89,7 +95,30 @@ CEF_PORT = 8080   # Steam's developer port, on 127.0.0.1 only
 CEF_FLAG = ".cef-enable-remote-debugging"   # in Steam's folder: Steam opens the port when it starts
 STYLE_ID = "steam-glass-theme"
 SCENE_WINDOWS = {"Steam", "Friends List"}   # Liquid's water and Aero's panorama run in these
-SCENE_SCRIPTS = {"liquid": "liquid.js", "aero": "aero.js"}
+SCENE_SCRIPTS = {"liquid": "liquid.js", "aero": "aero.js", "nullscapes": "nullscapes.js"}
+NULL_DIR = os.path.join(SETTINGS_DIR, "nullscapes")   # nullscapes-mountains.mp4, nullscapes-moon.mp4
+NULL_VIDEOS = ("mountains", "moon")
+# the level itself, played live by gdscene.js (preferred over the recordings when it's there):
+# nullscapes\live\level.json, camera.json and sheets\<GD sprite sheet>.png
+NULL_LIVE = os.path.join(NULL_DIR, "live")
+NULL_MUSIC = os.path.join(NULL_DIR, "nullscapes-music.mp3")        # the level's song, optional
+NULL_MUSIC_SETTING = os.path.join(SETTINGS_DIR, "nullscapes-music.txt")   # "on" / "off"
+
+
+def nullscapes_music_on() -> bool:
+    if not os.path.isfile(NULL_MUSIC):
+        return False
+    try:
+        with open(NULL_MUSIC_SETTING, encoding="utf-8") as f:
+            return f.read().strip().lower() != "off"
+    except OSError:
+        return True
+
+
+def set_nullscapes_music(on: bool):
+    os.makedirs(SETTINGS_DIR, exist_ok=True)
+    with open(NULL_MUSIC_SETTING, "w", encoding="utf-8") as f:
+        f.write("on\n" if on else "off\n")
 PICTURE = "aero-picture.jpg"        # the theme's own panorama picture, in THEME_DIR
 MY_PICTURE = "my-aero-picture.jpg"   # the one you chose, in SETTINGS_DIR
 PICTURE_HEIGHT = 1440          # pictures are scaled down to this height to keep them quick to send
@@ -110,9 +139,31 @@ user32.GetWindowLongW.restype = ctypes.c_long
 user32.SetWindowLongW.restype = ctypes.c_long
 
 
-MODES = {"frosted": "Frosted", "clear": "Clear", "liquid": "Liquid", "aero": "Frutiger Aero",
+MODES = {"frosted": "Frosted", "clear": "Clear", "liquid": "Liquid", "aero": "Frutiger Aero", "nullscapes": "Nullscapes",
          "off": "Off (Steam's normal look)"}
-FROSTED_LIKE = ("frosted", "liquid", "aero")   # glass kinds Windows draws as frosted
+FROSTED_LIKE = ("frosted", "liquid", "aero", "nullscapes")   # glass kinds Windows draws as frosted
+
+
+def nullscapes_live_files():
+    """[(name, path, type)] the live level needs, or None when any is missing."""
+    try:
+        with open(os.path.join(NULL_LIVE, "level.json"), encoding="utf-8") as f:
+            sheets = json.load(f).get("sheets", [])
+    except (OSError, ValueError):
+        return None
+    files = [("level", os.path.join(NULL_LIVE, "level.json"), "application/json"),
+             ("camera", os.path.join(NULL_LIVE, "camera.json"), "application/json")]
+    files += [("sheet:" + n, os.path.join(NULL_LIVE, "sheets", n + ".png"), "image/png")
+              for n in sheets if not n.startswith("gd:")]   # gd: textures are drawn by the script
+    return files if all(os.path.isfile(path) for _, path, _ in files) else None
+
+
+def nullscapes_videos_ready() -> bool:
+    return all(os.path.isfile(os.path.join(NULL_DIR, f"nullscapes-{n}.mp4")) for n in NULL_VIDEOS)
+
+
+def nullscapes_ready() -> bool:
+    return bool(nullscapes_live_files()) or nullscapes_videos_ready()
 
 
 def read_mode() -> str:
@@ -336,6 +387,9 @@ def tray_icon(mode: str, sizes=(16, 20, 24, 32, 48, 64)):
         if mode == "liquid":   # DiscTray's Liquid sky, a bit stronger to read at icon size
             for at, rgba in ((0.0, (70, 160, 172, 235)), (0.45, (150, 170, 182, 225)), (1.0, (36, 38, 44, 235))):
                 fill.setColorAt(at, QColor(*rgba))
+        elif mode == "nullscapes":   # night sky
+            for at, rgba in ((0.0, (24, 38, 50, 255)), (1.0, (8, 12, 18, 255))):
+                fill.setColorAt(at, QColor(*rgba))
         elif mode == "aero":   # Aero's sky, deep blue overhead and pale at the horizon
             for at, rgba in ((0.0, (11, 95, 207, 255)), (0.6, (110, 190, 250, 255)), (1.0, (200, 235, 255, 255))):
                 fill.setColorAt(at, QColor(*rgba))
@@ -346,7 +400,23 @@ def tray_icon(mode: str, sizes=(16, 20, 24, 32, 48, 64)):
             fill.setColorAt(0, QColor(*top))
             fill.setColorAt(1, QColor(*bottom))
         p.fillPath(body, fill)
-        if mode == "aero":
+        if mode == "nullscapes":   # the moon over spiky grass
+            p.save()
+            p.setClipPath(body)
+            glow = QRadialGradient(QPointF(px * 0.5, px * 0.58), px * 0.42)
+            glow.setColorAt(0, QColor(250, 250, 245, 255)); glow.setColorAt(0.55, QColor(250, 250, 245, 255))
+            glow.setColorAt(0.6, QColor(120, 140, 160, 120)); glow.setColorAt(1, QColor(60, 80, 100, 0))
+            p.fillRect(QRectF(0, 0, px, px), glow)
+            grass = QPainterPath()
+            grass.moveTo(0, px)
+            for k in range(9):
+                grass.lineTo(px * (k + 0.5) / 8.5, px * (0.5 + 0.12 * (k % 3)))
+                grass.lineTo(px * (k + 1) / 8.5, px * 0.8)
+            grass.lineTo(px, px)
+            grass.closeSubpath()
+            p.fillPath(grass, QColor(14, 20, 28))
+            p.restore()
+        elif mode == "aero":
             p.save()
             p.setClipPath(body)
             sun = QRadialGradient(QPointF(px * 0.74, px * 0.24), px * 0.34)
@@ -476,7 +546,8 @@ def ws_eval(url: str, expression: str, timeout: float = 3.0):
         else:
             frame += bytes([0x80 | 127]) + struct.pack(">Q", n)
         mask = os.urandom(4)
-        frame += mask + bytes(b ^ mask[i % 4] for i, b in enumerate(payload))
+        keys = (mask * (n // 4 + 1))[:n]   # mask the whole payload at once (it can be megabytes)
+        frame += mask + (int.from_bytes(payload, "little") ^ int.from_bytes(keys, "little")).to_bytes(n, "little")
         sock.sendall(frame)
 
         def take(k):
@@ -544,16 +615,61 @@ class Theme:
             with open(os.path.join(THEME_DIR, name), encoding="utf-8") as f:
                 return f.read()
 
-        extra = {"clear": "glass-clear.css", "liquid": "liquid.css", "aero": "aero.css"}.get(mode)
+        if mode == "nullscapes" and not nullscapes_ready():
+            mode = "frosted"   # the recordings went missing: plain glass instead
+        extra = {"clear": "glass-clear.css", "liquid": "liquid.css", "aero": "aero.css", "nullscapes": "nullscapes.css"}.get(mode)
         extra = read(extra) if extra else ""
         lib, friends = read("libraryroot.custom.css") + extra, read("friends.custom.css") + extra
-        js = read(SCENE_SCRIPTS[mode]) if mode in SCENE_SCRIPTS else ""
+        live = mode == "nullscapes" and nullscapes_live_files()
+        if live:   # the level player, then the scene that drives it
+            js = read("gdscene.js") + "\n" + read("nullscapes-live.js")
+        else:
+            js = read(SCENE_SCRIPTS[mode]) if mode in SCENE_SCRIPTS else ""
         if mode == "aero":
             picture = self.picture()
             if picture:
                 js = f"window.__ggAeroImage = {json.dumps(picture)};\n" + js
+        if mode == "nullscapes":   # its files come in as blobs (send_media); point the script at them
+            music = "window.__ggNullBlobs && window.__ggNullBlobs.music || null" if nullscapes_music_on() else "null"
+            files = live or [(n, os.path.join(NULL_DIR, f"nullscapes-{n}.mp4"), "") for n in NULL_VIDEOS]
+            js = (f"window.__ggNullVideos = window.__ggNullFiles = window.__ggNullBlobs || null;\n"
+                  f"window.__ggNullMusic = {music};\n" + js)
+            js += "".join(f"/* {n} {os.path.getmtime(path)} */" for n, path, _ in files)
         key = hashlib.sha1((lib + friends + js).encode()).hexdigest()[:16]
         return lib, friends, js, key
+
+    @staticmethod
+    def send_media(ws_url, with_music=False):
+        """Stream Nullscapes' files (the live level's data and sprite sheets, or else the
+        recordings) into a Steam page as blob URLs, once per page: Steam's pages can't load
+        files from disk, so the bytes go over the same developer port in base64 chunks and
+        become Blobs there."""
+        files = nullscapes_live_files() or [(n, os.path.join(NULL_DIR, f"nullscapes-{n}.mp4"), "video/mp4")
+                                            for n in NULL_VIDEOS]
+        if with_music and os.path.isfile(NULL_MUSIC):   # the song only goes to the main window
+            files.append(("music", NULL_MUSIC, "audio/mpeg"))
+        stamp = "|".join(f"{n}:{os.path.getmtime(path)}" for n, path, _ in files)
+        if ws_eval(ws_url, "window.__ggNullStamp || ''") == stamp:
+            return   # this page already has these recordings
+        ws_eval(ws_url, """(() => { const old = window.__ggNullBlobs; if (old) for (const k in old) URL.revokeObjectURL(old[k]);
+                                    delete window.__ggNullBlobs; })()""")
+        ws_eval(ws_url, "window.__ggNullUp = {}")
+        for name, path, _ in files:
+            with open(path, "rb") as f:
+                data = f.read()
+            ws_eval(ws_url, f"window.__ggNullUp[{name!r}] = []")
+            step = 3 << 20   # 3 MB per message
+            for i in range(0, len(data), step):
+                chunk = base64.b64encode(data[i:i + step]).decode()
+                ws_eval(ws_url, f"window.__ggNullUp[{name!r}].push(Uint8Array.from(atob({chunk!r}), c => c.charCodeAt(0)))",
+                        timeout=30)
+        types = json.dumps({n: t for n, _, t in files})
+        ws_eval(ws_url, f"""(() => {{
+            const up = window.__ggNullUp, types = {types}, out = {{}};
+            for (const k in up) out[k] = URL.createObjectURL(new Blob(up[k], {{ type: types[k] }}));
+            window.__ggNullBlobs = out; delete window.__ggNullUp;
+        }})()""")
+        ws_eval(ws_url, f"window.__ggNullStamp = {stamp!r}")
 
     def apply_all(self, mode: str):
         """One pass over Steam's pages. Raises OSError if Steam's port doesn't answer."""
@@ -574,10 +690,13 @@ class Theme:
                                f"(document.getElementById({STYLE_ID!r}) || {{dataset: {{}}}}).dataset.key || ''")
                 if have == want:
                     continue
+                if scene and mode == "nullscapes" and nullscapes_ready():
+                    self.send_media(t["webSocketDebuggerUrl"], with_music=t.get("title") == "Steam")
                 ws_eval(t["webSocketDebuggerUrl"], f"""(() => {{
                     let s = document.getElementById({STYLE_ID!r});
                     if (window.__ggLiquid) window.__ggLiquid.stop();
                     if (window.__ggAero) window.__ggAero.stop();
+                    if (window.__ggNull) window.__ggNull.stop();
                     if (!{json.dumps(want)}) {{ if (s) s.remove(); return; }}
                     if (!s) {{ s = document.createElement("style"); s.id = {STYLE_ID!r};
                               (document.head || document.documentElement).appendChild(s); }}
@@ -684,6 +803,8 @@ def main():
     group = QActionGroup(menu)
     actions = {}
     for key, label in MODES.items():
+        if key == "nullscapes" and not nullscapes_ready():
+            continue
         a = menu.addAction(label)
         a.setCheckable(True)
         group.addAction(a)
@@ -710,6 +831,11 @@ def main():
             pass
         choose("aero")
 
+    if nullscapes_ready() and os.path.isfile(NULL_MUSIC):
+        music = menu.addAction("Nullscapes music")
+        music.setCheckable(True)
+        music.setChecked(nullscapes_music_on())
+        music.toggled.connect(lambda on: set_nullscapes_music(on))
     pictures = menu.addMenu("Aero picture")
     pictures.addAction("Choose a picture…", choose_picture)
     pictures.addAction("Built-in Aero scene", drawn_scene)
