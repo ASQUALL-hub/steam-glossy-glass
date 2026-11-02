@@ -265,11 +265,20 @@
     uniform bool grayLum;
     uniform vec3 grayTint, ccC, ccB;
     uniform vec4 inv;               // invert amount per channel, amount
+    uniform vec4 glitch;            // slice bottom, top, its x shift, which channel to offset (0..1); top 0 = off
+    uniform vec2 glitchCol;         // that channel's offset
     out vec4 frag;
     void main() {
-      vec4 c = texture(scene, vUV);
+      vec2 at = vUV;
+      if (glitch.y > 0.0) at.x += glitch.z * (step(glitch.x, at.y) - step(glitch.y, at.y));   // the slice slides
+      vec4 c = texture(scene, at);
+      if (glitch.y > 0.0) {   // and one colour channel comes from a little way off
+        vec4 o = texture(scene, at + glitchCol);
+        if (glitch.w < 0.33) c.r = o.r; else if (glitch.w < 0.66) c.g = o.g; else c.b = o.b;
+        c.a = max(c.a, o.a);
+      }
       if (value != 0.0) {
-        vec2 uv = vUV, stepTo = (center - vUV) * value;
+        vec2 uv = at, stepTo = (center - at) * value;
         float w = 1.0 + 4.5 * fade;
         c *= w;
         for (int i = 1; i < 10; i++) { w -= fade; uv += stepTo; c += texture(scene, uv) * w; }
@@ -507,7 +516,7 @@
       gl.linkProgram(bp);
       if (!gl.getProgramParameter(bp, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(bp));
       this.blurVao = gl.createVertexArray();
-      this.uBlur = ["scene", "center", "value", "fade", "gray", "grayLum", "grayTint", "sepia", "inv", "ccC", "ccB"]
+      this.uBlur = ["scene", "center", "value", "fade", "gray", "grayLum", "grayTint", "sepia", "inv", "ccC", "ccB", "glitch", "glitchCol"]
         .reduce((o, k) => (o[k] = gl.getUniformLocation(bp, k), o), {});
       this.target = null;   // {fb, tex, w, h}, made when first needed
       const fp = this.flatProg = gl.createProgram();
@@ -631,7 +640,8 @@
       // invert (amount, per channel rgb, clamped), edit colour (rgb * c + b)
       this.shader = { size: 0, fade: 1, gray: 0, grayLum: 0, sepia: 0, inv: 0, invR: 1, invG: 1, invB: 1, invClamp: 0,
                       cR: 1, cG: 1, cB: 1, bR: 0, bG: 0, bB: 0,
-                      top: 8 };   // the highest z layer the effects cover (higher ones are drawn on top)
+                      top: 8,   // the highest z layer the effects cover (higher ones are drawn on top)
+                      glitch: 0, glitchSpeed: 1, glitchSlice: 1, glitchX: 1, glitchColX: 1, glitchColY: 1 };
       this.shakeRnd = makeRandom(7);
       this.fired = new Set();
       this.items = new Map();   // item id -> value
@@ -851,6 +861,10 @@
           this.shader.top = v >= 13 ? 8 : v >= 9 ? v - 4 : v >= 3 ? Math.min(v, 7) - 3 : v === 0 ? 4 : -1;
           break;
         }
+        case "glitch":   // GD's glitch shader (trigger 2909): its settings take effect at once
+          Object.assign(this.shader, { glitch: t.strength || 0, glitchSpeed: t.speed || 0, glitchSlice: t.slice || 0,
+                                       glitchX: t.sliceX || 0, glitchColX: t.colX || 0, glitchColY: t.colY || 0 });
+          break;
         case "radialblur": case "grayscale": case "sepia": case "invert": case "editcolor": {
           // shader triggers ease their effect's settings from where they are (a new one of a kind
           // replaces a running one); switches take effect at once
@@ -1147,7 +1161,7 @@
       // GD's shader layer: while any effect is on, the scene goes to a texture and through it
       const sh = this.shader;
       const editColor = sh.cR !== 1 || sh.cG !== 1 || sh.cB !== 1 || sh.bR !== 0 || sh.bG !== 0 || sh.bB !== 0;
-      const post = !this.noShaders && (Math.abs(sh.size) > 1e-4 || sh.gray > 0 || sh.sepia > 0 || sh.inv > 0 || editColor);
+      const post = !this.noShaders && (Math.abs(sh.size) > 1e-4 || sh.gray > 0 || sh.sepia > 0 || sh.inv > 0 || editColor || sh.glitch > 0);
       gl.bindFramebuffer(gl.FRAMEBUFFER, post ? this.sceneTarget(W, H).fb : null);
       gl.viewport(0, 0, W, H);
       gl.clearColor(bg[0], bg[1], bg[2], 1);
@@ -1255,6 +1269,14 @@
         gl.uniform4f(u.inv, clamp(sh.inv * sh.invR), clamp(sh.inv * sh.invG), clamp(sh.inv * sh.invB), sh.inv);
         if (editColor) { gl.uniform3f(u.ccC, Math.max(sh.cR, 1e-4), sh.cG, sh.cB); gl.uniform3f(u.ccB, sh.bR, sh.bG, sh.bB); }
         else gl.uniform3f(u.ccC, 0, 0, 0);
+        if (sh.glitch > 0) {   // GD's glitch: a new random slice and offsets speed x 20 times a second (its own noise
+          // and seeds, read from the game); sizes from strength, the slice's height in screen heights
+          const tq = Math.floor(sh.glitchSpeed * this.t * 20), A = W / H;
+          const n = seed => { const v = Math.sin(Math.fround(tq * 12.9898 + seed * 4.1414)) * 43758.5453; return v - Math.floor(v); };
+          const bot = n(2345), top = bot + n(9035) * sh.glitchSlice * sh.glitch, k = sh.glitch * 0.02;
+          gl.uniform4f(u.glitch, bot * A, (Math.floor(top) + top) * A, (n(9625) * 2 - 1) * sh.glitchX * k, n(9545));
+          gl.uniform2f(u.glitchCol, (n(9545) * 2 - 1) * sh.glitchColX * k, (n(7205) * 2 - 1) * sh.glitchColY * k * A);
+        } else gl.uniform4f(u.glitch, 0, 0, 0, 0);
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
         if (cut >= 0) drawRuns(runs.slice(cut + 1));   // the layers above the effects, as they are
       }
