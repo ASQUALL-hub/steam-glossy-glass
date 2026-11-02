@@ -19,6 +19,8 @@
   const KA4_TO_SPEED = [1, 0, 2, 3, 4];   // kA4: 0 = 1x, 1 = 0.5x, 2 = 2x, 3 = 3x, 4 = 4x
   const VIEW_H = 320;   // GD shows 320 units of height at zoom 1
   const GROUND_Y = 90;  // GD's node space puts y = 0 of the level file this far up
+  const SHAKE_SCALE = 0.5;    // units of offset per unit of shake strength (matched to the recording)
+  const SHAKE_SETTLE = 0.12;  // seconds a shake takes to ease back to rest
 
   // ------------------------------------------------------------------ easing (GD / cocos2d)
   function ease(type, rate, t) {
@@ -212,13 +214,14 @@
     return s;
   }
 
-  // textures GD draws in code: "gd:radial" = a radial gradient, opaque centre to clear edge (100 px)
-  function makeTexture(name) {
+  // textures GD draws in code: "gd:radial" = a radial gradient, opaque centre to clear edge
+  // (made the size of its frame, which spans the whole texture)
+  function makeTexture(name, size = 256) {
     const c = document.createElement("canvas");
-    c.width = c.height = 100;
-    const g = c.getContext("2d"), grad = g.createRadialGradient(50, 50, 0, 50, 50, 50);
+    c.width = c.height = size;
+    const h = size / 2, g = c.getContext("2d"), grad = g.createRadialGradient(h, h, 0, h, h, h);
     grad.addColorStop(0, "rgba(255,255,255,1)"); grad.addColorStop(1, "rgba(255,255,255,0)");
-    g.fillStyle = grad; g.fillRect(0, 0, 100, 100);
+    g.fillStyle = grad; g.fillRect(0, 0, size, size);
     return c;
   }
 
@@ -236,7 +239,8 @@
     static async create(canvas, opts = {}) {
       const base = opts.base || "";
       const data = opts.data || await (await fetch(base + "level.json", { cache: "no-store" })).json();
-      const sheets = await Promise.all(data.sheets.map(n => n.startsWith("gd:") ? makeTexture(n)
+      const frameSize = n => { const f = Object.values(data.frames).find(f => data.sheets[f[0]] === n); return f ? f[3] : 256; };
+      const sheets = await Promise.all(data.sheets.map(n => n.startsWith("gd:") ? makeTexture(n, frameSize(n))
         : loadImage(opts.sheetUrl ? opts.sheetUrl(n) : base + "sheets/" + n + ".png")));
       const scene = new GDScene(canvas, data, sheets);
       // the camera path recorded from the game (tools/gd_camera.py): [levelTime, zoom, camX, camY]
@@ -367,7 +371,9 @@
       }
       if (!this.chan.has(1004)) this.chan.set(1004, [1, 1, 1, 1, 0]);
       this.pulses = [];
-      this.cam = { x: 0, y: 105, zoom: 1, static: null, offX: 0, offY: 0, shake: 0, shakeEnd: 0 };
+      this.cam = { x: 0, y: 105, zoom: 1, static: null, offX: 0, offY: 0 };
+      this.shake = null;   // the running shake: see shakeOffset()
+      this.shakeRnd = makeRandom(7);
       this.fired = new Set();
       this.items = new Map();   // item id -> value
       // a returning player: levels often play a first-attempt intro (Nullscapes does) that the
@@ -415,6 +421,15 @@
         }
       }
       return [x, y, rot];
+    }
+
+    // touch-activated triggers need the player to run into them: without a simulated player,
+    // one counts as touched when it's within the camera's height (where the player is), so
+    // logic parked far above or below the course stays quiet
+    touchable(t) {
+      const v = this.trackView(16 / 9);
+      if (!v) return true;
+      return Math.abs(t.y - v.y) <= VIEW_H / 2 / (v.zoom || 1) + 30;
     }
 
     // a rotation's pivot: where the centre group's objects are now, moves included (not rotations)
@@ -549,7 +564,13 @@
           break;
         case "offset": this.actions.push({ kind: "offset", t0: now, dur: t.dur || 0, ease: t.ease, rate: t.rate,
                                            fx: this.cam.offX, fy: this.cam.offY, dx: t.dx || 0, dy: t.dy || 0 }); break;
-        case "shake": this.cam.shake = t.strength || 0; this.cam.shakeEnd = now + (t.dur || 0); break;
+        case "shake": {   // a new shake replaces the running one, starting from where the camera is now
+          const from = this.shakeOffset();
+          const every = Math.max(t.interval || 0, 1 / 60);
+          this.shake = { t0: now, end: now + (t.dur || 0), size: (t.strength || 0) * SHAKE_SCALE, every,
+                         from, to: from, at: now, next: now + every };
+          break;
+        }
       }
     }
 
@@ -579,7 +600,8 @@
       this.playerX += SPEED_UNITS[this.speed] * dt;
       // x-activated triggers the player passed
       while (this.nextX < this.xTriggers.length && this.xTriggers[this.nextX].x <= this.playerX) {
-        this.fire(this.xTriggers[this.nextX++]);
+        const t = this.xTriggers[this.nextX++];
+        if (t.mode !== "touch" || this.touchable(t)) this.fire(t);
       }
       // spawn activations that are due
       if (this.queue.length) {
@@ -668,6 +690,31 @@
       return { x: x + hh * aspect, y: y - GROUND_Y + hh, zoom };
     }
 
+    // GD moves a shaking camera to a new random offset once per interval (never more than 60
+    // times a second); here it glides between those offsets and settles back when the shake ends
+    shakeOffset() {
+      const k = this.shake;
+      if (!k) return [0, 0];
+      while (this.t >= k.next && k.next < k.end) {   // time for a new offset
+        const cur = this.shakeAt(k, k.next);
+        k.from = cur; k.at = k.next; k.next += k.every;
+        k.to = [(this.shakeRnd() * 2 - 1) * k.size, (this.shakeRnd() * 2 - 1) * k.size];
+      }
+      if (this.t >= k.end) {   // ease home over a moment
+        if (!k.home) { k.home = this.shakeAt(k, k.end); k.homeAt = k.end; }
+        const u = Math.min(1, (this.t - k.homeAt) / SHAKE_SETTLE);
+        if (u >= 1) { this.shake = null; return [0, 0]; }
+        const e = 1 - ease(13, 2, u);
+        return [k.home[0] * e, k.home[1] * e];
+      }
+      return this.shakeAt(k, this.t);
+    }
+
+    shakeAt(k, t) {
+      const u = ease(13, 2, Math.min(1, (t - k.at) / k.every));   // smooth step between offsets
+      return [k.from[0] + (k.to[0] - k.from[0]) * u, k.from[1] + (k.to[1] - k.from[1]) * u];
+    }
+
     pulseIntensity(p) {
       const a = this.t - p.t0;
       if (a < p.fin) return p.fin ? a / p.fin : 1;
@@ -712,9 +759,7 @@
       const W = canvas.width, H = canvas.height;
       const view = this.view || this.trackView(W / H) || { x: this.cam.x + this.cam.offX, y: this.cam.y + this.cam.offY, zoom: this.cam.zoom };
       let cx = view.x + (this.camOff ? this.camOff[0] : 0), cy = view.y + (this.camOff ? this.camOff[1] : 0);
-      if (!this.view && this.t < this.cam.shakeEnd && this.cam.shake) {
-        cx += (Math.random() - 0.5) * this.cam.shake; cy += (Math.random() - 0.5) * this.cam.shake;
-      }
+      if (!this.view) { const [sx, sy] = this.shakeOffset(); cx += sx; cy += sy; }
       const hh = VIEW_H / 2 / (view.zoom || 1), hw = hh * W / H;
       // channel colours with channel pulses applied
       const chanNow = new Map();
