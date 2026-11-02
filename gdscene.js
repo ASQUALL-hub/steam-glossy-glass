@@ -7,8 +7,9 @@
 
    Supported triggers: colour, pulse (colour and HSV, on channels or groups), alpha,
    toggle, spawn (with delay), move (offset, easing, lock to player X), rotate
-   (around a centre group), zoom, static camera, camera offset, shake, speed. Custom
-   particle objects run as cocos2d particle systems (gravity and radius modes).
+   (around a centre group), zoom, static camera, camera offset, shake, speed, radial blur
+   (GD's shader trigger, on the whole picture). Custom particle objects run as cocos2d
+   particle systems (gravity and radius modes).
 
    const scene = await GDScene.create(canvas, { base: "web/" });
    scene.play(fromSeconds) / scene.seek(seconds) / scene.view = {x, y, zoom} */
@@ -23,6 +24,7 @@
   const CELL = 400;   // width of the culling index's columns (level units)
   const SHAKE_SCALE = 0.5;    // units of offset per unit of shake strength (matched to the recording)
   const SHAKE_SETTLE = 0.12;  // seconds a shake takes to ease back to rest
+  const PORTAL_REACH = 35;    // units short of a speed portal's centre where it takes the player (matched to GD's timing)
 
   // ------------------------------------------------------------------ easing (GD / cocos2d)
   function ease(type, rate, t) {
@@ -220,6 +222,49 @@
       // soft glow's colour is scaled by its alpha twice: blended (ONE, ONE), do the same here
       if (add > 0.5) frag.rgb *= frag.a;
     }`;
+  // GD's shader layer, run over the finished picture while any of its effects is on, in GD's
+  // order: radial blur (trigger 2914: each pixel averages ten samples stepped toward the centre,
+  // the nearer ones weighted more as fade grows; GD feeds value = size * 0.2 / 9 and
+  // fade = min(fade * 0.2, 0.2)), then grayscale (2919), sepia (2920), invert (2921: per channel,
+  // amount * rgb) and edit colour (2923: rgb * c + b). Formulas and scalings read from the game
+  const BLUR_VS = `#version 300 es
+    out vec2 vUV;
+    void main() {
+      vec2 p = vec2(gl_VertexID & 1, gl_VertexID >> 1);   // a strip over the screen
+      vUV = p;
+      gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0);
+    }`;
+  const BLUR_FS = `#version 300 es
+    precision highp float;
+    in vec2 vUV;
+    uniform sampler2D scene;
+    uniform vec2 center;
+    uniform float value, fade, gray, sepia;
+    uniform bool grayLum;
+    uniform vec3 grayTint, ccC, ccB;
+    uniform vec4 inv;               // invert amount per channel, amount
+    out vec4 frag;
+    void main() {
+      vec4 c = texture(scene, vUV);
+      if (value != 0.0) {
+        vec2 uv = vUV, stepTo = (center - vUV) * value;
+        float w = 1.0 + 4.5 * fade;
+        c *= w;
+        for (int i = 1; i < 10; i++) { w -= fade; uv += stepTo; c += texture(scene, uv) * w; }
+        c *= 0.1;
+      }
+      if (gray > 0.0) {
+        float g = grayLum ? dot(c.rgb, vec3(0.299, 0.587, 0.114)) : (c.r + c.g + c.b) * 0.333;
+        c.rgb = c.rgb * (1.0 - gray) + vec3(g) * gray * grayTint;
+      }
+      if (sepia > 0.0) {
+        vec3 s = vec3(dot(c.rgb, vec3(0.393, 0.769, 0.189)), dot(c.rgb, vec3(0.349, 0.686, 0.168)), dot(c.rgb, vec3(0.272, 0.534, 0.131)));
+        c.rgb = c.rgb * (1.0 - sepia) + s * sepia;
+      }
+      if (inv.a > 0.0) c.rgb = c.rgb * (1.0 - inv.rgb) + (1.0 - c.rgb) * inv.rgb;
+      if (ccC.r > 0.0) c.rgb = c.rgb * ccC + ccB;
+      frag = c;
+    }`;
 
   function compile(gl, type, src) {
     const s = gl.createShader(type);
@@ -306,6 +351,7 @@
       this.emitters = new Map();   // object index -> particle settings, for custom particle objects
       this.highDetail = new Uint8Array(n);   // objects marked high detail (left out when lowDetail is set)
       this.addAlways = new Uint8Array(n);   // sprites that always add light (GD's glow), whatever their channel
+      this.zLayer = new Uint8Array(n);   // GD's z layer: 0..8 = B5..B1, T1..T4 (objects come sorted by it)
       // a sprite that is one piece of a bigger object: its offset from the object's centre, and
       // how fast the object spins by itself (GD's rotating objects, degrees per second, clockwise)
       this.partX = new Float32Array(n); this.partY = new Float32Array(n); this.spin = new Float32Array(n);
@@ -338,6 +384,7 @@
         this.staticSolid[i] = f[8] ? 1 : 0;
         if (objects[i][13]) { this.staticSolid[i] = 2; this.staticAffine.set(objects[i][13], i * 4); }   // a free-shaped backing
         if (objects[i][14]) this.addAlways[i] = 1;
+        this.zLayer[i] = Math.floor((objects[i][6] || 0) / 100);
         if (objects[i][15]) [this.partX[i], this.partY[i], this.spin[i]] = objects[i][15];
         if (objects[i][17]) this.audio.set(i, objects[i][17]);   // [min, max] scale with the music
         if (objects[i][18]) this.link[i] = objects[i][18];   // its link group (GD's linked objects act as one)
@@ -352,7 +399,9 @@
       // only reachable through logic GD triggers this engine doesn't run (counters, collisions,
       // events), so they fire when the player passes them instead
       const passive = new Set(["colblock", "teleport", "persist", "touch", "ondeath", "event"]);   // never fired by passing
-      this.xTriggers = trig.filter(t => t.mode !== "spawn" && !passive.has(t.type)).sort((a, b) => a.x - b.x);
+      // (a speed portal works as soon as the player's hitbox reaches it, short of its centre)
+      for (const t of trig) t.at = t.x - (t.type === "speed" ? PORTAL_REACH : 0);
+      this.xTriggers = trig.filter(t => t.mode !== "spawn" && !passive.has(t.type)).sort((a, b) => a.at - b.at);
       this.colBlocks = trig.filter(t => t.type === "colblock");
       this.groupTriggers = new Map();
       for (const t of trig) for (const g of t.groups) {
@@ -427,6 +476,35 @@
       this.uCam = gl.getUniformLocation(prog, "cam");
       this.uTex = gl.getUniformLocation(prog, "tex");
       this.uAdd = gl.getUniformLocation(prog, "add");
+      // the radial blur pass: the scene goes to a texture first while a blur runs
+      const bp = this.blurProg = gl.createProgram();
+      gl.attachShader(bp, compile(gl, gl.VERTEX_SHADER, BLUR_VS));
+      gl.attachShader(bp, compile(gl, gl.FRAGMENT_SHADER, BLUR_FS));
+      gl.linkProgram(bp);
+      if (!gl.getProgramParameter(bp, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(bp));
+      this.blurVao = gl.createVertexArray();
+      this.uBlur = ["scene", "center", "value", "fade", "gray", "grayLum", "grayTint", "sepia", "inv", "ccC", "ccB"]
+        .reduce((o, k) => (o[k] = gl.getUniformLocation(bp, k), o), {});
+      this.target = null;   // {fb, tex, w, h}, made when first needed
+    }
+
+    // the offscreen picture the blur reads, the canvas's size
+    sceneTarget(W, H) {
+      const gl = this.gl;
+      if (this.target && this.target.w === W && this.target.h === H) return this.target;
+      if (this.target) { gl.deleteFramebuffer(this.target.fb); gl.deleteTexture(this.target.tex); }
+      const tex = gl.createTexture();
+      gl.bindTexture(gl.TEXTURE_2D, tex);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, W, H, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      const fb = gl.createFramebuffer();
+      gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      return (this.target = { fb, tex, w: W, h: H });
     }
 
     // ---------------------------------------------------------------- simulation state
@@ -453,6 +531,11 @@
       this.pulses = [];
       this.cam = { x: 0, y: 105, zoom: 1, static: null, offX: 0, offY: 0 };
       this.shake = null;   // the running shake: see shakeOffset()
+      // GD's shader layer state (its GJShaderState): radial blur size and fade, grayscale, sepia,
+      // invert (amount, per channel rgb, clamped), edit colour (rgb * c + b)
+      this.shader = { size: 0, fade: 1, gray: 0, grayLum: 0, sepia: 0, inv: 0, invR: 1, invG: 1, invB: 1, invClamp: 0,
+                      cR: 1, cG: 1, cB: 1, bR: 0, bG: 0, bB: 0,
+                      top: 8 };   // the highest z layer the effects cover (higher ones are drawn on top)
       this.shakeRnd = makeRandom(7);
       this.fired = new Set();
       this.items = new Map();   // item id -> value
@@ -661,6 +744,28 @@
           break;
         case "offset": this.actions.push({ kind: "offset", t0: now, dur: t.dur || 0, ease: t.ease, rate: t.rate,
                                            fx: this.cam.offX, fy: this.cam.offY, dx: t.dx || 0, dy: t.dy || 0 }); break;
+        case "shaderlayers": {   // GD's layer scale: 3..7 = B5..B1, 8 = the player's, 9..12 = T1..T4, 13+ = all
+          const v = t.max | 0;   // (a minimum above the bottom layer isn't supported: Nullscapes doesn't use one)
+          this.shader.top = v >= 13 ? 8 : v >= 9 ? v - 4 : v >= 3 ? Math.min(v, 7) - 3 : v === 0 ? 4 : -1;
+          break;
+        }
+        case "radialblur": case "grayscale": case "sepia": case "invert": case "editcolor": {
+          // shader triggers ease their effect's settings from where they are (a new one of a kind
+          // replaces a running one); switches take effect at once
+          const sh = this.shader, to = {};
+          if (t.type === "radialblur") { to.size = t.size || 0; sh.fade = t.fade ?? 1; }
+          else if (t.type === "grayscale") { to.gray = t.value || 0; sh.grayLum = t.useLum ? 1 : 0; }
+          else if (t.type === "sepia") to.sepia = t.value || 0;
+          else if (t.type === "invert") {
+            to.inv = t.value || 0; sh.invClamp = t.clamp ? 1 : 0;
+            if (t.editRGB) { to.invR = t.r || 0; to.invG = t.g || 0; to.invB = t.b || 0; }
+          } else Object.assign(to, { cR: t.cr ?? 1, cG: t.cg ?? 1, cB: t.cb ?? 1, bR: t.br || 0, bG: t.bg || 0, bB: t.bb || 0 });
+          this.actions = this.actions.filter(a => !(a.kind === "shader" && a.of === t.type));
+          const from = {};
+          for (const k in to) from[k] = sh[k];
+          this.actions.push({ kind: "shader", of: t.type, t0: now, dur: t.dur || 0, ease: t.ease, rate: t.rate, from, to });
+          break;
+        }
         case "shake": {   // a new shake replaces the running one, starting from where the camera is now
           const from = this.shakeOffset();
           const every = Math.max(t.interval || 0, 1 / 60);
@@ -699,7 +804,7 @@
       // the camera says, a fixed distance ahead of its left edge; otherwise it runs at its speed
       this.playerX = tracked !== null && tracked !== false ? Math.max(prevX, tracked) : this.playerX + SPEED_UNITS[this.speed] * dt;
       // x-activated triggers the player passed
-      while (this.nextX < this.xTriggers.length && this.xTriggers[this.nextX].x <= this.playerX) {
+      while (this.nextX < this.xTriggers.length && this.xTriggers[this.nextX].at <= this.playerX) {
         const t = this.xTriggers[this.nextX++];
         if (t.mode !== "touch" || this.touchable(t)) this.fire(t);
       }
@@ -757,6 +862,11 @@
           }
           case "zoom": this.cam.zoom = a.from + (a.to - a.from) * ease(a.ease, a.rate, u); return u < 1;
           case "offset": { const e = ease(a.ease, a.rate, u); this.cam.offX = a.fx + a.dx * e; this.cam.offY = a.fy + a.dy * e; return u < 1; }
+          case "shader": {
+            const e = ease(a.ease, a.rate, u);
+            for (const k in a.to) this.shader[k] = a.from[k] + (a.to[k] - a.from[k]) * e;
+            return u < 1;
+          }
         }
         return false;
       });
@@ -932,12 +1042,18 @@
       for (const ch of chanPulses.keys()) shown(ch);
       const groupPulses = this.pulses.filter(p => p.group);
       const bg = chanNow.get(1000) || [0.16, 0.49, 1];
+      // GD's shader layer: while any effect is on, the scene goes to a texture and through it
+      const sh = this.shader;
+      const editColor = sh.cR !== 1 || sh.cG !== 1 || sh.cB !== 1 || sh.bR !== 0 || sh.bG !== 0 || sh.bB !== 0;
+      const post = !this.noShaders && (Math.abs(sh.size) > 1e-4 || sh.gray > 0 || sh.sepia > 0 || sh.inv > 0 || editColor);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, post ? this.sceneTarget(W, H).fb : null);
       gl.viewport(0, 0, W, H);
       gl.clearColor(bg[0], bg[1], bg[2], 1);
       gl.clear(gl.COLOR_BUFFER_BIT);
       // gather visible objects in draw order
       let m = 0;
       const runs = [];   // [start, count, sheet, additive]
+      let aboveFrom = false;
       const margin = 200;
       const near = this.nearby(cx - hw - margin, cx + hw + margin);
       for (let q = 0; q < near.length; q++) {
@@ -953,6 +1069,8 @@
         let a = this.objAlpha[i];
         for (let k = 0; k < groups.length; k++) { const ga = this.groupAlpha.get(groups[k]); if (ga !== undefined) a *= ga; }
         if (a <= 0.003) continue;
+        // z layers above the shader's range come after its picture (a null in runs marks where)
+        if (post && !aboveFrom && this.zLayer[i] > sh.top) { aboveFrom = true; runs.push(null); }
         if (sys) { m = this.drawParticles(i, sys, x, y, rot, a, m, runs); continue; }
         const ch = this.channel[i];
         const c = chanNow.get(ch) || chanNow.get(1004) || [1, 1, 1, 1, 0];
@@ -992,21 +1110,48 @@
       const up = (attr, arr, size) => { gl.bindBuffer(gl.ARRAY_BUFFER, attr.buf); gl.bufferData(gl.ARRAY_BUFFER, arr.subarray(0, m * size), gl.DYNAMIC_DRAW); };
       up(this.aPos, this.fPos, 4); up(this.aSize, this.fSize, 4); up(this.aUV, this.fUV, 4);
       up(this.aColor, this.fColor, 4); up(this.aRotated, this.fRotated, 1); up(this.aAffine, this.fAffine, 4);
-      gl.uniform4f(this.uCam, cx, cy, hw, hh);
-      gl.uniform1i(this.uTex, 0);
-      gl.enable(gl.BLEND);
       gl.activeTexture(gl.TEXTURE0);
-      for (const [start, count, sheet, additive] of runs) {
-        gl.blendFunc(gl.ONE, additive ? gl.ONE : gl.ONE_MINUS_SRC_ALPHA);
-        gl.uniform1f(this.uAdd, additive ? 1 : 0);
-        gl.bindTexture(gl.TEXTURE_2D, this.textures[sheet].t);
-        for (const attr of [this.aPos, this.aSize, this.aUV, this.aColor, this.aAffine]) {
-          gl.bindBuffer(gl.ARRAY_BUFFER, attr.buf);
-          gl.vertexAttribPointer(attr.l, 4, gl.FLOAT, false, 0, start * 16);
+      const drawRuns = list => {
+        gl.useProgram(this.prog);
+        gl.bindVertexArray(this.vao);
+        gl.uniform4f(this.uCam, cx, cy, hw, hh);
+        gl.uniform1i(this.uTex, 0);
+        gl.enable(gl.BLEND);
+        for (const [start, count, sheet, additive] of list) {
+          gl.blendFunc(gl.ONE, additive ? gl.ONE : gl.ONE_MINUS_SRC_ALPHA);
+          gl.uniform1f(this.uAdd, additive ? 1 : 0);
+          gl.bindTexture(gl.TEXTURE_2D, this.textures[sheet].t);
+          for (const attr of [this.aPos, this.aSize, this.aUV, this.aColor, this.aAffine]) {
+            gl.bindBuffer(gl.ARRAY_BUFFER, attr.buf);
+            gl.vertexAttribPointer(attr.l, 4, gl.FLOAT, false, 0, start * 16);
+          }
+          gl.bindBuffer(gl.ARRAY_BUFFER, this.aRotated.buf);
+          gl.vertexAttribPointer(this.aRotated.l, 1, gl.FLOAT, false, 0, start * 4);
+          gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, count);
         }
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.aRotated.buf);
-        gl.vertexAttribPointer(this.aRotated.l, 1, gl.FLOAT, false, 0, start * 4);
-        gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, count);
+      };
+      const cut = runs.indexOf(null);
+      drawRuns(cut < 0 ? runs : runs.slice(0, cut));
+      if (post) {   // the finished picture through GD's shader effects, onto the canvas
+        const u = this.uBlur, clamp = v => sh.invClamp ? Math.min(v, 1) : v;
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        gl.disable(gl.BLEND);
+        gl.useProgram(this.blurProg);
+        gl.bindVertexArray(this.blurVao);
+        gl.bindTexture(gl.TEXTURE_2D, this.target.tex);
+        gl.uniform1i(u.scene, 0);
+        gl.uniform2f(u.center, 0.5, 0.5);   // the screen's middle (no target group or offset here)
+        gl.uniform1f(u.value, Math.abs(sh.size) > 1e-4 ? sh.size * 0.2 / 9 : 0);
+        gl.uniform1f(u.fade, Math.min(Math.max(sh.fade * 0.2, 0), 0.2));
+        gl.uniform1f(u.gray, sh.gray);
+        gl.uniform1i(u.grayLum, sh.grayLum);
+        gl.uniform3f(u.grayTint, 1, 1, 1);
+        gl.uniform1f(u.sepia, sh.sepia);
+        gl.uniform4f(u.inv, clamp(sh.inv * sh.invR), clamp(sh.inv * sh.invG), clamp(sh.inv * sh.invB), sh.inv);
+        if (editColor) { gl.uniform3f(u.ccC, Math.max(sh.cR, 1e-4), sh.cG, sh.cB); gl.uniform3f(u.ccB, sh.bR, sh.bG, sh.bB); }
+        else gl.uniform3f(u.ccC, 0, 0, 0);
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+        if (cut >= 0) drawRuns(runs.slice(cut + 1));   // the layers above the effects, as they are
       }
       this.drawn = m;
     }
