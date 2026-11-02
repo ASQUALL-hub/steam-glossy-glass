@@ -566,9 +566,9 @@
     }
 
     // ---------------------------------------------------------------- triggers
-    fire(t) {
+    fire(t, at = this.t) {   // at: when it fires (a spawn's exact due time, inside the current step)
       if (!this.groupEnabled(t.groups)) return;
-      const now = this.t, nActions = this.actions.length, nPulses = this.pulses.length;
+      const now = at, nActions = this.actions.length, nPulses = this.pulses.length;
       this.srcGroups = t.groups;
       this.fireKind(t, now);
       for (let k = nActions; k < this.actions.length; k++) this.actions[k].src = t.groups;
@@ -704,16 +704,21 @@
         if (t.mode !== "touch" || this.touchable(t)) this.fire(t);
       }
       // spawn activations that are due
+      // (in time order, each at its own due time, and calls those make with no delay run in this
+      // same step: a spawn loop keeps GD's period instead of losing a step every lap)
       if (this.queue.length) {
-        const due = this.queue.filter(q => q[0] <= this.t);
-        this.queue = this.queue.filter(q => q[0] > this.t);
         if (this.queued.size > 50000) this.queued.clear();
         const firedNow = new Set();   // each trigger fires once per step, however many calls reach it
-        for (const [, g] of due) for (const t of this.groupTriggers.get(g) || []) {
-          // a call only runs the group's spawn-triggered triggers: ones the player sets off by
-          // passing them (often a loop's kick-off) don't fire again
-          if (t.mode !== "spawn") continue;
-          if (!firedNow.has(t.id)) { firedNow.add(t.id); this.fire(t); }   // a spawn calls the group's spawn-triggered triggers
+        for (let round = 0; round < 16; round++) {
+          const due = this.queue.filter(q => q[0] <= this.t).sort((a, b) => a[0] - b[0]);
+          if (!due.length) break;
+          this.queue = this.queue.filter(q => q[0] > this.t);
+          for (const [at, g] of due) for (const t of this.groupTriggers.get(g) || []) {
+            // a call only runs the group's spawn-triggered triggers: ones the player sets off by
+            // passing them (often a loop's kick-off) don't fire again
+            if (t.mode !== "spawn") continue;
+            if (!firedNow.has(t.id)) { firedNow.add(t.id); this.fire(t, at); }
+          }
         }
       }
       if (this.listeners.length) this.checkCollisions();
