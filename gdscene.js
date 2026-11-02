@@ -193,8 +193,8 @@
     void main() {
       vec2 local = corner * 2.0 * size.xy + size.zw;
       float c = cos(posRot.z), s = sin(posRot.z);
-      vec2 world = posRot.w > 1.5 ? posRot.xy + mat2(affine.xy, affine.zw) * corner
-                                  : posRot.xy + vec2(local.x * c + local.y * s, -local.x * s + local.y * c);
+      if (posRot.w > 1.5) local = mat2(affine.xy, affine.zw) * corner;   // a free shape (its turn comes on top)
+      vec2 world = posRot.xy + vec2(local.x * c + local.y * s, -local.x * s + local.y * c);
       gl_Position = vec4((world - cam.xy) / cam.zw, 0.0, 1.0);
       vec2 t = corner + 0.5;          // 0..1 across the sprite, y up
       vec2 st = rotated > 0.5 ? t.yx : vec2(t.x, 1.0 - t.y);   // cocos2d: a rotated frame's bottom-left is its sheet rect's top-left
@@ -310,6 +310,7 @@
       // how fast the object spins by itself (GD's rotating objects, degrees per second, clockwise)
       this.partX = new Float32Array(n); this.partY = new Float32Array(n); this.spin = new Float32Array(n);
       this.audio = new Map();   // object index -> [min, max]: GD's music-pulsing objects (data.pulse drives them)
+      this.link = new Int32Array(n);   // link group (key 108), 0 for none
       for (const i of this.data.highDetail || []) this.highDetail[i] = 1;
       for (let i = 0; i < n; i++) {
         if (objects[i][12]) this.emitters.set(i, objects[i][12]);
@@ -339,6 +340,7 @@
         if (objects[i][14]) this.addAlways[i] = 1;
         if (objects[i][15]) [this.partX[i], this.partY[i], this.spin[i]] = objects[i][15];
         if (objects[i][17]) this.audio.set(i, objects[i][17]);   // [min, max] scale with the music
+        if (objects[i][18]) this.link[i] = objects[i][18];   // its link group (GD's linked objects act as one)
         for (const g of groups) {
           if (!this.groupObjects.has(g)) this.groupObjects.set(g, []);
           this.groupObjects.get(g).push(i);
@@ -356,6 +358,18 @@
       for (const t of trig) for (const g of t.groups) {
         if (!this.groupTriggers.has(g)) this.groupTriggers.set(g, []);
         this.groupTriggers.get(g).push(t);
+      }
+      // the centre of each link group: what its objects turn about together
+      const sums = new Map();
+      for (let i = 0; i < n; i++) {
+        if (!this.link[i]) continue;
+        const s = sums.get(this.link[i]) || sums.set(this.link[i], [0, 0, 0]).get(this.link[i]);
+        s[0] += this.baseX[i] - this.partX[i]; s[1] += this.baseY[i] - this.partY[i]; s[2]++;
+      }
+      this.linkX = new Float32Array(n); this.linkY = new Float32Array(n);   // each sprite's offset from its link's centre
+      for (let i = 0; i < n; i++) {
+        const s = this.link[i] && sums.get(this.link[i]);
+        if (s) { this.linkX[i] = this.baseX[i] - s[0] / s[2]; this.linkY[i] = this.baseY[i] - s[1] / s[2]; }
       }
       // a coarse spatial index for culling: objects that never move (no group a move or rotate
       // trigger targets, no spin, no particles) sit in columns of CELL units by x; the rest are
@@ -478,7 +492,9 @@
       // turning in place (its own spin, and rotate triggers that turn each object about itself):
       // a piece of an object swings round the object's centre with it
       let own = this.spin[i] ? this.spin[i] * Math.max(0, this.t - this.spinFrom(i)) : 0;
-      for (let k = 0; k < groups.length; k++) { const r = this.groupRot.get(groups[k]); if (r && r.angle && r.self) own += r.angle; }
+      let selfA = 0;
+      for (let k = 0; k < groups.length; k++) { const r = this.groupRot.get(groups[k]); if (r && r.angle && r.self) selfA += r.angle; }
+      own += selfA;
       const k = this.audio.size ? this.audioScale(i) : 1;   // music scaling swells the whole object about its centre
       if (own || k !== 1) {
         const a = own * Math.PI / 180, ox = this.partX[i], oy = this.partY[i];
