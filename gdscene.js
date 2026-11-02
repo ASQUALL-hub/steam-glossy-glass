@@ -19,6 +19,8 @@
   const KA4_TO_SPEED = [1, 0, 2, 3, 4];   // kA4: 0 = 1x, 1 = 0.5x, 2 = 2x, 3 = 3x, 4 = 4x
   const VIEW_H = 320;   // GD shows 320 units of height at zoom 1
   const GROUND_Y = 90;  // GD's node space puts y = 0 of the level file this far up
+  const SPIN_WAKE = 60;   // how far past the right edge of the screen a rotating object starts turning
+  const CELL = 400;   // width of the culling index's columns (level units)
   const SHAKE_SCALE = 0.5;    // units of offset per unit of shake strength (matched to the recording)
   const SHAKE_SETTLE = 0.12;  // seconds a shake takes to ease back to rest
 
@@ -204,6 +206,7 @@
     precision mediump float;
     in vec2 vUV; in vec4 vColor; in float vSolid;
     uniform sampler2D tex;
+    uniform float add;              // 1 while drawing additive (blending) sprites
     out vec4 frag;
     void main() {
       vec4 t = texture(tex, vUV);
@@ -213,6 +216,9 @@
       } else {
         frag = vec4(t.rgb * vColor.rgb, t.a) * vColor.a;   // premultiplied
       }
+      // GD adds light with (SRC_ALPHA, ONE) on sheets that are already premultiplied, so a
+      // soft glow's colour is scaled by its alpha twice: blended (ONE, ONE), do the same here
+      if (add > 0.5) frag.rgb *= frag.a;
     }`;
 
   function compile(gl, type, src) {
@@ -296,8 +302,14 @@
       this.staticSolid = new Float32Array(n);   // 1 for flat shapes that tile (the frame's 9th entry), 2 for free shapes
       this.staticAffine = new Float32Array(n * 4);
       this.groupObjects = new Map();
+      this.anims = new Map();   // object index -> its animation frames (GD's animated objects: fire, drops, smoke...)
       this.emitters = new Map();   // object index -> particle settings, for custom particle objects
       this.highDetail = new Uint8Array(n);   // objects marked high detail (left out when lowDetail is set)
+      this.addAlways = new Uint8Array(n);   // sprites that always add light (GD's glow), whatever their channel
+      // a sprite that is one piece of a bigger object: its offset from the object's centre, and
+      // how fast the object spins by itself (GD's rotating objects, degrees per second, clockwise)
+      this.partX = new Float32Array(n); this.partY = new Float32Array(n); this.spin = new Float32Array(n);
+      this.audio = new Map();   // object index -> [min, max]: GD's music-pulsing objects (data.pulse drives them)
       for (const i of this.data.highDetail || []) this.highDetail[i] = 1;
       for (let i = 0; i < n; i++) {
         if (objects[i][12]) this.emitters.set(i, objects[i][12]);
@@ -307,13 +319,26 @@
         const tex = this.textures[sh];
         this.baseX[i] = x; this.baseY[i] = y; this.baseRot[i] = rot * Math.PI / 180;
         this.sheet[i] = sh; this.channel[i] = ch; this.objHSV[i] = parseHSV(hsv); this.objGroups[i] = groups; this.objAlpha[i] = op;
-        const w = fw * upp, h = fh * upp;   // the sprite's size on screen (a rotated frame is fh x fw in its sheet)
-        this.staticSize.set([w / 2 * sx, h / 2 * sy, ox * upp * sx, oy * upp * sy], i * 4);
-        const tw = rotated ? fh : fw, th = rotated ? fw : fh;
-        this.staticUV.set([fx / tex.w, fy / tex.h, (fx + tw) / tex.w, (fy + th) / tex.h], i * 4);
+        const geom = (f, size, uv, at) => {   // a frame's size on screen and its place in the sheet
+          const [, fx, fy, fw, fh, rotated, ox, oy] = f;
+          const w = fw * upp, h = fh * upp;   // (a rotated frame is fh x fw in its sheet)
+          size.set([w / 2 * sx, h / 2 * sy, ox * upp * sx, oy * upp * sy], at * 4);
+          const tw = rotated ? fh : fw, th = rotated ? fw : fh;
+          uv.set([fx / tex.w, fy / tex.h, (fx + tw) / tex.w, (fy + th) / tex.h], at * 4);
+        };
+        geom(f, this.staticSize, this.staticUV, i);
         this.staticRot[i] = rotated;
+        const an = objects[i][16];
+        if (an) {   // an animated object: its frames in turn, each shown for frameTime seconds
+          const k = an.f.length, a = { n: k, t: an.t, size: new Float32Array(k * 4), uv: new Float32Array(k * 4), rot: new Uint8Array(k) };
+          an.f.forEach((name, j) => { geom(frames[name], a.size, a.uv, j); a.rot[j] = frames[name][5]; });
+          this.anims.set(i, a);
+        }
         this.staticSolid[i] = f[8] ? 1 : 0;
         if (objects[i][13]) { this.staticSolid[i] = 2; this.staticAffine.set(objects[i][13], i * 4); }   // a free-shaped backing
+        if (objects[i][14]) this.addAlways[i] = 1;
+        if (objects[i][15]) [this.partX[i], this.partY[i], this.spin[i]] = objects[i][15];
+        if (objects[i][17]) this.audio.set(i, objects[i][17]);   // [min, max] scale with the music
         for (const g of groups) {
           if (!this.groupObjects.has(g)) this.groupObjects.set(g, []);
           this.groupObjects.get(g).push(i);
@@ -332,8 +357,32 @@
         if (!this.groupTriggers.has(g)) this.groupTriggers.set(g, []);
         this.groupTriggers.get(g).push(t);
       }
-      // a coarse spatial grid for culling (cells of 600 units, over base positions; moved groups are handled separately)
-      this.cell = 600;
+      // a coarse spatial index for culling: objects that never move (no group a move or rotate
+      // trigger targets, no spin, no particles) sit in columns of CELL units by x; the rest are
+      // checked every frame
+      const movers = new Set(trig.filter(t => t.type === "move" || t.type === "rotate").map(t => t.target));
+      const cols = new Map(), dynamic = [];
+      for (let i = 0; i < n; i++) {
+        if (this.spin[i] || this.emitters.has(i) || this.objGroups[i].some(g => movers.has(g))) { dynamic.push(i); continue; }
+        const c = Math.floor(this.baseX[i] / CELL);
+        (cols.get(c) || cols.set(c, []).get(c)).push(i);
+      }
+      this.columns = new Map([...cols].map(([c, list]) => [c, Int32Array.from(list)]));
+      this.dynamic = Int32Array.from(dynamic);
+    }
+
+    // the objects worth checking for a view from x0 to x1, in draw order
+    nearby(x0, x1) {
+      const parts = [this.dynamic];
+      let total = this.dynamic.length;
+      for (let c = Math.floor(x0 / CELL); c <= Math.floor(x1 / CELL); c++) {
+        const list = this.columns.get(c);
+        if (list) { parts.push(list); total += list.length; }
+      }
+      const out = new Int32Array(total);
+      let k = 0;
+      for (const p of parts) { out.set(p, k); k += p.length; }
+      return out.sort();
     }
 
     prepareGL() {
@@ -363,6 +412,7 @@
       this.fColor = new Float32Array(cap * 4); this.fRotated = new Float32Array(cap); this.fAffine = new Float32Array(cap * 4);
       this.uCam = gl.getUniformLocation(prog, "cam");
       this.uTex = gl.getUniformLocation(prog, "tex");
+      this.uAdd = gl.getUniformLocation(prog, "add");
     }
 
     // ---------------------------------------------------------------- simulation state
@@ -384,6 +434,8 @@
         if (c[5]) this.copies.set(+ch, [c[5], parseHSV(c[6])]);
       }
       if (!this.chan.has(1004)) this.chan.set(1004, [1, 1, 1, 1, 0]);
+      this.chan.set(1010, [0, 0, 0, 1, 0]);   // GD's fixed channels: black
+      this.chan.set(1011, [1, 1, 1, 1, 0]);   // and white
       this.pulses = [];
       this.cam = { x: 0, y: 105, zoom: 1, static: null, offX: 0, offY: 0 };
       this.shake = null;   // the running shake: see shakeOffset()
@@ -423,10 +475,23 @@
         x += this.groupDX.get(g) || 0;
         y += this.groupDY.get(g) || 0;
       }
+      // turning in place (its own spin, and rotate triggers that turn each object about itself):
+      // a piece of an object swings round the object's centre with it
+      let own = this.spin[i] ? this.spin[i] * Math.max(0, this.t - this.spinFrom(i)) : 0;
+      for (let k = 0; k < groups.length; k++) { const r = this.groupRot.get(groups[k]); if (r && r.angle && r.self) own += r.angle; }
+      const k = this.audio.size ? this.audioScale(i) : 1;   // music scaling swells the whole object about its centre
+      if (own || k !== 1) {
+        const a = own * Math.PI / 180, ox = this.partX[i], oy = this.partY[i];
+        if (ox || oy) {
+          const c = Math.cos(a), s = Math.sin(a);
+          x += (ox * c + oy * s) * k - ox; y += (-ox * s + oy * c) * k - oy;
+        }
+        rot += a;
+      }
       for (let k = 0; k < groups.length; k++) {
         const r = this.groupRot.get(groups[k]);
         if (r && r.angle) {
-          if (r.self) { rot += r.angle * Math.PI / 180; continue; }   // each object turns in place
+          if (r.self) continue;   // done above
           const [px, py] = this.pivot(r.cg);
           const a = -r.angle * Math.PI / 180, dx = x - px, dy = y - py;
           x = px + dx * Math.cos(a) - dy * Math.sin(a);
@@ -613,7 +678,10 @@
     step(dt) {
       const prevX = this.playerX;
       this.t += dt;
-      this.playerX += SPEED_UNITS[this.speed] * dt;
+      const tracked = this.data.playerFromCamera && this.trackX(this.t);
+      // with a recorded camera that follows the player (data.playerFromCamera), the player is where
+      // the camera says, a fixed distance ahead of its left edge; otherwise it runs at its speed
+      this.playerX = tracked !== null && tracked !== false ? Math.max(prevX, tracked) : this.playerX + SPEED_UNITS[this.speed] * dt;
       // x-activated triggers the player passed
       while (this.nextX < this.xTriggers.length && this.xTriggers[this.nextX].x <= this.playerX) {
         const t = this.xTriggers[this.nextX++];
@@ -694,6 +762,51 @@
     // the camera from the recorded track at the current time. GD's camera position is the
     // bottom-left of the zoomed view (320/zoom units tall; wider screens see more), in GD's
     // node space, where y sits 90 units above the level file's y (the ground's height).
+    // the music pulse now (0..1), and how much an object that scales with it is scaled
+    pulseNow() {
+      const p = this.data.pulse;
+      if (!p || !p.values.length) return 0.5;
+      const f = this.t * p.rate, k = Math.floor(f), u = f - k, v = p.values;
+      if (k >= v.length - 1) return v[v.length - 1];
+      return v[Math.max(0, k)] * (1 - u) + v[Math.max(0, k + 1)] * u;
+    }
+    audioScale(i) {
+      const r = this.audio.get(i);
+      if (!r || !this.data.pulse) return 1;   // no recorded pulse: leave it its own size
+      if (this.pulseAt !== this.t) { this.pulseAt = this.t; this.pulseVal = this.pulseNow(); }
+      return r[0] + (r[1] - r[0]) * this.pulseVal;
+    }
+
+    // GD only turns a rotating object while it is near the screen, so its angle counts from when
+    // the camera first reached it (its right edge plus a little), not from the level's start
+    spinFrom(i) {
+      if (!this.spinStart) this.spinStart = new Map();
+      let t0 = this.spinStart.get(i);
+      if (t0 === undefined) {
+        const tr = this.track, x = this.baseX[i] - this.partX[i];
+        t0 = 0;
+        if (tr && tr.length) {
+          let lo = 0, hi = tr.length - 1;
+          const reach = k => tr[k][2] + VIEW_H * 16 / 9 / (tr[k][1] || 1) + SPIN_WAKE;
+          if (reach(0) < x) {
+            while (hi - lo > 1) { const mid = (lo + hi) >> 1; if (reach(mid) < x) lo = mid; else hi = mid; }
+            t0 = tr[hi][0];
+          }
+        }
+        this.spinStart.set(i, t0);
+      }
+      return t0;
+    }
+
+    trackX(t) {   // where the player is by the recorded camera (its x at level start sets the distance)
+      const tr = this.track;
+      if (!tr || !tr.length) return null;
+      let lo = 0, hi = tr.length - 1;
+      while (hi - lo > 1) { const mid = (lo + hi) >> 1; if (tr[mid][0] <= t) lo = mid; else hi = mid; }
+      const a = tr[lo], b = tr[hi], u = b[0] > a[0] ? Math.min(1, Math.max(0, (t - a[0]) / (b[0] - a[0]))) : 0;
+      return a[2] + (b[2] - a[2]) * u + (this.startX || 0) - tr[0][2];
+    }
+
     trackView(aspect) {
       const tr = this.track;
       if (!tr || !tr.length) return null;
@@ -777,14 +890,25 @@
       let cx = view.x + (this.camOff ? this.camOff[0] : 0), cy = view.y + (this.camOff ? this.camOff[1] : 0);
       if (!this.view) { const [sx, sy] = this.shakeOffset(); cx += sx; cy += sy; }
       const hh = VIEW_H / 2 / (view.zoom || 1), hw = hh * W / H;
-      // channel colours with channel pulses applied
-      const chanNow = new Map();
-      for (const ch of this.chan.keys()) chanNow.set(ch, this.channelColor(ch));
-      for (const p of this.pulses) {
-        if (p.group) continue;
-        const base = this.channelColor(p.target), k = this.pulseIntensity(p), pc = this.pulseColor(p, base);
-        chanNow.set(p.target, [base[0] + (pc[0] - base[0]) * k, base[1] + (pc[1] - base[1]) * k, base[2] + (pc[2] - base[2]) * k, base[3], base[4]]);
-      }
+      // channel colours with channel pulses applied. A channel that copies another follows what
+      // its source shows, pulse included (as GD: a pulse on the background lights every copy of it)
+      const chanNow = new Map(), chanPulses = new Map();
+      for (const p of this.pulses) if (!p.group) (chanPulses.get(p.target) || chanPulses.set(p.target, []).get(p.target)).push(p);
+      const shown = (ch, depth = 0) => {
+        if (chanNow.has(ch)) return chanNow.get(ch);
+        const own = this.chan.get(ch) || this.chan.get(1004) || [1, 1, 1, 1, 0];
+        const cp = depth < 4 && this.copies.get(ch);
+        let c = own;
+        if (cp) { const src = applyHSV(shown(cp[0], depth + 1), cp[1]); c = [src[0], src[1], src[2], own[3], own[4]]; }
+        for (const p of chanPulses.get(ch) || []) {
+          const k = this.pulseIntensity(p), pc = this.pulseColor(p, c);
+          c = [c[0] + (pc[0] - c[0]) * k, c[1] + (pc[1] - c[1]) * k, c[2] + (pc[2] - c[2]) * k, c[3], c[4]];
+        }
+        chanNow.set(ch, c);
+        return c;
+      };
+      for (const ch of this.chan.keys()) shown(ch);
+      for (const ch of chanPulses.keys()) shown(ch);
       const groupPulses = this.pulses.filter(p => p.group);
       const bg = chanNow.get(1000) || [0.16, 0.49, 1];
       gl.viewport(0, 0, W, H);
@@ -794,7 +918,9 @@
       let m = 0;
       const runs = [];   // [start, count, sheet, additive]
       const margin = 200;
-      for (let i = 0; i < this.n; i++) {
+      const near = this.nearby(cx - hw - margin, cx + hw + margin);
+      for (let q = 0; q < near.length; q++) {
+        const i = near[q];
         const groups = this.objGroups[i];
         if (groups.length && !this.groupEnabled(groups)) continue;
         if (this.only !== undefined && !groups.includes(this.only)) continue;   // debugging: one group alone
@@ -816,17 +942,28 @@
           col = [col[0] + (pc[0] - col[0]) * k, col[1] + (pc[1] - col[1]) * k, col[2] + (pc[2] - col[2]) * k];
         }
         if (this.mark !== undefined && groups.includes(this.mark)) col = [1, 0, 0];   // debugging: tint one group
-        const additive = c[4] ? 1 : 0, sheet = this.sheet[i];
+        const additive = c[4] || this.addAlways[i] ? 1 : 0, sheet = this.sheet[i];
         const last = runs[runs.length - 1];
         if (!last || last[2] !== sheet || last[3] !== additive) runs.push([m, 0, sheet, additive]);
         runs[runs.length - 1][1]++;
         this.fPos[m * 4] = x; this.fPos[m * 4 + 1] = y; this.fPos[m * 4 + 2] = rot; this.fPos[m * 4 + 3] = this.staticSolid[i];
         if (this.staticSolid[i] > 1.5) this.fAffine.set(this.staticAffine.subarray(i * 4, i * 4 + 4), m * 4);
-        this.fSize.set(this.staticSize.subarray(i * 4, i * 4 + 4), m * 4);
-        this.fUV.set(this.staticUV.subarray(i * 4, i * 4 + 4), m * 4);
+        const an = this.anims.size && this.anims.get(i);
+        if (an) {
+          const j = Math.floor(this.t / an.t) % an.n;
+          this.fSize.set(an.size.subarray(j * 4, j * 4 + 4), m * 4); this.fUV.set(an.uv.subarray(j * 4, j * 4 + 4), m * 4);
+        } else {
+          this.fSize.set(this.staticSize.subarray(i * 4, i * 4 + 4), m * 4);
+          this.fUV.set(this.staticUV.subarray(i * 4, i * 4 + 4), m * 4);
+        }
+        if (this.audio.size && this.audio.has(i)) {
+          const k = this.audioScale(i);
+          for (let q = 0; q < 4; q++) this.fSize[m * 4 + q] *= k;
+        }
         this.fColor[m * 4] = col[0]; this.fColor[m * 4 + 1] = col[1]; this.fColor[m * 4 + 2] = col[2];
         this.fColor[m * 4 + 3] = a * (c[3] ?? 1);
-        this.fRotated[m] = this.staticRot[i];
+        if (this.colorLog) this.colorLog.set(i, [col[0], col[1], col[2], a * (c[3] ?? 1), c[0], c[1], c[2]]);   // debugging: the colours drawn (and the channel's)
+        this.fRotated[m] = an ? an.rot[Math.floor(this.t / an.t) % an.n] : this.staticRot[i];
         m++;
       }
       gl.useProgram(this.prog);
@@ -840,6 +977,7 @@
       gl.activeTexture(gl.TEXTURE0);
       for (const [start, count, sheet, additive] of runs) {
         gl.blendFunc(gl.ONE, additive ? gl.ONE : gl.ONE_MINUS_SRC_ALPHA);
+        gl.uniform1f(this.uAdd, additive ? 1 : 0);
         gl.bindTexture(gl.TEXTURE_2D, this.textures[sheet].t);
         for (const attr of [this.aPos, this.aSize, this.aUV, this.aColor, this.aAffine]) {
           gl.bindBuffer(gl.ARRAY_BUFFER, attr.buf);
