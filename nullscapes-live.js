@@ -30,7 +30,7 @@
 
    Runs once per window; loading it again replaces the running copy. */
 (() => {
-  for (const k of ["__ggNull", "__ggAero", "__ggLiquid"]) if (window[k]) window[k].stop();
+  for (const k of ["__ggNull", "__ggNight", "__ggAero", "__ggLiquid"]) if (window[k]) window[k].stop();
   document.querySelectorAll("#gg-null").forEach(n => n.remove());
   const files = window.__ggNullFiles;
   if (!files || !files.level || !window.GDScene) return;

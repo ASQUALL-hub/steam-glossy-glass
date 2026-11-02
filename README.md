@@ -31,7 +31,7 @@ New tray icons go into the hidden **^** area on Windows 11. Pin Steam Glass unde
 - Needs Windows 11 (22H2 or newer) for the frosted blur.
 - Big Picture mode isn't themed.
 - Frutiger Aero animates, so it costs Steam some CPU (about a third of one core here) while its window is on screen. It pauses when Steam is minimized or covered.
-- There's also a personal **Nullscapes** mode (`nullscapes.css`, `nullscapes-live.js`, `gdscene.js`): a Geometry Dash level played live behind Steam, with matte, low-poly glass buttons. It needs the level's data and Geometry Dash's own sprite sheets in `%APPDATA%\SteamGlass\nullscapes\live`, made from your own copy of the game. They aren't shipped here, and without them the mode doesn't appear in the tray menu.
+- There are also two personal Geometry Dash modes, **Nullscapes** and **Eternal Night** (`nullscapes-live.js`, `eternal-night-live.js`, `gdscene.js`, `nullscapes.css`): a level played live behind Steam, with matte, low-poly glass buttons. Each needs the level's data and Geometry Dash's own sprite sheets in `%APPDATA%\SteamGlass\nullscapes\live` or `%APPDATA%\SteamGlass\eternal-night\live`, made from your own copy of the game, plus the level's song if you want music (`nullscapes-music.mp3`, `eternal-night-music.mp3` in the folder above). None of that is shipped here, and without it a mode doesn't appear in the tray menu. **Song toggle** in the tray menu turns the songs on or off.
 - Steam names most of its page parts with generated class names, which can change when Steam updates. If part of the theme stops applying after a Steam update, check for a theme update.
 - Quitting the helper (tray icon → **Quit**) puts Steam's windows back to normal.
 
