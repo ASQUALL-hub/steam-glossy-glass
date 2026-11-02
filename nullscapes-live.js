@@ -23,7 +23,10 @@
    and GD's sprite sheets are the player's own files and stay on their PC: the Steam
    Glass helper hands them in as blob URLs, window.__ggNullFiles = {level, camera,
    "sheet:<name>"...}, and window.__ggNullMusic (or null when the music is off; the
-   friends list never gets it). Without music the same clock runs silently.
+   friends list never gets it). Without music the same clock runs silently. The friends
+   list shows the same moment as the main window: the main window sends its song clock
+   over a BroadcastChannel (Steam's windows share one origin) and the friends list
+   follows it, running on its own only while the main window is away.
 
    Runs once per window; loading it again replaces the running copy. */
 (() => {
@@ -104,6 +107,19 @@
     }
     clock = t; clockAt = now;
     return t;
+  };
+  // the friends list follows the main window's clock; the main window answers when asked
+  let chan = null;
+  try { chan = new BroadcastChannel("gg-null-clock"); } catch (e) {}
+  const tell = () => {
+    if (!chan || FRIENDS || !players) return;
+    chan.postMessage({ song: songNow(performance.now()), wall: Date.now(), running: !paused });
+  };
+  if (chan) chan.onmessage = ({ data }) => {
+    if (!FRIENDS) { if (data && data.ask) tell(); return; }
+    if (!data || !data.running) return;   // the main window is hidden or paused: carry on alone
+    clock = data.song + Math.max(0, Date.now() - data.wall) / 1000;
+    clockAt = performance.now();
   };
   const restartSong = now => {
     clock = 0; clockAt = now;
@@ -202,6 +218,7 @@
     clock = 0; clockAt = performance.now();
     if (music) music.play().catch(() => {});
     if (document.hidden) onVisibility();
+    if (chan && FRIENDS) chan.postMessage({ ask: 1 });   // where is the main window now?
     raf = requestAnimationFrame(frame);
   })().catch(e => console.warn("Nullscapes:", e));
 
@@ -209,11 +226,13 @@
     if (box.parentNode !== home()) home().prepend(box);
     fit();
   }, 1000);
+  const clockTimer = setInterval(tell, 500);
 
   window.__ggNull = {
     stop() {
       stopped = true;
-      cancelAnimationFrame(raf); clearInterval(timer);
+      cancelAnimationFrame(raf); clearInterval(timer); clearInterval(clockTimer);
+      if (chan) chan.close();
       document.removeEventListener("visibilitychange", onVisibility);
       removeEventListener("pointerdown", onInput, true);
       removeEventListener("keydown", onInput, true);

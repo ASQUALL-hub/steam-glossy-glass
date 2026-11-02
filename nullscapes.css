@@ -206,3 +206,18 @@ body.ModalDialogBody::before { display: none !important; }
 ._1ENHEsrSLcTRtPQFl1F-wL::after,
 body.ModalDialogBody::after,
 body.ContextMenuPopupBody::after { opacity: 0.45; }
+
+/* the friends list: the same matte panes (tabs, section bars, rows) */
+.friendTab.socialListTab,
+.friendsListSectionTitle {
+  border-radius: 3px;
+  background: var(--gn-fill) !important;
+  box-shadow: inset 0 0 0 1px var(--gn-edge) !important;
+}
+.friendTab.socialListTab.activeTab { background: rgba(200, 214, 224, 0.2) !important; box-shadow: inset 0 0 0 1px rgba(240, 246, 250, 0.4) !important; }
+.friend { border-radius: 3px; }
+.friend:hover { background: rgba(255, 255, 255, 0.1) !important; box-shadow: inset 0 0 0 1px var(--gn-edge) !important; }
+.friendGroup.onlineFriends { border-top-color: var(--gn-edge) !important; }
+.dropTargetBox { border-color: var(--gn-edge-lit) !important; border-radius: 3px; }
+.title-area-highlight,
+.singleWindowFocusBar { background: linear-gradient(to right, transparent, rgba(240, 246, 250, 0.35), transparent) !important; }
