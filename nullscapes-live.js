@@ -10,7 +10,9 @@
    calm stretches show the mountains, the drops show the moon from its reveal (a long
    drop starts the moon over on a bar line). Every change of scene lands on a bar line
    with a one-beat cross-fade between two players, one winding up its stretch of the
-   level while the other is on screen. When the song ends, song and level start over.
+   level while the other is on screen. As the song ends the picture fades to white;
+   song and level then start over, and the white clears as the level's opening zoom
+   plays.
 
    (song time = SONG_OFFSET + SONG_RATE x level time, fitted to the level's beat
    pulses; the song's beat grid starts at GRID.)
@@ -45,6 +47,7 @@
   const SECTIONS = [[0, 40, "level"], [40, 50, MOUNTAINS], [50, 67, MOON], [67, 76, MOUNTAINS],
                     [76, 95, MOON], [95, 111, MOUNTAINS]];
   const FADE = BEAT;                              // a change of scene cross-fades over one beat
+  const WHITE_OUT = 3, WHITE_IN = 1.6;            // seconds of fade to white at the song's end, and back at its start
   const VOLUME = 0.35;
   const ASPECT = 16 / 9;                          // GD's framing; the window crops it
   const FOCUS = 0.45;                             // which part stays in view when the window is wider than 16:9 (0 top, 1 bottom)
@@ -71,6 +74,12 @@
     box.append(c);
     return c;
   });
+  const white = document.createElement("div");   // the fade to white between one play of the song and the next
+  white.style.cssText = "position:absolute;inset:0;background:#fff;opacity:0";
+  box.append(white);
+  const smooth = u => (u = Math.min(1, Math.max(0, u)), u * u * (3 - 2 * u));
+  const whiteness = song => song > SONG_LENGTH - WHITE_OUT ? smooth((song - (SONG_LENGTH - WHITE_OUT)) / WHITE_OUT)
+                          : song < WHITE_IN ? 1 - smooth(song / WHITE_IN) : 0;
   if (FRIENDS) {   // the friends list sits straight on the scene: a wash of dark glass keeps names readable
     const wash = document.createElement("div");
     wash.style.cssText = "position:absolute;inset:0;background:rgba(10,14,20,0.5)";
@@ -150,6 +159,7 @@
       wind(players[1 - cur], segNow !== seg ? segNow : (seg + 1) % schedule.length);
     }
     a.segOn = seg;
+    white.style.opacity = whiteness(song).toFixed(3);
     frames.push(performance.now() - t0);
     if (frames.length > 240) frames.shift();
   };

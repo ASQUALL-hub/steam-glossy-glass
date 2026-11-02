@@ -297,6 +297,8 @@
       this.staticAffine = new Float32Array(n * 4);
       this.groupObjects = new Map();
       this.emitters = new Map();   // object index -> particle settings, for custom particle objects
+      this.highDetail = new Uint8Array(n);   // objects marked high detail (left out when lowDetail is set)
+      for (const i of this.data.highDetail || []) this.highDetail[i] = 1;
       for (let i = 0; i < n; i++) {
         if (objects[i][12]) this.emitters.set(i, objects[i][12]);
         const [frame, x, y, rot, sx, sy, , , ch, hsv, groups, op] = objects[i];
@@ -795,6 +797,7 @@
         if (groups.length && !this.groupEnabled(groups)) continue;
         if (this.only !== undefined && !groups.includes(this.only)) continue;   // debugging: one group alone
         if (this.onlyFrame && !this.data.objects[i][0].includes(this.onlyFrame)) continue;   // debugging: one sprite
+        if (this.lowDetail && this.highDetail[i]) continue;   // GD's Low Detail Mode leaves these out
         const [x, y, rot] = this.objPos(i);
         const sys = this.systems.get(i);
         if (!sys && (x < cx - hw - margin || x > cx + hw + margin || y < cy - hh - margin || y > cy + hh + margin)) continue;
