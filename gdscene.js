@@ -548,13 +548,15 @@
                               total: (t.deg || 0) + 360 * (t.turns || 0), done: 0 });
           break;
         }
-        case "alpha": {
+        case "alpha": {   // replaces a fade still running on the same group (as GD), from wherever it got to
+          this.actions = this.actions.filter(a => !(a.kind === "alpha" && a.g === t.target));
           const from = this.groupAlpha.has(t.target) ? this.groupAlpha.get(t.target) : 1;
           this.actions.push({ kind: "alpha", t0: now, dur: t.dur || 0, g: t.target, from, to: t.opacity ?? 1 });
           break;
         }
-        case "color": {
+        case "color": {   // likewise replaces a colour change still running on the channel
           const ch = t.channel || 1;
+          this.actions = this.actions.filter(a => !(a.kind === "color" && a.ch === ch));
           const from = this.channelColor(ch).slice();
           let to = [(t.r ?? 255) / 255, (t.g ?? 255) / 255, (t.b ?? 255) / 255];
           if (t.copy) to = applyHSV(this.channelColor(t.copy), parseHSV(t.hsv));

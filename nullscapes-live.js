@@ -47,7 +47,7 @@
   const SECTIONS = [[0, 40, "level"], [40, 50, MOUNTAINS], [50, 67, MOON], [67, 76, MOUNTAINS],
                     [76, 95, MOON], [95, 111, MOUNTAINS]];
   const FADE = BEAT;                              // a change of scene cross-fades over one beat
-  const WHITE_OUT = 3, WHITE_IN = 1.6;            // seconds of fade to white at the song's end, and back at its start
+  const WHITE_OUT = 3, WHITE_IN = 0.5;            // seconds of fade to white at the song's end, and of clearing once the level starts (as GD)
   const VOLUME = 0.35;
   const ASPECT = 16 / 9;                          // GD's framing; the window crops it
   const FOCUS = 0.45;                             // which part stays in view when the window is wider than 16:9 (0 top, 1 bottom)
@@ -78,8 +78,9 @@
   white.style.cssText = "position:absolute;inset:0;background:#fff;opacity:0";
   box.append(white);
   const smooth = u => (u = Math.min(1, Math.max(0, u)), u * u * (3 - 2 * u));
+  // like GD: white until the level starts (song time SONG_OFFSET), then clear over WHITE_IN
   const whiteness = song => song > SONG_LENGTH - WHITE_OUT ? smooth((song - (SONG_LENGTH - WHITE_OUT)) / WHITE_OUT)
-                          : song < WHITE_IN ? 1 - smooth(song / WHITE_IN) : 0;
+                          : song < SONG_OFFSET + WHITE_IN ? 1 - smooth((song - SONG_OFFSET) / WHITE_IN) : 0;
   if (FRIENDS) {   // the friends list sits straight on the scene: a wash of dark glass keeps names readable
     const wash = document.createElement("div");
     wash.style.cssText = "position:absolute;inset:0;background:rgba(10,14,20,0.5)";
