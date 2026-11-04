@@ -1211,6 +1211,36 @@
       return m;
     }
 
+    // the colour the level shows most right now (Steam Glass tints its buttons with it): set wantTint
+    // and the next draw tallies the sprites it draws by hue, in twelve 30-degree bins, each weighted by
+    // its size, opacity and how vivid it is (saturation x brightness). tint is then the strongest hue's
+    // average colour (with the bins beside it) and how much of the screen that lights, or null when
+    // nothing on screen has a colour
+    tallyTint(tally, col, m) {
+      const r = col[0], g = col[1], b = col[2], mx = Math.max(r, g, b), d = mx - Math.min(r, g, b);
+      if (mx < 0.12 || d < 0.12) return;
+      let h = mx === r ? (g - b) / d : mx === g ? 2 + (b - r) / d : 4 + (r - g) / d;
+      if (h < 0) h += 6;
+      const w = Math.abs(this.fSize[m * 4] * this.fSize[m * 4 + 1]) * this.fColor[m * 4 + 3] * d * mx;
+      const k = Math.min(11, Math.floor(h * 2)) * 4;
+      tally[k] += w * r; tally[k + 1] += w * g; tally[k + 2] += w * b; tally[k + 3] += w;
+    }
+
+    finishTint(tally, hw, hh) {
+      this.wantTint = false;
+      let best = -1, score = 0;
+      for (let k = 0; k < 12; k++) {
+        const s = tally[k * 4 + 3] + 0.5 * (tally[((k + 11) % 12) * 4 + 3] + tally[((k + 1) % 12) * 4 + 3]);
+        if (s > score) { score = s; best = k; }
+      }
+      if (best < 0) { this.tint = null; return; }
+      let r = 0, g = 0, b = 0, w = 0;
+      for (const k of [(best + 11) % 12, best, (best + 1) % 12]) {
+        r += tally[k * 4]; g += tally[k * 4 + 1]; b += tally[k * 4 + 2]; w += tally[k * 4 + 3];
+      }
+      this.tint = { rgb: [r / w, g / w, b / w], cover: Math.min(1, w / (hw * hh)) };
+    }
+
     draw() {
       const gl = this.gl, canvas = this.canvas;
       const W = canvas.width, H = canvas.height;
@@ -1254,6 +1284,7 @@
       // gather visible objects in draw order
       let m = 0;
       const runs = [];   // [start, count, sheet, additive]
+      const tally = this.wantTint ? new Float64Array(48) : null;   // (tallyTint)
       let aboveFrom = false;
       const margin = 200;
       const near = this.nearby(cx - hw - margin, cx + hw + margin);
@@ -1303,9 +1334,11 @@
         this.fColor[m * 4] = col[0]; this.fColor[m * 4 + 1] = col[1]; this.fColor[m * 4 + 2] = col[2];
         this.fColor[m * 4 + 3] = a * (c[3] ?? 1);
         if (this.colorLog) this.colorLog.set(i, [col[0], col[1], col[2], a * (c[3] ?? 1), c[0], c[1], c[2]]);   // debugging: the colours drawn (and the channel's)
+        if (tally) this.tallyTint(tally, col, m);
         this.fRotated[m] = an ? an.rot[Math.floor(this.t / an.t) % an.n] : this.staticRot[i];
         m++;
       }
+      if (tally) this.finishTint(tally, hw, hh);
       gl.useProgram(this.prog);
       gl.bindVertexArray(this.vao);
       const up = (attr, arr, size) => { gl.bindBuffer(gl.ARRAY_BUFFER, attr.buf); gl.bufferData(gl.ARRAY_BUFFER, arr.subarray(0, m * size), gl.DYNAMIC_DRAW); };

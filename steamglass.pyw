@@ -23,7 +23,11 @@ in glass-mode.txt next to this file (changes apply live):
   nullscapes  the Geometry Dash level "Nullscapes Background" plays behind smoky
            glass, live, with the level player gdscene.js (nullscapes-live.js).
   eternalnight  the Geometry Dash level "Eternal Night" plays from start to end,
-           over and over, behind the same smoky glass (eternal-night-live.js).
+           over and over, behind the same smoky glass (eternal-night-live.js), and
+           Steam's buttons light up in the level's colours with its beat.
+  deprivation  AudieoVisual's "DEPRIVATION", played the same way with the newer level
+           player (gdscene-next.js). Unfinished: offered only when you exported it
+           yourself into <settings>\deprivation\live\ (the theme ships no data for it).
            Both levels ship as data only (skin\levels\): their pictures are
            Geometry Dash's own sprite sheets, taken from this PC's copy of the game
            (see built_level), and their songs are the ones GD downloaded. So they're
@@ -46,7 +50,7 @@ window back to normal without starting the helper.
 Installed builds (SteamGlass.exe, put there by SteamGlassUpdater.exe) keep
 glass-mode.txt in %APPDATA%\SteamGlass and add "Check for updates…" to the menu.
 "Start with Windows" in the menu adds or removes the helper under the Run key."""
-__version__ = "1.3.3"
+__version__ = "1.4.0"
 
 import base64
 import ctypes
@@ -88,7 +92,7 @@ DWMSBT_AUTO, DWMSBT_NONE, DWMSBT_TRANSIENTWINDOW = 0, 1, 3   # transient window 
 DWM_BB_ENABLE, DWM_BB_BLURREGION = 1, 2
 GWL_STYLE = -16
 WS_SYSMENU, WS_CAPTION = 0x00080000, 0x00C00000
-SWP_REFRESH = 0x0001 | 0x0002 | 0x0004 | 0x0020   # NOSIZE|NOMOVE|NOZORDER|FRAMECHANGED
+SWP_REFRESH = 0x0001 | 0x0002 | 0x0004 | 0x0010 | 0x0020   # NOSIZE|NOMOVE|NOZORDER|NOACTIVATE|FRAMECHANGED: redraw the frame, never raise Steam
 PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
 SKIP_TITLES = {"Steam Big Picture Mode"}   # the theme does not style Big Picture
 SQUIRCLE_N = 4.0   # DiscTray's corner superellipse exponent
@@ -114,7 +118,8 @@ NULL_VIDEOS = ("mountains", "moon")
 # level.json.gz, camera.json) put together with this PC's Geometry Dash in <settings>\built\<folder>\.
 # Its song is <settings>\<folder>\<song file>, or the copy GD downloaded (%LOCALAPPDATA%\GeometryDash\<id>.mp3).
 LEVELS = {"nullscapes": ("nullscapes", "nullscapes-music.mp3", "1132447"),
-          "eternalnight": ("eternal-night", "eternal-night-music.mp3", "153668")}
+          "eternalnight": ("eternal-night", "eternal-night-music.mp3", "153668"),
+          "deprivation": ("deprivation", "deprivation-music.mp3", "1273903")}
 LEVEL_MODES = tuple(LEVELS)
 LEVEL_DATA = os.path.join(THEME_DIR, "levels")
 BUILT_DIR = os.path.join(SETTINGS_DIR, "built")
@@ -167,8 +172,8 @@ user32.SetWindowLongW.restype = ctypes.c_long
 
 
 MODES = {"frosted": "Frosted", "clear": "Clear", "liquid": "Liquid", "aero": "Frutiger Aero", "nullscapes": "Nullscapes",
-         "eternalnight": "Eternal Night", "off": "Off (Steam's normal look)"}
-FROSTED_LIKE = ("frosted", "liquid", "aero", "nullscapes", "eternalnight")   # glass kinds Windows draws as frosted
+         "eternalnight": "Eternal Night", "deprivation": "Deprivation (unfinished)", "off": "Off (Steam's normal look)"}
+FROSTED_LIKE = ("frosted", "liquid", "aero", "nullscapes", "eternalnight", "deprivation")   # glass kinds Windows draws as frosted
 
 
 _sheets_of = {}   # level.json path -> (its mtime, its sheet names): the files are big, so each is read once
@@ -365,7 +370,7 @@ def set_sysmenu(hwnd, on: bool):
     new = style | WS_SYSMENU if on else style & ~WS_SYSMENU
     if new != style:
         user32.SetWindowLongW(hwnd, GWL_STYLE, new)
-        user32.SetWindowPos(hwnd, None, 0, 0, 0, 0, SWP_REFRESH)
+        user32.SetWindowPos(hwnd, None, 0, 0, 0, 0, SWP_REFRESH)   # (never activates it: see SWP_REFRESH)
 
 
 def has_region(hwnd) -> bool:
@@ -503,7 +508,8 @@ def tray_icon(mode: str, sizes=(16, 20, 24, 32, 48, 64)):
     """A little glossy glass squircle: deep blue when frosted, clear with a blue
     rim when clear, Liquid's teal sky with a wave of water when liquid, a
     sunny sky over a green hill when aero, the moon over spiky grass for
-    Nullscapes, a crescent moon and stars for Eternal Night, grey when off."""
+    Nullscapes, a crescent moon and stars for Eternal Night, a row of fangs in crimson
+    for Deprivation, grey when off."""
     from PySide6.QtCore import QPointF, QRectF, Qt
     from PySide6.QtGui import QColor, QIcon, QLinearGradient, QPainter, QPainterPath, QPen, QPixmap, QRadialGradient
 
@@ -531,6 +537,9 @@ def tray_icon(mode: str, sizes=(16, 20, 24, 32, 48, 64)):
         elif mode == "eternalnight":   # a deeper, violet night
             for at, rgba in ((0.0, (46, 28, 78, 255)), (1.0, (10, 8, 24, 255))):
                 fill.setColorAt(at, QColor(*rgba))
+        elif mode == "deprivation":   # the level's crimson dark
+            for at, rgba in ((0.0, (150, 10, 40, 255)), (1.0, (24, 2, 8, 255))):
+                fill.setColorAt(at, QColor(*rgba))
         elif mode == "aero":   # Aero's sky, deep blue overhead and pale at the horizon
             for at, rgba in ((0.0, (11, 95, 207, 255)), (0.6, (110, 190, 250, 255)), (1.0, (200, 235, 255, 255))):
                 fill.setColorAt(at, QColor(*rgba))
@@ -556,6 +565,18 @@ def tray_icon(mode: str, sizes=(16, 20, 24, 32, 48, 64)):
             grass.lineTo(px, px)
             grass.closeSubpath()
             p.fillPath(grass, QColor(14, 20, 28))
+            p.restore()
+        elif mode == "deprivation":   # the level's grinning mouths: a row of white fangs
+            p.save()
+            p.setClipPath(body)
+            p.setPen(Qt.NoPen)
+            teeth = QPainterPath()
+            teeth.moveTo(px * 0.12, px * 0.36)
+            for k in range(5):
+                teeth.lineTo(px * (0.12 + 0.152 * k + 0.076), px * 0.66)
+                teeth.lineTo(px * (0.12 + 0.152 * (k + 1)), px * 0.36)
+            teeth.closeSubpath()
+            p.fillPath(teeth, QColor(250, 246, 240))
             p.restore()
         elif mode == "eternalnight":   # a crescent moon and a few stars
             p.save()
@@ -773,7 +794,7 @@ class Theme:
         if mode in LEVEL_MODES and not files:
             mode = "frosted"   # the level can't be put together here: plain glass instead
         extra = {"clear": "glass-clear.css", "liquid": "liquid.css", "aero": "aero.css", "nullscapes": "nullscapes.css",
-                 "eternalnight": "nullscapes.css"}.get(mode)   # both GD levels wear the matte low-poly look
+                 "eternalnight": "nullscapes.css", "deprivation": "nullscapes.css"}.get(mode)   # the GD levels wear the matte low-poly look
         extra = read(extra) if extra else ""
         lib, friends = read("libraryroot.custom.css") + extra, read("friends.custom.css") + extra
         live = mode == "nullscapes" and files[0][0] == "level"   # or else the recordings
@@ -781,6 +802,8 @@ class Theme:
             js = read("gdscene.js") + "\n" + read("nullscapes-live.js")
         elif mode == "eternalnight":
             js = read("gdscene.js") + "\n" + read("eternal-night-live.js")
+        elif mode == "deprivation":   # a 2.2 level: the newer player (Nullscapes and Eternal Night keep theirs)
+            js = read("gdscene-next.js") + "\n" + read("eternal-night-live.js")
         else:
             js = read(SCENE_SCRIPTS[mode]) if mode in SCENE_SCRIPTS else ""
         if mode == "aero":
@@ -793,7 +816,8 @@ class Theme:
                 js = (f"window.__ggNullVideos = window.__ggNullFiles = window.__ggNullBlobs || null;\n"
                       f"window.__ggNullMusic = {music};\n" + js)
             else:
-                js = f"window.__ggNightFiles = window.__ggNullBlobs || null;\nwindow.__ggNightMusic = {music};\n" + js
+                js = (f"window.__ggNightFiles = window.__ggNullBlobs || null;\nwindow.__ggNightMusic = {music};\n"
+                      f"window.__ggTint = {json.dumps(mode == 'eternalnight')};\n" + js)   # its buttons in the level's colours
             js += "".join(f"/* {n} {os.path.getmtime(path)} */" for n, path, _ in files)
         key = hashlib.sha1((lib + friends + js).encode()).hexdigest()[:16]
         return lib, friends, js, key

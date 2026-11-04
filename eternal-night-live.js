@@ -1,7 +1,8 @@
 /* Glossy Glass for Steam: the "Eternal Night" glass, played live.
 
-   Runs the Geometry Dash level "Eternal Night" behind the window with the level player in
-   gdscene.js (loaded just before this script), from start to end along the camera path
+   Runs the Geometry Dash level "Eternal Night" (or any level it's handed: Deprivation uses it
+   too) behind the window with the level player in gdscene.js (loaded just before this
+   script), from start to end along the camera path
    recorded from the game, and then from the top again. The song (Rose At Nightfall) is
    the clock: the level starts at the song's offset (level.json "song": offset in seconds,
    fadeIn/fadeOut as the level sets them); once the camera stops, the picture fades to
@@ -15,6 +16,12 @@
    off; the friends list never gets it). Without music the same clock runs silently. The
    friends list shows the same moment as the main window, which sends its clock over a
    BroadcastChannel (as Nullscapes does).
+
+   With window.__ggTint (Eternal Night), Steam's buttons take the level's colour: the colour
+   the level shows most on screen right now (the player's tint, see tallyTint in gdscene.js)
+   tints their glass and edge, red when the level is red, violet when it's violet, and they
+   light up with the song's beat (the level's recorded music pulse). It's set on the buttons
+   on screen themselves, 30 times a second (see "the buttons' colours" below for why).
 
    Runs once per window; loading it again replaces the running copy. */
 (() => {
@@ -33,6 +40,8 @@
   const MAX_FPS = FRIENDS ? 30 : 144;   // the friends list is small and mostly text
   const RES = FRIENDS ? 0.6 : 1;        // render scale (1 = the window's own pixels)
   const WIND = 1;               // level seconds simulated per frame when the picture has to catch up
+  const TINT = !!window.__ggTint;   // Steam's buttons in the level's colours (see above)
+  const TINT_HZ = 30;           // how often the buttons' colours are worked out and restyled
 
   const box = document.createElement("div");
   box.id = "gg-night";
@@ -50,6 +59,82 @@
   }
   const home = () => document.querySelector("._1ENHEsrSLcTRtPQFl1F-wL") || document.body;
   home().prepend(box);
+
+  // the buttons' colours, set on the buttons themselves (inline), so only they restyle: changing a
+  // stylesheet makes Steam's browser go through all of Steam's CSS again (~15 ms each time), and
+  // colours handed down as CSS variables would restyle everything inside the buttons as well. Only
+  // the buttons on screen are restyled (an IntersectionObserver keeps that list). Inline !important
+  // also beats nullscapes.css's hover rules, so the lit look on hover or keyboard focus is set here
+  // too, and the buttons' own 0.2 s fades are off: restyled 30 times a second, a fade would smear
+  // every beat into the next.
+  const SMALL = "._2Szzh5sKyGgnLUR870zbDE,._3yD46y5pd3zOGR7CzKs0mC,._5wILZhsLODVwGfcJ0hKmJ,a._3pSPluBgf0NeR1kkCLWMhR," +
+    "._2PF_m-I5yte3WnQhpcz8RC,._20QAC4WMXm8qFE8waUT5oo,a._30KGSfPjPskFlnrSxBfkiK,.uE7Pj4tb2n3_Bx4vjEX0a svg," +
+    "._3_xMyCJAh_Dv99KgZ54P3j,._3qDWQGB0rtwM3qpXTb11Q-,._1b6LYWVijW-9E4YV0keDWZ,.bACIuqv-b_9TztCczFK19," +
+    "._2EnMapnWx2CwmY0kDRc6rW,._2aw5aUUo3lrK6wxJb4_ms5,._3sz4Ldugm_cV_JaHOErVR8,._3AjoLnMNKxYmNTGTJCLfgs," +
+    ".DialogDropDown,.DialogButton,.friendListButton,.addFriendButton,.friendTab.socialListTab,.friendsListSectionTitle";
+  const BARE = "._2foCkpRXhqq0UGVE50BWqj,._1TdaAqMFadi0UTqilrkelR,.ip-YZhijAMZcuRoXBGiye";   // bottom bar: glass only on hover
+  const PALE = ".DialogButton:not(.Secondary),.friendTab.socialListTab.activeTab";   // a dialog's main choice, the open friends tab
+  const PLAY = "._3ydigb6zZAjJ0JCDgHwSYA,._2q-gZ3XJzlvSGHSF-GvSmi";   // Play / Install
+  const GREYED = "._1Pb6PMh_3L5p5NzuUz0Pp9 *,._1Pb6PMh_3L5p5NzuUz0Pp9";   // a greyed-out Play keeps its grey
+  const ALL = [SMALL, BARE, PALE, PLAY].join(","), LIT = ":hover,:focus-visible";
+  const kindOf = el => el.matches(PLAY) ? (el.matches(GREYED) ? -1 : 3) : el.matches(PALE) ? 2 : el.matches(BARE) ? 1 : 0;
+  const NEUTRAL = [0.8, 0.84, 0.88];   // nothing on screen has a colour: the mode's usual greys
+  const shown = NEUTRAL.slice();
+  let tintAt = 0, beat = 0, gatherIn = 0;
+  const tinted = new Map();    // button -> {kind, bg, shadow}: what it was given
+  const onScreen = new Set();
+  const io = TINT ? new IntersectionObserver(seen => {
+    for (const e of seen) e.isIntersecting ? onScreen.add(e.target) : onScreen.delete(e.target);
+  }) : null;
+  const untint = el => {
+    for (const p of ["background-color", "box-shadow", "transition"]) el.style.removeProperty(p);
+    io.unobserve(el); onScreen.delete(el); tinted.delete(el);
+  };
+  const gather = () => {   // the buttons there are now (Steam's pages come and go): twice a second while it draws
+    const here = new Set(document.querySelectorAll(ALL));
+    for (const el of [...tinted.keys()]) if (!here.has(el)) untint(el);
+    for (const el of here) {
+      const kind = kindOf(el), t = tinted.get(el);
+      if (kind < 0) { if (t) untint(el); continue; }
+      if (t) { t.kind = kind; continue; }
+      tinted.set(el, { kind, bg: null, shadow: null });
+      el.style.setProperty("transition", "none", "important");
+      io.observe(el);
+    }
+  };
+  const looks = () => {   // [kind][plain, lit] = [background colour, box-shadow] for the colour and beat now
+    const c = shown.map(v => Math.round(v * 255)), rgb = c.join(","), dim = f => c.map(v => Math.round(v * f)).join(",");
+    const a = (x, k) => (x + k * beat).toFixed(2), edge = al => `inset 0 0 0 1px rgba(${rgb},${al})`;
+    const small = [[`rgba(${dim(0.3)},${a(0.48, 0.2)})`, edge(a(0.4, 0.55))], [`rgba(${dim(0.5)},0.62)`, edge("0.95")]];
+    const play = `${edge(a(0.6, 0.4))},inset 0 0 ${(4 + 14 * beat).toFixed(1)}px rgba(${rgb},${a(0.25, 0.45)})`;
+    return [
+      small,
+      [[null, null], small[1]],
+      [[`rgba(${dim(0.6)},${a(0.26, 0.2)})`, edge(a(0.55, 0.4))], [`rgba(${dim(0.7)},0.42)`, edge(a(0.55, 0.4))]],
+      [[`rgba(${dim(0.55)},${a(0.34, 0.22)})`, play], [`rgba(${dim(0.7)},0.5)`, play]],
+    ];
+  };
+  const put = (el, prop, value) => value ? el.style.setProperty(prop, value, "important") : el.style.removeProperty(prop);
+  const retint = () => {   // after a draw that tallied the level's colours
+    const t = scene.tint;
+    let target = NEUTRAL;
+    if (t && t.cover > 0.003) {   // that hue at full brightness (the buttons darken it themselves)
+      const mx = Math.max(...t.rgb) || 1;
+      target = t.rgb.map(v => v / mx);
+    }
+    for (let k = 0; k < 3; k++) shown[k] += (target[k] - shown[k]) * 0.35;
+    const p = scene.pulseNow ? scene.pulseNow() : 0;
+    beat = Math.max(p * p, beat * 0.8);
+    if (--gatherIn <= 0) { gather(); gatherIn = TINT_HZ / 2; }
+    const look = looks();
+    for (const el of onScreen) {
+      const b = tinted.get(el);
+      if (!b) continue;
+      const [bg, shadow] = look[b.kind][el.matches(LIT) ? 1 : 0];
+      if (bg !== b.bg) { put(el, "background-color", bg); b.bg = bg; }
+      if (shadow !== b.shadow) { put(el, "box-shadow", shadow); b.shadow = shadow; }
+    }
+  };
 
   const music = !FRIENDS && window.__ggNightMusic ? new Audio(window.__ggNightMusic) : null;
   let scene = null, song = { offset: 0, fadeIn: false, fadeOut: false }, end = 0;
@@ -113,7 +198,10 @@
     if (t - scene.t > WIND) scene.seek(scene.t + WIND);   // far behind (the friends list joining late): catch up a bit each frame
     // run the level up to the clock in small steps, so triggers fire in order
     for (let n = 0; n < 240 && scene.t < t - 1e-4; n++) scene.step(Math.min(1 / 120, t - scene.t));
+    const tally = TINT && now - tintAt >= 1000 / TINT_HZ - 1;
+    if (tally) { scene.wantTint = true; tintAt = now; }
     scene.draw();
+    if (tally) retint();
     if (music && !music.paused) music.volume = volumeAt(t);
     black.style.opacity = Math.min(1, Math.max(0, (t - end) / FADE_OUT)).toFixed(3);
     frames.push(performance.now() - t0);
@@ -178,6 +266,7 @@
       const gl = canvas.getContext("webgl2");
       if (gl) gl.getExtension("WEBGL_lose_context")?.loseContext();
       if (music) { music.pause(); music.removeAttribute("src"); music.load(); }
+      if (io) { for (const el of [...tinted.keys()]) untint(el); io.disconnect(); }
       box.remove();
       delete window.__ggNight;
     },
@@ -192,6 +281,8 @@
     stats: () => ({ avg: frames.reduce((a, b) => a + b, 0) / (frames.length || 1), worst: Math.max(0, ...frames),
                     level: clock, end, drawn: scene && scene.t,
                     musicOff: music && !music.paused ? music.currentTime - song.offset - clock : null,
+                    tint: TINT ? { shown: shown.map(v => +v.toFixed(3)), beat: +beat.toFixed(3), level: scene && scene.tint,
+                                   buttons: tinted.size, onScreen: onScreen.size } : null,
                     size: [canvas.width, canvas.height] }),
   };
 })();
