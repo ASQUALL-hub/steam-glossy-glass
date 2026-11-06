@@ -8,7 +8,9 @@ debugging on 127.0.0.1:8080), which Steam opens when its folder holds an empty
 .cef-enable-remote-debugging file; the helper creates that file, and Steam reads
 it when it starts. Every Steam page gets the theme's CSS (plus Liquid's script in
 the main and friends windows), put back when a page reloads or the glass changes.
-No Millennium needed.
+The store and community pages Steam shows in its window (real websites) get the
+glass too (web.css): their solid backgrounds go, so the glass or the mode's scene
+shows through them as it does through the library. No Millennium needed.
 
 It watches for Steam windows (main window, friends,
 settings, menus) and treats each one as it appears. The kind of glass is picked
@@ -49,8 +51,9 @@ window back to normal without starting the helper.
 
 Installed builds (SteamGlass.exe, put there by SteamGlassUpdater.exe) keep
 glass-mode.txt in %APPDATA%\SteamGlass and add "Check for updates…" to the menu.
+helper.log in the same folder notes mode changes and anything that went wrong.
 "Start with Windows" in the menu adds or removes the helper under the Run key."""
-__version__ = "1.4.0"
+__version__ = "1.4.1"
 
 import base64
 import ctypes
@@ -61,12 +64,14 @@ import math
 import os
 import plistlib
 import re
+import select
 import shutil
 import socket
 import struct
 import sys
 import threading
 import time
+import traceback
 import urllib.parse
 import urllib.request
 from ctypes import wintypes as wt
@@ -308,13 +313,32 @@ def mode_ready(mode: str) -> bool:
                 or (mode == "nullscapes" and nullscapes_videos_ready()))
 
 
-def read_mode() -> str:
+def read_mode(unreadable: str = "frosted") -> str:
+    """The glass chosen in glass-mode.txt (`unreadable` if the file can't be read just now)."""
     try:
         with open(MODE_FILE, encoding="utf-8") as f:
             word = f.read().strip().lower()
     except OSError:
-        return "frosted"
+        return unreadable
     return word if word in MODES else "frosted"
+
+
+LOG_FILE = os.path.join(SETTINGS_DIR, "helper.log")
+
+
+def log(message: str):
+    """A line in helper.log (kept under 256 KB: the older half goes when it grows past that)."""
+    try:
+        os.makedirs(SETTINGS_DIR, exist_ok=True)
+        if os.path.exists(LOG_FILE) and os.path.getsize(LOG_FILE) > 256 << 10:
+            with open(LOG_FILE, encoding="utf-8", errors="replace") as f:
+                keep = f.read()[-(128 << 10):]
+            with open(LOG_FILE, "w", encoding="utf-8") as f:
+                f.write(keep[keep.find("\n") + 1:])
+        with open(LOG_FILE, "a", encoding="utf-8") as f:
+            f.write(time.strftime("%Y-%m-%d %H:%M:%S ") + message.rstrip() + "\n")
+    except OSError:
+        pass
 
 
 def write_mode(mode: str):
@@ -691,27 +715,45 @@ def enable_theme_port() -> bool:
         return False
 
 
-def ws_eval(url: str, expression: str, timeout: float = 3.0):
-    """Evaluate JavaScript in one Steam page over its DevTools WebSocket (a minimal
-    RFC 6455 client: one masked text frame out, frames in until our reply)."""
-    u = urllib.parse.urlparse(url)
-    with socket.create_connection((u.hostname, u.port or 80), timeout) as sock:
-        key = base64.b64encode(os.urandom(16)).decode()
-        sock.sendall((f"GET {u.path} HTTP/1.1\r\nHost: {u.netloc}\r\nUpgrade: websocket\r\n"
-                      f"Connection: Upgrade\r\nSec-WebSocket-Key: {key}\r\nSec-WebSocket-Version: 13\r\n\r\n")
-                     .encode())
-        buf = b""
-        while b"\r\n\r\n" not in buf:
-            chunk = sock.recv(4096)
-            if not chunk:
-                raise ConnectionError("closed during handshake")
-            buf += chunk
-        status, buf = buf.split(b"\r\n", 1)[0], buf.split(b"\r\n\r\n", 1)[1]
-        if b" 101 " not in status:
-            raise ConnectionError(status.decode(errors="replace"))
+class CDP:
+    """A DevTools WebSocket connection to one Steam page: a minimal RFC 6455 client (masked text
+    frames out; text frames in, pings and binary frames skipped). Calls wait for their reply, and
+    events that arrive meanwhile are dropped."""
 
-        payload = json.dumps({"id": 1, "method": "Runtime.evaluate",
-                              "params": {"expression": expression, "returnByValue": True}}).encode()
+    def __init__(self, url: str, timeout: float = 3.0):
+        u = urllib.parse.urlparse(url)
+        self.sock = socket.create_connection((u.hostname, u.port or 80), timeout)
+        self.buf, self.last = b"", 0
+        try:
+            key = base64.b64encode(os.urandom(16)).decode()
+            self.sock.sendall((f"GET {u.path} HTTP/1.1\r\nHost: {u.netloc}\r\nUpgrade: websocket\r\n"
+                               f"Connection: Upgrade\r\nSec-WebSocket-Key: {key}\r\nSec-WebSocket-Version: 13\r\n\r\n")
+                              .encode())
+            buf = b""
+            while b"\r\n\r\n" not in buf:
+                chunk = self.sock.recv(4096)
+                if not chunk:
+                    raise ConnectionError("closed during handshake")
+                buf += chunk
+            status, self.buf = buf.split(b"\r\n", 1)[0], buf.split(b"\r\n\r\n", 1)[1]
+            if b" 101 " not in status:
+                raise ConnectionError(status.decode(errors="replace"))
+        except BaseException:
+            self.sock.close()
+            raise
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_):
+        self.close()
+
+    def close(self):
+        self.sock.close()
+
+    def send(self, method: str, **params) -> int:
+        self.last += 1
+        payload = json.dumps({"id": self.last, "method": method, "params": params}).encode()
         n = len(payload)
         frame = bytearray([0x81])   # FIN, text
         if n < 126:
@@ -723,34 +765,110 @@ def ws_eval(url: str, expression: str, timeout: float = 3.0):
         mask = os.urandom(4)
         keys = (mask * (n // 4 + 1))[:n]   # mask the whole payload at once (it can be megabytes)
         frame += mask + (int.from_bytes(payload, "little") ^ int.from_bytes(keys, "little")).to_bytes(n, "little")
-        sock.sendall(frame)
+        self.sock.sendall(frame)
+        return self.last
 
-        def take(k):
-            nonlocal buf
-            while len(buf) < k:
-                chunk = sock.recv(65536)
-                if not chunk:
-                    raise ConnectionError("closed")
-                buf += chunk
-            out, buf = buf[:k], buf[k:]
-            return out
+    def _take(self, k: int) -> bytes:
+        while len(self.buf) < k:
+            chunk = self.sock.recv(65536)
+            if not chunk:
+                raise ConnectionError("closed")
+            self.buf += chunk
+        out, self.buf = self.buf[:k], self.buf[k:]
+        return out
 
+    def message(self) -> dict:
+        """The next whole message from Steam (a reply or an event)."""
         message = b""
         while True:
-            b0, b1 = take(2)
+            b0, b1 = self._take(2)
             size = b1 & 0x7F
             if size == 126:
-                size = struct.unpack(">H", take(2))[0]
+                size = struct.unpack(">H", self._take(2))[0]
             elif size == 127:
-                size = struct.unpack(">Q", take(8))[0]
-            data = take(size)
+                size = struct.unpack(">Q", self._take(8))[0]
+            data = self._take(size)
+            if b0 & 0x0F == 0x8:
+                raise ConnectionError("closed by Steam")
             if b0 & 0x0F not in (0x0, 0x1):
                 continue   # ping/pong/binary: not ours
             message += data
             if b0 & 0x80:   # last fragment of a message
-                reply, message = json.loads(message), b""
-                if reply.get("id") == 1:
-                    return reply.get("result", {}).get("result", {}).get("value")
+                return json.loads(message)
+
+    def waiting(self, seconds: float) -> bool:
+        """Whether Steam has sent something (within `seconds`)."""
+        return bool(self.buf) or bool(select.select([self.sock], [], [], seconds)[0])
+
+    def call(self, method: str, **params) -> dict:
+        n = self.send(method, **params)
+        while True:
+            reply = self.message()
+            if reply.get("id") == n:
+                return reply.get("result", {})
+
+
+def ws_eval(url: str, expression: str, timeout: float = 3.0):
+    """Evaluate JavaScript in one Steam page over its DevTools WebSocket; the value it returns."""
+    with CDP(url, timeout) as page:
+        return page.call("Runtime.evaluate", expression=expression, returnByValue=True).get("result", {}).get("value")
+
+
+def steam_site(url: str) -> bool:
+    """The store, the community and Valve's other Steam sites (not a game's homepage opened in Steam)."""
+    host = (urllib.parse.urlparse(url).hostname or "").lower()
+    return any(host == d or host.endswith("." + d) for d in ("steampowered.com", "steamcommunity.com"))
+
+
+class WebPage(threading.Thread):
+    """One of the web pages Steam shows in its window (the store, the community...) with the glass in
+    it. A DevTools connection to the page stays open for as long as the page lives: the script
+    registered over it (web-glass.js with web.css) runs at the start of every page load there, before
+    the page's own scripts, so pages never flash their solid background on the way in. (A registered
+    script lasts as long as the connection that registered it, and only runs with the Page domain on.)"""
+
+    def __init__(self, ws_url: str):
+        super().__init__(daemon=True)
+        self.ws_url = ws_url
+        self.alive = True
+        self._lock = threading.Lock()
+        self._want = self._have = None   # (script, key); key "" = the glass taken out
+
+    def want(self, script: str, key: str):
+        with self._lock:
+            self._want = (script, key)
+
+    def settled(self) -> bool:
+        with self._lock:
+            return self._have == self._want
+
+    def close(self):
+        self.alive = False
+
+    def run(self):
+        registered = None
+        try:
+            with CDP(self.ws_url, timeout=5) as page:
+                page.call("Page.enable")
+                while self.alive:
+                    with self._lock:
+                        want = self._want
+                    if want is not None and want != self._have:
+                        script, key = want
+                        if registered:
+                            page.call("Page.removeScriptToEvaluateOnNewDocument", identifier=registered)
+                            registered = None
+                        if key:
+                            registered = page.call("Page.addScriptToEvaluateOnNewDocument", source=script).get("identifier")
+                        page.call("Runtime.evaluate", expression=script)   # the page that's already open
+                        with self._lock:
+                            self._have = want
+                    if page.waiting(0.5):
+                        page.message()   # the page's own events: nothing to do with them
+        except (OSError, ValueError):
+            pass   # the page closed, or Steam did
+        finally:
+            self.alive = False
 
 
 class Theme:
@@ -758,8 +876,8 @@ class Theme:
     thread (Steam can be slow to answer); set `mode` to switch the glass."""
 
     def __init__(self):
-        self.mode = read_mode()
         self.answered = False   # Steam has answered on its developer port
+        self.web = {}           # target id -> WebPage: the store and community pages open in Steam
         self._stop = threading.Event()
         self._thread = threading.Thread(target=self._run, daemon=True)
 
@@ -780,6 +898,20 @@ class Theme:
                     self._picture = (path, mtime, "data:image/jpeg;base64," + base64.b64encode(f.read()).decode())
             return self._picture[2]
         return None
+
+    @staticmethod
+    def web_bundle(mode: str):
+        """(the script that puts the glass into Steam's web pages, its key); key "" takes it out."""
+        with open(os.path.join(THEME_DIR, "web-glass.js"), encoding="utf-8") as f:
+            js = f.read()
+        if mode in LEVEL_MODES and not mode_ready(mode):
+            mode = "frosted"   # as bundle() does when the level can't be put together
+        css = ""
+        if mode != "off":
+            with open(os.path.join(THEME_DIR, "web.css"), encoding="utf-8") as f:
+                css = f.read()
+        key = hashlib.sha1((css + js + mode).encode()).hexdigest()[:16] if css else ""
+        return f"({js})({json.dumps({'css': css, 'mode': mode, 'key': key})});", key
 
     def bundle(self, mode: str):
         """(css for library pages, css for friends pages, Liquid's script, key)."""
@@ -860,12 +992,24 @@ class Theme:
             pages = json.load(r)
         self.answered = True
         lib, friends, js, key = self.bundle(mode)
+        web_script, web_key = self.web_bundle(mode)
+        open_web = set()
         for t in pages:
             url = t.get("url", "")
             if t.get("type") != "page" or "webSocketDebuggerUrl" not in t or t.get("title") == "SharedJSContext":
                 continue
             if url.startswith(("http:", "https:")) and "steamloopback" not in url:
-                continue   # store and community pages are real websites: leave them be
+                # a real website in Steam's window: the store and community get web.css (their own
+                # script leaves other sites, the in-game overlay and Big Picture alone)
+                tid = t.get("id")
+                if tid and (steam_site(url) or tid in self.web):
+                    open_web.add(tid)
+                    page = self.web.get(tid)
+                    if page is None or not page.alive:
+                        page = self.web[tid] = WebPage(t["webSocketDebuggerUrl"])
+                        page.start()
+                    page.want(web_script, web_key)
+                continue
             scene = js if t.get("title") in SCENE_WINDOWS else ""
             want = key + ("w" if scene else "")
             try:
@@ -891,13 +1035,28 @@ class Theme:
                 }})()""", timeout=5)
             except (OSError, ValueError):
                 pass   # that page went away mid-pass; the next pass catches up
+        for tid in [tid for tid in self.web if tid not in open_web]:
+            self.web.pop(tid).close()   # closed, or showing something else now
 
     def _run(self):
+        mode, problem = None, None
         while not self._stop.wait(1.0):
+            # the mode file is the truth (the tray writes it before anything else, and it can be
+            # edited by hand); if it can't be read just now, the glass stays as it is
+            now = read_mode(unreadable=mode or "frosted")
+            if now != mode:
+                log(f"mode {mode} -> {now}")
+                mode = now
             try:
-                self.apply_all(self.mode)
+                self.apply_all(mode)
+                problem = None
             except (OSError, ValueError):
                 pass   # Steam isn't running, or was started before its port was turned on
+            except Exception:   # anything else: noted once, and the next pass tries again
+                text = traceback.format_exc()
+                if text != problem:
+                    log("theme pass failed:\n" + text)
+                    problem = text
 
     def stop(self):
         """Take the theme out of Steam's pages (quitting puts Steam back to normal)."""
@@ -907,6 +1066,11 @@ class Theme:
             self.apply_all("off")
         except (OSError, ValueError):
             pass
+        deadline = time.monotonic() + 2   # the web pages take the glass out over their own connections
+        while time.monotonic() < deadline and any(p.alive and not p.settled() for p in self.web.values()):
+            time.sleep(0.05)
+        for page in self.web.values():
+            page.close()
 
 
 def startup_command() -> str:
@@ -973,6 +1137,7 @@ def main():
     app = QApplication(sys.argv)
     app.setQuitOnLastWindowClosed(False)
     port_on = enable_theme_port()
+    log(f"Steam Glass {__version__} started")
     theme = Theme()
     theme.start()
     glass = Glass()
@@ -1035,13 +1200,13 @@ def main():
     quit_action = menu.addAction("Quit (Steam back to normal)")
 
     def show(mode):
-        actions[mode].setChecked(True)
+        if mode in actions:
+            actions[mode].setChecked(True)
         tray.setIcon(tray_icon(mode))
         tray.setToolTip(f"Steam Glass: {MODES[mode]}")
 
     def choose(mode):
-        write_mode(mode)
-        theme.mode = mode
+        write_mode(mode)   # the theme thread follows the file
         glass.last_scan = 0.0   # apply now, not at the next scan
         glass.tick()
         show(mode)
@@ -1065,8 +1230,7 @@ def main():
 
     def sync():   # the file can also be edited by hand
         mode = read_mode()
-        theme.mode = mode
-        if not actions[mode].isChecked():
+        if mode in actions and not actions[mode].isChecked():
             show(mode)
         if (not theme.answered and port_on and not sync.told and steam_windows()
                 and time.monotonic() - sync.started > 10):

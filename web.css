@@ -1,0 +1,102 @@
+/* Glossy Glass for Steam: Steam's web pages (the store, the community, profiles, the market...)
+   as glass.
+
+   The helper puts this into the store and community pages Steam shows inside its own window
+   (never the in-game overlay or Big Picture), so the glass behind the window, or the mode's
+   scene (Aero's panorama, Liquid's water, a GD level), shows through them the way it does
+   through the library. Steam's pages paint a solid colour under everything (navy on the store
+   and community, black on profiles) plus page-wide art (a game's background picture, a profile
+   background, a hub's art); those go. A veil in the glass's own tint stays under the page so
+   white text reads over a bright scene, and the few nearly solid panels become glass too.
+   Steam's own panels and pictures keep their colours. The mode arrives as
+   <html data-gg-glass="frosted|clear|liquid|aero|nullscapes|eternalnight|deprivation">. */
+
+:root {
+  --gw-veil: rgba(8, 10, 22, 0.32);          /* the glass's tint under the whole page */
+  --gw-panel: rgba(10, 13, 24, 0.55);        /* the panels Steam draws nearly solid */
+  --gw-panel-deep: rgba(8, 10, 20, 0.72);    /* ...where much text sits */
+  --gw-rim: rgba(255, 255, 255, 0.14);       /* a hairline edge, like the library's panels */
+}
+html[data-gg-glass="clear"] { --gw-veil: rgba(8, 10, 22, 0.48); }
+html[data-gg-glass="liquid"] { --gw-veil: rgba(8, 12, 18, 0.26); }
+html[data-gg-glass="aero"] {
+  --gw-veil: rgba(16, 60, 120, 0.40);
+  --gw-panel: rgba(12, 48, 104, 0.58);
+  --gw-panel-deep: rgba(10, 40, 90, 0.74);
+  --gw-rim: rgba(255, 255, 255, 0.26);
+}
+html[data-gg-glass="nullscapes"],
+html[data-gg-glass="eternalnight"],
+html[data-gg-glass="deprivation"] {   /* a GD level moves behind: matte, darker glass */
+  --gw-veil: rgba(12, 15, 20, 0.5);
+  --gw-panel: rgba(14, 17, 22, 0.62);
+  --gw-panel-deep: rgba(10, 12, 16, 0.76);
+  --gw-rim: rgba(232, 240, 246, 0.16);
+}
+
+/* the page itself: only the veil under it */
+html { background: var(--gw-veil) !important; }
+body,
+.responsive_page_frame,
+.responsive_page_content,
+.responsive_page_template_content,
+#responsive_page_template_content,
+.no_header.profile_page,
+.profile_page.has_profile_background,
+.page_content_ctn,
+.home_page_body_ctn,
+.home_page_content,
+.game_page_background,
+.page_background_holder,
+.page_background,
+.apphub_background,
+.headerOverride,
+.gg-clear-bg {
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
+/* page-wide art: profile backgrounds (pictures and videos), a hub's or game's picture */
+.profile_background_holder_content,
+.profile_animated_background,
+.profile_background_image,
+.profile_background_image_content,
+.profile_background_wrapper,
+.apphub_background,
+.game_page_background,
+.page_background_holder { background-image: none !important; }
+.profile_animated_background,
+.profile_background_holder_content video,
+.profile_background_image_content { display: none !important; }
+
+/* the panels Steam paints nearly solid: glass with a hairline edge */
+.profile_content,
+.profile_header_bg_texture {
+  background-color: var(--gw-panel) !important;
+  background-image: none !important;
+  box-shadow: inset 0 0 0 1px var(--gw-rim) !important;
+}
+.profile_header_bg_texture { border-radius: 4px 4px 0 0; }
+.profile_content { border-radius: 0 0 4px 4px; }
+.apphub_Card,
+.browseApps,
+.newmodal_content_border,
+.market_header_bg {
+  background-color: var(--gw-panel-deep) !important;
+  box-shadow: inset 0 0 0 1px var(--gw-rim) !important;
+}
+.apphub_Card .gradient { background-image: none !important; }   /* faded into the card's old solid colour */
+#BG_top { background-color: transparent !important; }
+
+/* words that sit straight on the glass get a soft shadow, as in the library */
+.home_page_content h2,
+.home_section_title,
+.home_page_content .home_title,
+.apphub_HomeHeaderContent,
+.profile_header_centered_persona,
+.profile_header .persona_name,
+.page_title_area,
+.pageheader,
+.workshop_home_title {
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+}
