@@ -33,7 +33,8 @@ in glass-mode.txt next to this file (changes apply live):
            Both levels ship as data only (skin\levels\): their pictures are
            Geometry Dash's own sprite sheets, taken from this PC's copy of the game
            (see built_level), and their songs are the ones GD downloaded. So they're
-           offered when Geometry Dash is installed through Steam. A level exported
+           offered when Geometry Dash is installed through Steam. In these modes
+           Steam's blue goes black and white (greys, from Steam's own stylesheets). A level exported
            by hand into the settings folder's <level>\live\ wins over that, and
            Nullscapes falls back on two recorded scenes (nullscapes.js).
   aero     Frutiger Aero: a sunny panorama pans by behind blue glass panels.
@@ -53,10 +54,11 @@ Installed builds (SteamGlass.exe, put there by SteamGlassUpdater.exe) keep
 glass-mode.txt in %APPDATA%\SteamGlass and add "Check for updates…" to the menu.
 helper.log in the same folder notes mode changes and anything that went wrong.
 "Start with Windows" in the menu adds or removes the helper under the Run key."""
-__version__ = "1.4.2"
+__version__ = "1.4.3"
 
 import base64
 import ctypes
+import glob
 import gzip
 import hashlib
 import json
@@ -871,6 +873,314 @@ class WebPage(threading.Thread):
             self.alive = False
 
 
+# ------------------------------------------------------------- black and white for the GD modes
+# The GD modes wear matte greys, so there Steam's own blue (its accent, focus rings, progress bars,
+# graphs, links) is restated in grey for every Steam window: from Steam's stylesheets (steamui\css),
+# each rule that paints with a saturated blue, cyan or indigo (hue 160-280) comes back with only those
+# colours in grey and !important, inside :where() (no specificity), so the theme's own rules still win
+# over it while it wins over Steam's. The theme's base gets the same, with its own selectors, placed
+# after it and before the GD modes' stylesheet. Hover and focus looks stay (same selectors), pictures
+# and icons in url(...) are never touched, and other colours (greens, reds) stay as they are.
+
+COLOR_TOKEN = re.compile(r"""url\((?:[^()'"]|'[^']*'|"[^"]*")*\)|#[0-9a-fA-F]{3,8}\b|(?:rgba?|hsla?)\([^()]*\)""", re.I)
+GRADIENT_OR_URL = re.compile(r"""url\((?:[^()'"]|'[^']*'|"[^"]*")*\)|(?:repeating-)?(?:linear|radial|conic)-gradient\(""", re.I)
+COLOR_PROPS = re.compile(
+    r"^(?:color|background-color|background-image|border(?:-(?:top|right|bottom|left|block|inline)(?:-start|-end)?)?-color"
+    r"|outline-color|box-shadow|text-shadow|fill|stroke|-webkit-text-fill-color|-webkit-text-stroke-color|caret-color"
+    r"|text-decoration-color|column-rule-color|scrollbar-color|accent-color|stop-color|flood-color|lighting-color)$")
+SHORTHANDS = {   # shorthand -> the colour longhand restated instead (so widths, styles and positions stay Steam's)
+    "border": "border-color", "border-top": "border-top-color", "border-right": "border-right-color",
+    "border-bottom": "border-bottom-color", "border-left": "border-left-color", "outline": "outline-color",
+    "column-rule": "column-rule-color", "text-decoration": "text-decoration-color",
+    "-webkit-text-stroke": "-webkit-text-stroke-color",
+}
+
+
+def parse_color(tok):
+    """(r, g, b, a) for a #hex / rgb() / hsl() token (r, g, b 0-255, a 0-1), or None."""
+    t = tok.strip().lower()
+    if t.startswith("#"):
+        h = t[1:]
+        if len(h) in (3, 4):
+            h = "".join(c * 2 for c in h)
+        if len(h) not in (6, 8):
+            return None
+        return int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16), int(h[6:8], 16) / 255 if len(h) == 8 else 1.0
+    m = re.match(r"(rgba?|hsla?)\((.*)\)$", t, re.S)
+    if not m:
+        return None
+    parts = [p for p in re.split(r"[,\s/]+", m.group(2).strip()) if p]
+    if len(parts) < 3:
+        return None
+
+    def num(p, scale):
+        return float(p[:-1]) * scale / 100 if p.endswith("%") else float(p)
+
+    try:
+        if m.group(1).startswith("rgb"):
+            r, g, b = (num(p, 255) for p in parts[:3])
+        else:
+            hue = float(re.sub(r"deg$", "", parts[0])) % 360
+            s, light = num(parts[1], 1) if parts[1].endswith("%") else float(parts[1]) / 100, \
+                num(parts[2], 1) if parts[2].endswith("%") else float(parts[2]) / 100
+            s, light = min(1.0, max(0.0, s)), min(1.0, max(0.0, light))   # Steam writes 105% lightness
+            c = (1 - abs(2 * light - 1)) * s
+            x = c * (1 - abs((hue / 60) % 2 - 1))
+            r1, g1, b1 = [(c, x, 0), (x, c, 0), (0, c, x), (0, x, c), (x, 0, c), (c, 0, x)][int(hue // 60) % 6]
+            mm = light - c / 2
+            r, g, b = ((v + mm) * 255 for v in (r1, g1, b1))
+        a = num(parts[3], 1) if len(parts) > 3 else 1.0
+    except ValueError:
+        return None
+    return r, g, b, a
+
+
+def is_blue(c) -> bool:
+    r, g, b, a = c
+    mx, mn = max(r, g, b), min(r, g, b)
+    d = mx - mn
+    if a < 0.04 or mx < 24 or d / mx < 0.2:
+        return False
+    h = 60 * (((g - b) / d) % 6 if mx == r else (b - r) / d + 2 if mx == g else (r - g) / d + 4)
+    return 160 <= h % 360 <= 280
+
+
+def grey_token(c) -> str:
+    r, g, b, a = c
+    y = round(0.2126 * r + 0.7152 * g + 0.0722 * b)
+    return f"rgba({y},{y},{y},{round(a, 3):g})" if a < 1 else f"rgb({y},{y},{y})"
+
+
+def grey_value(v):
+    """The value with its blue colours in grey (urls untouched), and whether anything changed."""
+    out, i, changed = [], 0, False
+    for m in COLOR_TOKEN.finditer(v):
+        out.append(v[i:m.start()])
+        tok, i = m.group(), m.end()
+        if not tok.lower().startswith("url("):
+            c = parse_color(tok)
+            if c and is_blue(c):
+                tok, changed = grey_token(c), True
+        out.append(tok)
+    out.append(v[i:])
+    return "".join(out), changed
+
+
+def split_top(s, sep):
+    """Split at `sep` outside quotes, brackets and parentheses."""
+    parts, depth, q, start, i = [], 0, None, 0, 0
+    while i < len(s):
+        c = s[i]
+        if q:
+            if c == "\\":
+                i += 2
+                continue
+            if c == q:
+                q = None
+        elif c in "\"'":
+            q = c
+        elif c in "([":
+            depth += 1
+        elif c in ")]":
+            depth -= 1
+        elif c == sep and depth == 0:
+            parts.append(s[start:i])
+            start = i + 1
+        i += 1
+    parts.append(s[start:])
+    return parts
+
+
+def background_longhands(v):
+    """A background shorthand's images and colour as (background-image, background-color) values."""
+    layers = split_top(v, ",")
+    images, rest = [], layers[-1]
+    for n, layer in enumerate(layers):
+        m = GRADIENT_OR_URL.search(layer)
+        if not m:
+            images.append("none")
+            continue
+        end = m.end()
+        if not m.group().lower().startswith("url("):   # a gradient: to its closing parenthesis
+            depth, j = 1, m.end()
+            while j < len(layer) and depth:
+                depth += {"(": 1, ")": -1}.get(layer[j], 0)
+                j += 1
+            end = j
+        images.append(layer[m.start():end])
+        if n == len(layers) - 1:   # the colour, if any, is what's left of the last layer
+            rest = layer[:m.start()] + " " + layer[end:]
+    colors = [m.group() for m in COLOR_TOKEN.finditer(rest) if not m.group().lower().startswith("url(")]
+    image = ", ".join(images) if any(x != "none" for x in images) else None
+    return image, colors[-1] if colors else None
+
+
+def grey_decl(prop, val):
+    """[(property, grey value)] to restate for one declaration (nothing when it has no blue)."""
+    if prop.startswith("--") or COLOR_PROPS.match(prop):
+        g, changed = grey_value(val)
+        return [(prop, g)] if changed else []
+    if prop == "background":
+        image, color = background_longhands(val)
+        out = []
+        if image:
+            g, changed = grey_value(image)
+            if changed:
+                out.append(("background-image", g))
+        if color:
+            g, changed = grey_value(color)
+            if changed:
+                out.append(("background-color", g))
+        return out
+    if prop in SHORTHANDS:
+        rest = re.sub(r"""url\((?:[^()'"]|'[^']*'|"[^"]*")*\)""", " ", val)
+        colors = [m.group() for m in COLOR_TOKEN.finditer(rest)]
+        if colors:
+            g, changed = grey_value(colors[-1])
+            if changed:
+                return [(SHORTHANDS[prop], g)]
+    return []
+
+
+PSEUDO_ELEMENT = re.compile(r"::|:(?:before|after|first-line|first-letter)\b", re.I)
+
+
+def where(selector):
+    """Each selector in the list inside :where() (pseudo-elements stay outside, as they must)."""
+    out = []
+    for sel in split_top(selector, ","):
+        sel = sel.strip()
+        if not sel:
+            continue
+        cut, depth, i = -1, 0, 0
+        while i < len(sel):
+            c = sel[i]
+            if c in "([":
+                depth += 1
+            elif c in ")]":
+                depth -= 1
+            elif c == ":" and depth == 0 and PSEUDO_ELEMENT.match(sel, i):
+                cut = i
+                break
+            i += 1
+        base, rest = (sel[:cut], sel[cut:]) if cut >= 0 else (sel, "")
+        out.append(f":where({base.strip() or '*'}){rest}")
+    return ",".join(out)
+
+
+def blocks(css):
+    """(prelude, body) for each block at this level ("@media ..." blocks included)."""
+    i, n = 0, len(css)
+    while i < n:
+        j, depth, q = i, 0, None
+        while j < n:
+            c = css[j]
+            if q:
+                if c == "\\":
+                    j += 2
+                    continue
+                if c == q:
+                    q = None
+            elif c in "\"'":
+                q = c
+            elif c == "(":
+                depth += 1
+            elif c == ")":
+                depth -= 1
+            elif depth == 0 and c in "{;}":
+                break
+            j += 1
+        if j >= n:
+            return
+        if css[j] != "{":   # a statement (@import, @charset) or a stray brace
+            i = j + 1
+            continue
+        k, depth, q = j + 1, 1, None
+        while k < n and depth:
+            c = css[k]
+            if q:
+                if c == "\\":
+                    k += 2
+                    continue
+                if c == q:
+                    q = None
+            elif c in "\"'":
+                q = c
+            elif c == "{":
+                depth += 1
+            elif c == "}":
+                depth -= 1
+            k += 1
+        yield css[i:j].strip(), css[j + 1:k - 1]
+        i = k
+
+
+def greys(css, wrap=True):
+    """The grey restatements of a stylesheet's blue (see the module docstring)."""
+    css = re.sub(r"/\*.*?\*/", "", css, flags=re.S)
+    out = []
+    for prelude, body in blocks(css):
+        if prelude.startswith("@"):
+            name = prelude[1:].split(None, 1)[0].lower() if len(prelude) > 1 else ""
+            if name in ("media", "supports", "container", "layer", "document", "-moz-document"):
+                inner = greys(body, wrap)
+                if inner:
+                    out.append(prelude + "{" + inner + "}")
+            continue
+        if "{" in body:
+            continue   # nested rules: not used by Steam
+        decls = []
+        for d in split_top(body, ";"):
+            if ":" not in d:
+                continue
+            prop, val = d.split(":", 1)
+            prop = prop.strip()
+            prop = prop if prop.startswith("--") else prop.lower()
+            val = re.sub(r"\s*!\s*important\s*$", "", val.strip(), flags=re.I)
+            decls += [f"{p}:{v} !important" for p, v in grey_decl(prop, val)]
+        if decls:
+            out.append((where(prelude) if wrap else prelude) + "{" + ";".join(decls) + "}")
+    return "".join(out)
+
+
+_greys = {}   # worked out once: "steam" -> (the files' stamp, css); ("theme", text hash) -> css
+
+
+def steam_greys() -> str:
+    """greys() of Steam's own stylesheets, worked out again only when Steam's files change (an update);
+    about a second for its 5 MB."""
+    steam = steam_dir()
+    if not steam:
+        return ""
+    paths = sorted(glob.glob(os.path.join(steam, "steamui", "css", "*.css")) + glob.glob(os.path.join(steam, "steamui", "*.css")))
+    try:
+        stamp = tuple((path, os.path.getmtime(path), os.path.getsize(path)) for path in paths)
+    except OSError:
+        return _greys.get("steam", (None, ""))[1]
+    have = _greys.get("steam")
+    if have and have[0] == stamp:
+        return have[1]
+    parts = []
+    for path in paths:
+        try:
+            with open(path, encoding="utf-8", errors="replace") as f:
+                parts.append(greys(f.read()))
+        except OSError:
+            pass
+    css = "\n/* Steam's blue in grey (steamglass.pyw, greys) */\n" + "".join(parts) + "\n"
+    _greys["steam"] = (stamp, css)
+    log(f"Steam's blue in grey: {len(css) >> 10} KB from {len(paths)} stylesheets")
+    return css
+
+
+def theme_greys(css: str) -> str:
+    """greys() of the theme's own base stylesheet, with its selectors as they are."""
+    key = ("theme", hashlib.sha1(css.encode()).hexdigest())
+    if key not in _greys:
+        _greys[key] = "\n/* the theme's blue in grey */\n" + greys(css, wrap=False) + "\n"
+    return _greys[key]
+
+
 class Theme:
     """Puts the theme into every Steam page and keeps it there. Runs on its own
     thread (Steam can be slow to answer); set `mode` to switch the glass."""
@@ -928,7 +1238,12 @@ class Theme:
         extra = {"clear": "glass-clear.css", "liquid": "liquid.css", "aero": "aero.css", "nullscapes": "nullscapes.css",
                  "eternalnight": "nullscapes.css", "deprivation": "nullscapes.css"}.get(mode)   # the GD levels wear the matte low-poly look
         extra = read(extra) if extra else ""
-        lib, friends = read("libraryroot.custom.css") + extra, read("friends.custom.css") + extra
+        base_lib, base_friends = read("libraryroot.custom.css"), read("friends.custom.css")
+        if mode in LEVEL_MODES:   # Steam's blue, and the theme's, in black and white (see greys)
+            steam = steam_greys()
+            base_lib += steam + theme_greys(base_lib)
+            base_friends += steam + theme_greys(base_friends)
+        lib, friends = base_lib + extra, base_friends + extra
         live = mode == "nullscapes" and files[0][0] == "level"   # or else the recordings
         if live:   # the level player, then the scene that drives it
             js = read("gdscene.js") + "\n" + read("nullscapes-live.js")

@@ -323,6 +323,16 @@ a._30KGSfPjPskFlnrSxBfkiK,
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
 }
 
+/* ------------------------------------------------------------- downloads */
+
+/* the Downloads page is glass like the rest: its own solid fill becomes the glass's tint (so white
+   text still reads over a bright scene), and the network graph's band a darker glass card on it */
+._1bq4x9pa4-9RLY-dXWUZTp { background: var(--gg-tint) !important; }
+._3Mbhnlk1Go2j8yCdjthzc7._2KB3yVOsiRCK9qK6mwKl9c {
+  background: var(--gg-tint) !important;
+  box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.12);
+}
+
 /* ------------------------------------------------------------- menus */
 
 /* dropdown and right-click menus are their own small windows, so there is no
