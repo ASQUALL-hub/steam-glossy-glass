@@ -157,6 +157,7 @@ a._30KGSfPjPskFlnrSxBfkiK:hover,
   background: linear-gradient(#ffffff, #ffffff);
   -webkit-background-clip: text;
   background-clip: text;
+  text-shadow: none !important;   /* Steam's blue glow on the open tab paints over the white letters */
 }
 ._1gqEjB5QsKT_NftD1dEsdZ ._19axKcqYRuaJ8vdYKYmtTQ::after { background: rgba(240, 246, 250, 0.75) !important; box-shadow: none !important; }   /* the underline */
 ._3AjoLnMNKxYmNTGTJCLfgs {                /* the round dismiss button on recent-game tiles */
@@ -221,3 +222,22 @@ body.ContextMenuPopupBody::after { opacity: 0.45; }
 .dropTargetBox { border-color: var(--gn-edge-lit) !important; border-radius: 3px; }
 .title-area-highlight,
 .singleWindowFocusBar { background: linear-gradient(to right, transparent, rgba(240, 246, 250, 0.35), transparent) !important; }
+
+/* menus (Store / Library / Community, right-click, drop-downs): the same matte smoky glass
+   instead of the other modes' glossy blue, with a grey hover pane and hairline edges. A menu is
+   its own small window with nothing behind it to show, so its glass is denser. */
+.PP7LM0Ow1K5qkR8WElLpt,
+._2EstNjFIIZm_WUSKm5Wt7n {
+  background: rgba(20, 24, 30, 0.84) !important;
+}
+.PP7LM0Ow1K5qkR8WElLpt {
+  border-radius: 3px;
+  box-shadow: inset 0 0 0 1px rgba(232, 240, 246, 0.3) !important;
+}
+.contextMenuItem { border-radius: 2px; }
+.contextMenuItem:hover,
+.contextMenuItem.active {
+  background: rgba(70, 80, 92, 0.6) !important;
+  box-shadow: inset 0 0 0 1px var(--gn-edge-lit) !important;
+}
+._21GPYlKBCLsHQpTsHw_RL_ { background: rgba(232, 240, 246, 0.14) !important; }   /* separators */

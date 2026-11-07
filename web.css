@@ -100,3 +100,71 @@ body,
 .workshop_home_title {
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
 }
+
+/* ------------------------------------------------------------- the GD modes
+   Nullscapes, Eternal Night and Deprivation wear matte greys (nullscapes.css), so Steam's blue
+   goes black and white here. web-glass.js marks the blue parts of a page (Steam's blue, cyan and
+   indigo; not the green discounts or the coloured deal labels): small parts with no pictures in
+   them (buttons, tags, labels, links) are drawn through a greyscale filter, which keeps their
+   hover looks, and panels that hold game pictures get only their own background in grey, so the
+   pictures keep their colours. Steam's buttons become the library's matte panes. */
+:is(html[data-gg-glass="nullscapes"], html[data-gg-glass="eternalnight"], html[data-gg-glass="deprivation"]) [data-gg-mono] {
+  filter: grayscale(1) !important;
+}
+:is(html[data-gg-glass="nullscapes"], html[data-gg-glass="eternalnight"], html[data-gg-glass="deprivation"]) [data-gg-grey] {
+  background-color: var(--gg-grey-bg) !important;
+  background-image: var(--gg-grey-img) !important;
+  border-color: var(--gg-grey-border) !important;
+  box-shadow: var(--gg-grey-shadow) !important;
+}
+:is(html[data-gg-glass="nullscapes"], html[data-gg-glass="eternalnight"], html[data-gg-glass="deprivation"]) [data-gg-grey-hover]:hover {
+  background-color: var(--gg-grey-bg-hover) !important;
+  background-image: var(--gg-grey-img-hover) !important;
+  border-color: var(--gg-grey-border-hover) !important;
+  box-shadow: var(--gg-grey-shadow-hover) !important;
+}
+
+/* buttons: a smoky pane with a hairline edge that lifts on hover; buying keeps a faint green-grey */
+:is(html[data-gg-glass="nullscapes"], html[data-gg-glass="eternalnight"], html[data-gg-glass="deprivation"])
+:is(.btnv6_blue_hoverfade, .btnv6_white_transparent, .btnv6_lightblue_blue, .btnv6_grey_black, .btnv6_border_2px,
+    .btn_grey_black, .btn_grey_grey, .btn_grey_steamui, .btn_grey_white_innerfade, .btn_darkblue_white_innerfade,
+    .btn_blue_steamui, .btn_blue_white_innerfade, .btn_darkred_white_innerfade, .btn_black, .btn_profile_action,
+    .pagebtn, .creator_follow_btn, .home_tab_button, .queue_btn_inactive, .queue_btn_active, .persona_level_btn,
+    .btn_green_steamui, .btn_green_white_innerfade, .btnv6_green_white_innerfade) {
+  background: rgba(232, 240, 246, 0.08) !important;
+  border-color: transparent !important;
+  border-radius: 3px !important;
+  box-shadow: inset 0 0 0 1px rgba(232, 240, 246, 0.24) !important;
+  color: rgba(236, 242, 246, 0.92) !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+:is(html[data-gg-glass="nullscapes"], html[data-gg-glass="eternalnight"], html[data-gg-glass="deprivation"])
+:is(.btnv6_blue_hoverfade, .btnv6_white_transparent, .btnv6_lightblue_blue, .btnv6_grey_black, .btnv6_border_2px,
+    .btn_grey_black, .btn_grey_grey, .btn_grey_steamui, .btn_grey_white_innerfade, .btn_darkblue_white_innerfade,
+    .btn_blue_steamui, .btn_blue_white_innerfade, .btn_darkred_white_innerfade, .btn_black, .btn_profile_action,
+    .pagebtn, .creator_follow_btn, .home_tab_button, .queue_btn_inactive, .queue_btn_active, .persona_level_btn,
+    .btn_green_steamui, .btn_green_white_innerfade, .btnv6_green_white_innerfade) > span {
+  background: transparent !important;
+  border-radius: 3px !important;
+  color: inherit !important;
+}
+:is(html[data-gg-glass="nullscapes"], html[data-gg-glass="eternalnight"], html[data-gg-glass="deprivation"])
+:is(.btnv6_blue_hoverfade, .btnv6_white_transparent, .btnv6_lightblue_blue, .btnv6_grey_black, .btnv6_border_2px,
+    .btn_grey_black, .btn_grey_grey, .btn_grey_steamui, .btn_grey_white_innerfade, .btn_darkblue_white_innerfade,
+    .btn_blue_steamui, .btn_blue_white_innerfade, .btn_darkred_white_innerfade, .btn_black, .btn_profile_action,
+    .pagebtn, .creator_follow_btn, .home_tab_button, .queue_btn_inactive, .queue_btn_active, .persona_level_btn):hover {
+  background: rgba(232, 240, 246, 0.18) !important;
+  box-shadow: inset 0 0 0 1px rgba(240, 246, 250, 0.48) !important;
+  color: #fff !important;
+}
+:is(html[data-gg-glass="nullscapes"], html[data-gg-glass="eternalnight"], html[data-gg-glass="deprivation"])
+:is(.btn_green_steamui, .btn_green_white_innerfade, .btnv6_green_white_innerfade) {
+  background: rgba(185, 225, 205, 0.2) !important;
+  box-shadow: inset 0 0 0 1px rgba(205, 240, 220, 0.42) !important;
+  color: #fff !important;
+}
+:is(html[data-gg-glass="nullscapes"], html[data-gg-glass="eternalnight"], html[data-gg-glass="deprivation"])
+:is(.btn_green_steamui, .btn_green_white_innerfade, .btnv6_green_white_innerfade):hover {
+  background: rgba(185, 225, 205, 0.32) !important;
+  box-shadow: inset 0 0 0 1px rgba(215, 245, 228, 0.62) !important;
+}
