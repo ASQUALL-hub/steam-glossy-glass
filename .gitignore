@@ -9,3 +9,6 @@ preview/*.jpg
 
 # Nullscapes recordings are the player's own captures of a GD level: never in the repo
 *.mp4
+
+# written beside the source when the helper runs from it
+helper.log

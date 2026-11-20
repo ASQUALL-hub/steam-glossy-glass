@@ -25,7 +25,8 @@ ICON = ROOT / "assets" / "steamglass.ico"
 PUBLISHER = "ASQUALL-hub"
 THEME = ["skin.json", "libraryroot.custom.css", "friends.custom.css", "glass-frosted.css", "glass-clear.css",
          "liquid.css", "liquid.js", "aero.css", "aero.js", "nullscapes.css", "nullscapes.js",
-         "gdscene.js", "gdscene-next.js", "nullscapes-live.js", "eternal-night-live.js", "web.css", "web-glass.js"]   # what Millennium loads from steamui\skins\GlossyGlass
+         "gdscene.js", "gdscene-next.js", "nullscapes-live.js", "eternal-night-live.js", "web.css", "web-glass.js",
+         "steam2013.css", "friends2013.css", "web2013.css", "steam2013.js"]   # what Millennium loads from steamui\skins\GlossyGlass
 
 
 def version() -> str:

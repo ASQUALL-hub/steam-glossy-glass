@@ -1,0 +1,60 @@
+/* Glossy Glass for Steam: Steam's web pages (the store, the community, profiles, the market...)
+   in the "Steam 2013" mode.
+
+   The 2013 store and community were charcoal: a black page with a grey glow at its top, dark grey
+   panels, light grey Arial, and green where there was something to buy. Today's pages are navy
+   and blue. web-glass.js marks their blue parts (Steam's blue, cyan and indigo; never the green
+   discounts or the coloured deal labels): small parts with no pictures in them are drawn through
+   a greyscale filter, which keeps their hover looks, and panels that hold game pictures get only
+   their own background in grey, so the pictures keep their colours. This sheet draws those greys,
+   the old page background and the old typeface. The mode arrives as
+   <html data-gg-glass="steam2013">. */
+
+html[data-gg-glass="steam2013"] [data-gg-mono] { filter: grayscale(1) !important; }
+html[data-gg-glass="steam2013"] [data-gg-grey] {
+  background-color: var(--gg-grey-bg) !important;
+  background-image: var(--gg-grey-img) !important;
+  border-color: var(--gg-grey-border) !important;
+  box-shadow: var(--gg-grey-shadow) !important;
+}
+html[data-gg-glass="steam2013"] [data-gg-grey-hover]:hover {
+  background-color: var(--gg-grey-bg-hover) !important;
+  background-image: var(--gg-grey-img-hover) !important;
+  border-color: var(--gg-grey-border-hover) !important;
+  box-shadow: var(--gg-grey-shadow-hover) !important;
+}
+
+/* the page: black, with the grey glow that sat behind the top of every store page */
+html[data-gg-glass="steam2013"] { background: #000 !important; }
+html[data-gg-glass="steam2013"] body,
+html[data-gg-glass="steam2013"] body.v6,
+html[data-gg-glass="steam2013"] body.v7 {
+  background: radial-gradient(ellipse 1100px 460px at 50% 0, rgb(64, 62, 60) 0, rgba(38, 37, 36, 0.6) 55%, rgba(0, 0, 0, 0) 100%) no-repeat #000 !important;
+}
+html[data-gg-glass="steam2013"] :is(.responsive_page_frame, .responsive_page_content, .responsive_page_template_content, .responsive_page_template_content > .page_content_ctn, #responsive_page_template_content, .pagecontent, .page_background_holder ~ .page_content_ctn, .home_page_gutter, body > div.pagecontent, .apphub_background, .profile_page, #footer, #footer_spacer) {
+  background-color: transparent !important;
+}
+html[data-gg-glass="steam2013"] :is(.home_page_body_ctn, .home_page_content, #store_header, .store_header, #global_header, .supernav_container) { background-color: transparent !important; background-image: none !important; }
+
+/* Arial, as everywhere in the 2013 client and on its pages */
+html[data-gg-glass="steam2013"] body,
+html[data-gg-glass="steam2013"] body :not(i, [class*="icon"], [class*="Icon"], svg, svg *) { font-family: Arial, Helvetica, Verdana, sans-serif !important; }
+
+/* words: the old greys; links and headings lighter */
+html[data-gg-glass="steam2013"] body { color: rgb(176, 174, 172) !important; }
+html[data-gg-glass="steam2013"] :is(h1, h2, h3, .pageheader, .page_title, .blockbg, .home_page_content h2, .apphub_AppName) { color: rgb(229, 226, 223) !important; text-shadow: none !important; letter-spacing: 0 !important; }
+html[data-gg-glass="steam2013"] :is(input[type="text"], input[type="search"], input[type="password"], textarea, select, .searchbox, #store_nav_search_term) {
+  border: 1px solid rgb(77, 75, 72) !important;
+  border-radius: 2px !important;
+  box-shadow: none !important;
+  background: rgb(23, 22, 20) !important;
+  color: rgb(209, 207, 205) !important;
+}
+html[data-gg-glass="steam2013"] ::selection { color: #fff; background: rgb(64, 90, 128); }
+
+/* scrollbars: the client's own */
+html[data-gg-glass="steam2013"] ::-webkit-scrollbar { width: 15px; height: 15px; background: rgb(23, 22, 20); }
+html[data-gg-glass="steam2013"] ::-webkit-scrollbar-thumb { border: solid transparent; border-width: 0 2px 0 0; border-radius: 1px; background: rgba(105, 102, 99, 0.784); background-clip: padding-box; }
+html[data-gg-glass="steam2013"] ::-webkit-scrollbar-thumb:hover { background-color: rgba(105, 102, 99, 0.94); }
+html[data-gg-glass="steam2013"] ::-webkit-scrollbar-thumb:horizontal { border-width: 0 0 2px; }
+html[data-gg-glass="steam2013"] ::-webkit-scrollbar-corner { background: rgb(23, 22, 20); }

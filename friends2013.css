@@ -1,0 +1,180 @@
+/* Glossy Glass for Steam: the friends list and chat windows in the "Steam 2013" mode.
+
+   The 2013 friends window: the dialog grey with a darker top, your own picture and name at its
+   head, friends 40 apart with their pictures in thick rounded frames, everything coloured by
+   what the friend is doing (the skin's Friends.InGameColor green, OnlineColor blue, grey when
+   offline), group names in small capitals, and "+ ADD A FRIEND..." along the bottom. Arial
+   throughout; the colours and sizes are the old skin's (see steam2013.css). */
+
+html:root {
+  --black: #000;
+  --almost-black: rgb(23, 22, 20);
+  --dialog: rgb(56, 54, 53);
+  --dark-client: rgb(36, 35, 34);
+  --sheet: rgb(74, 72, 70);
+  --text: rgb(209, 207, 205);
+  --text2: rgb(184, 180, 176);
+  --text-hover: rgb(229, 226, 223);
+  --label: rgb(166, 164, 161);
+  --label2: rgb(115, 111, 108);
+  --label-disabled: rgb(138, 135, 132);
+  --label-focus: rgb(199, 196, 194);
+  --face: rgba(105, 102, 99, 0.784);
+  --face2: rgb(92, 89, 86);
+  --border: rgb(112, 109, 105);
+  --border-disabled: rgb(77, 75, 72);
+  --border-focus: rgb(153, 147, 141);
+  --focus: rgb(49, 66, 89);
+  --focus3: rgb(62, 92, 133);
+  --selected-bg: rgb(64, 90, 128);
+  --highlight5: rgb(77, 103, 140);
+  --divider: rgb(107, 104, 101);
+  --in-game: rgb(140, 179, 89);
+  --online: rgb(134, 181, 217);
+  --offline: rgb(128, 125, 122);
+  --frame-in-game: rgb(160, 193, 114);
+  --frame-online: rgb(128, 165, 198);
+  --frame-offline: rgb(118, 116, 113);
+  --font: Arial, Helvetica, sans-serif;
+}
+
+html, body, body.fullheight { background: var(--dialog) !important; font-family: var(--font) !important; color: var(--label) !important; }
+body * { font-family: var(--font) !important; letter-spacing: 0 !important; }
+.popup_chat_frame, .chat_main, .chat_main_flex, .friendsListContainer, .friendlist, .FriendsListContent, .friendlistListContainer, .listContentContainer, .chatRoomListContainer { background: none !important; box-shadow: none !important; }
+.friendlist { border: 1px solid #000; border-right-color: var(--highlight5); border-bottom-color: var(--highlight5); box-sizing: border-box; }
+
+/* the head of the window: black down to the dialog grey, with the old header texture */
+.friendListHeaderContainer {
+  background: var(--g-friendslist-header2, none) 0 0 / 100% 100% no-repeat, linear-gradient(var(--black), var(--dialog) 120px) !important;
+  box-shadow: none !important;
+  border: 0 !important;
+}
+.friendListHeaderContainer .title-area-highlight, .friendListHeaderContainer .currentUserContainer > svg { display: none !important; }
+.chatTitleBar, .TitleBar { background: none !important; }
+.title-bar-actions .title-area-icon { width: 18px !important; height: 16px !important; margin: 7px 3px 0 0 !important; border-radius: 0 !important; background: center no-repeat !important; opacity: 1 !important; }
+.title-bar-actions .title-area-icon svg { display: none !important; }
+.title-bar-actions .title-area-icon-inner { background: none !important; }
+.title-bar-actions .closeButton { background-image: var(--g-win32-win-close, none) !important; background-color: transparent !important; }
+.title-bar-actions .closeButton:hover { background-image: var(--g-win32-win-close-hover, none) !important; background-color: transparent !important; }
+.title-bar-actions .minimizeButton { background-image: var(--g-win32-win-min, none) !important; }
+.title-bar-actions .minimizeButton:hover { background-image: var(--g-win32-win-min-hover, none) !important; }
+.title-bar-actions .maximizeButton { background-image: var(--g-win32-win-max, none) !important; }
+.title-bar-actions .maximizeButton:hover { background-image: var(--g-win32-win-max-hover, none) !important; }
+.title-bar-actions .restoreButton { background-image: var(--g-win32-win-restore, none) !important; }
+
+/* pictures: 4 thick rounded frames in the colour of what the friend is doing */
+.avatarHolder {
+  --frame: var(--frame-offline);
+  box-sizing: border-box !important;
+  padding: 4px !important;
+  border: 0 !important;
+  border-radius: 4px !important;
+  box-shadow: inset 0 0 0 1px rgba(23, 22, 20, 0.22) !important;
+  background: var(--frame) !important;
+}
+.avatarHolder.online, .avatarHolder.awayOrSnooze.online { --frame: var(--frame-online); }
+.avatarHolder.ingame { --frame: var(--frame-in-game); }
+.avatarHolder .avatarStatus { display: none !important; }
+.avatarHolder img.avatar, .avatarHolder .avatar { width: 100% !important; height: 100% !important; border-radius: 0 !important; box-shadow: 0 0 0 1px rgba(23, 22, 20, 0.4) !important; }
+.avatarHolder .avatarFrame { display: none !important; }
+
+/* you */
+.currentUserContainer { background: none !important; }
+.currentUserAvatar .avatarHolder { width: 40px !important; height: 40px !important; }
+.currentUserContainer .labelHolder :is(.nOdcT-MoOaXGePXLyPe0H, [class*="playerName"]) { font: 700 13px/16px var(--font) !important; }
+.labelHolder { color: var(--offline) !important; }
+.labelHolder.online { color: var(--online) !important; }
+.labelHolder.ingame { color: var(--in-game) !important; }
+.labelHolder * { color: inherit !important; text-shadow: none !important; }
+.labelHolder :is(._2Ri005Wg_uXDTa71kdRbcN, [class*="richPresence"], [class*="gameName"], [class*="personaStatus"]) { font: 400 11px/13px var(--font) !important; opacity: 0.85; }
+.ContextMenuButton svg { color: var(--label-disabled) !important; }
+
+/* the tab row ("Friends", search, add): one quiet line */
+.socialTabSearchContainer, .socialTabContainer, .friendTab, .friendTab.activeTab { background: none !important; box-shadow: none !important; border: 0 !important; }
+.friendTab .tabLabel { font: 400 11px/20px var(--font) !important; text-transform: uppercase !important; color: var(--label-focus) !important; }
+.friendTab :is(.searchIconButton, .friendRequestButton, .friendListButton) { opacity: 0.75; }
+.friendTab :is(.searchIconButton, .friendRequestButton, .friendListButton):hover { opacity: 1; }
+.quickAccessFriends { background: none !important; border: 1px dashed var(--border-disabled) !important; border-radius: 0 !important; }
+.quickAccessFriendsMessage { font: 400 11px/14px var(--font) !important; color: var(--label2) !important; }
+.quickAccessFriendsMessageDismiss { background: none !important; color: var(--label) !important; }
+
+/* groups: small capitals with the old plus and minus; friends 40 apart */
+.friendGroup { background: none !important; border: 0 !important; }
+.friendGroup .groupName, .friendsListSectionTitle, .groupChatSectionTitle {
+  background: none !important;
+  font: 400 11px/20px var(--font) !important;
+  text-transform: uppercase !important;
+  color: var(--label2) !important;
+}
+.friendGroup .groupName:hover, .friendsListSectionTitle:hover { color: var(--text-hover) !important; }
+.friendGroup .groupName * { font: inherit !important; color: inherit !important; }
+.friendGroup .groupName hr, .friendsListSectionTitle hr { display: none !important; }
+.friendGroup .groupCount { opacity: 0.7; }
+.friend {
+  border-radius: 0 !important;
+  background: none !important;
+  box-shadow: none !important;
+  transition: none !important;
+}
+.friend:hover, .friend.friendSelected, .friend[class*="Selected"] { background: linear-gradient(to right, var(--focus3), rgba(62, 92, 133, 0)) !important; }
+.friend .avatarHolder { width: 40px !important; height: 40px !important; }
+.friend :is(.nOdcT-MoOaXGePXLyPe0H, [class*="playerName"]) { font: 700 12px/15px var(--font) !important; }
+.friend .FriendInGameIcon { opacity: 0.8; }
+.unreadFriend { background: rgba(49, 66, 89, 0.5) !important; }
+
+/* group chats, at the bottom */
+.FriendsListChatSection, .friendsListSectionTitle.chatSectionTitle { background: var(--dark-client) !important; border-top: 1px solid var(--border-disabled) !important; box-shadow: none !important; }
+.ChatRoomListGroupItem, .ChatRoomListGroupItem_header { background: none !important; }
+.ChatRoomListGroupItem:hover { background: linear-gradient(to right, var(--focus3), rgba(62, 92, 133, 0)) !important; }
+.ChatRoomListGroupItem :is(.groupNameStatusContainer, [class*="chatRoomName"]) { font: 700 12px/15px var(--font) !important; color: var(--text) !important; }
+.friendListFooter { background: var(--dialog) !important; border-top: 1px solid var(--border-disabled) !important; font: 400 11px/20px var(--font) !important; text-transform: uppercase; color: var(--label-focus) !important; }
+
+/* a chat window: the conversation on almost black inside a 1px edge, names in their colours,
+   the line you type in a TextEntry, Send a Button */
+.chatWindow, .chatDialogs, .chatBody, .ChatRoomGroupDialogContents { background: var(--dialog) !important; }
+.chatHeader, .chatTabList, .chatTabSetContainer { background: linear-gradient(var(--black), var(--dialog)) !important; border: 0 !important; box-shadow: none !important; }
+.chatTab { border-radius: 0 !important; background: var(--sheet) !important; font: 400 11px/20px var(--font) !important; color: var(--label) !important; }
+.chatTab.Active, .chatTab.active { background: linear-gradient(var(--divider), var(--dialog)) !important; color: var(--text-hover) !important; }
+.chatHistoryScroll, .chatHistory, .ChatHistoryContainer { background: var(--almost-black) !important; border: 1px solid var(--border-disabled) !important; }
+.ChatMessageBlock, .msg { background: none !important; }
+.msgText, .msg { font: 400 12px/16px var(--font) !important; color: var(--text) !important; }
+.speakerName, .speaker { font: 700 12px/16px var(--font) !important; }
+.speaker.online, .speakerName.online { color: var(--online) !important; }
+.speaker.ingame, .speakerName.ingame { color: var(--in-game) !important; }
+.speaker.offline, .speakerName.offline { color: var(--offline) !important; }
+.chatEntry, .chatEntry textarea, .chatentry_wrapper textarea {
+  border: 1px solid var(--border) !important;
+  border-radius: 1px !important;
+  box-shadow: none !important;
+  background: rgba(23, 22, 20, 0.35) !important;
+  font: 400 12px/16px var(--font) !important;
+  color: var(--text) !important;
+}
+.chatEntry textarea { border: 0 !important; background: none !important; }
+button, .DialogButton, .chatSubmitButton {
+  border: 1px solid var(--border) !important;
+  border-radius: 2px !important;
+  box-shadow: none !important;
+  background: linear-gradient(var(--face2), var(--sheet)) !important;
+  font: 400 10px/20px var(--font) !important;
+  text-transform: uppercase !important;
+  color: var(--text) !important;
+}
+:is(button, .DialogButton, .chatSubmitButton):hover { border-color: var(--border-focus) !important; color: var(--text-hover) !important; }
+::selection { color: #fff; background: var(--selected-bg); }
+
+/* scrollbars: the client's own */
+::-webkit-scrollbar { width: 15px !important; height: 15px !important; background: transparent !important; }
+::-webkit-scrollbar-track { background: transparent !important; border: 0 !important; }
+::-webkit-scrollbar-thumb {
+  border: solid transparent !important;
+  border-width: 0 2px 0 0 !important;
+  border-radius: 1px !important;
+  background: var(--g-icon-scroll-handle, none) center no-repeat, var(--face) !important;
+  background-origin: padding-box !important;
+  background-clip: padding-box !important;
+}
+::-webkit-scrollbar-thumb:hover { background-color: rgba(105, 102, 99, 0.94) !important; }
+::-webkit-scrollbar-corner { background: transparent !important; }
+
+/* menus opened from here take the main window's Menu look (their pages get steam2013.css) */

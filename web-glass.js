@@ -53,14 +53,16 @@
     walk(document.body, 0);
   };
 
-  // The GD modes wear matte greys, so Steam's blue goes black and white there (web.css draws it). A
+  // The GD modes wear matte greys, and the Steam 2013 mode the old charcoal, so Steam's blue goes black
+  // and white there (web.css and web2013.css draw it). A
   // part counts as blue when its background, text, edge or glow is a saturated blue, cyan or indigo
   // (hue 160-280; the green discounts and coloured deal labels stay). A small part with no pictures
   // in it gets data-gg-mono (a greyscale filter, so its hover look stays too); anything bigger, a panel
   // holding game pictures, gets data-gg-grey with its own colours in grey (--gg-grey-*), and its
   // insides are looked at one by one. Parts added later (the store loads sections as you scroll)
   // are looked at as they come, and parts that only turn blue under the pointer when it gets there.
-  const MONO = /^(nullscapes|eternalnight|deprivation)$/.test(cfg.mode);
+  const MONO = /^(nullscapes|eternalnight|deprivation|steam2013)$/.test(cfg.mode);
+  const SOLID = cfg.mode === "steam2013";   // an opaque look of its own (web2013.css): nothing to clear
   const PICTURES = "img, video, canvas, picture, iframe";
   const COLOR = /rgba?\(([^)]*)\)/g;
   const LOOKS = [["backgroundColor", "bg"], ["backgroundImage", "img"], ["borderColor", "border"], ["boxShadow", "shadow"]];
@@ -147,7 +149,7 @@
     addEventListener("mouseover", onOver, { passive: true, capture: true });
   }
 
-  const again = () => { put(); clearWide(); if (MONO) monoAll(); };
+  const again = () => { put(); if (!SOLID) clearWide(); if (MONO) monoAll(); };
   const timers = [setTimeout(again, 1500), setTimeout(again, 4000)];   // late pictures and sections
   let mo = null;
   if (!put()) {   // a page that is just starting: no <html> yet

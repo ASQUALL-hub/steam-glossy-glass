@@ -42,6 +42,13 @@ in glass-mode.txt next to this file (changes apply live):
            yours (tray > Aero picture > Choose a picture…, kept as
            my-aero-picture.jpg in the settings folder) or the theme's own
            aero-picture.jpg if it has one.
+  steam2013  Steam as it looked at the end of 2013, on today's client: not glass but the old
+           skin itself (steam2013.css, friends2013.css, web2013.css, steam2013.js). Its colours,
+           sizes and box metrics are the December 2013 client's own (resource/styles/steam.styles
+           and resource/layout/*.layout, as kept by SteamDatabase's SteamTracking), and its
+           pictures are the ones Steam still ships in its graphics folder on this PC
+           (skin_2013_pictures), so none of Valve's files are in this theme. Steam's blue goes
+           grey underneath (greys), so the parts the mode doesn't name fit in too.
   off      Steam's own windows.
 
 A tray icon switches between them (it writes glass-mode.txt). Its "Song toggle"
@@ -54,7 +61,7 @@ Installed builds (SteamGlass.exe, put there by SteamGlassUpdater.exe) keep
 glass-mode.txt in %APPDATA%\SteamGlass and add "Check for updates…" to the menu.
 helper.log in the same folder notes mode changes and anything that went wrong.
 "Start with Windows" in the menu adds or removes the helper under the Run key."""
-__version__ = "1.4.3"
+__version__ = "1.5.0"
 
 import base64
 import ctypes
@@ -76,6 +83,7 @@ import time
 import traceback
 import urllib.parse
 import urllib.request
+import zlib
 from ctypes import wintypes as wt
 
 user32 = ctypes.WinDLL("user32", use_last_error=True)
@@ -179,7 +187,9 @@ user32.SetWindowLongW.restype = ctypes.c_long
 
 
 MODES = {"frosted": "Frosted", "clear": "Clear", "liquid": "Liquid", "aero": "Frutiger Aero", "nullscapes": "Nullscapes",
-         "eternalnight": "Eternal Night", "deprivation": "Deprivation (unfinished)", "off": "Off (Steam's normal look)"}
+         "eternalnight": "Eternal Night", "deprivation": "Deprivation (unfinished)", "steam2013": "Steam 2013",
+         "off": "Off (Steam's normal look)"}
+SOLID_MODES = ("steam2013",)   # looks of their own on opaque windows: no glass behind the pages
 FROSTED_LIKE = ("frosted", "liquid", "aero", "nullscapes", "eternalnight", "deprivation")   # glass kinds Windows draws as frosted
 
 
@@ -441,8 +451,8 @@ def apply(hwnd, mode: str):
                {"frosted": DWMSBT_TRANSIENTWINDOW, "clear": DWMSBT_NONE}.get(mode, DWMSBT_AUTO))
     blur_behind(hwnd, mode == "clear")
     dword_attr(hwnd, DWMWA_WINDOW_CORNER_PREFERENCE,
-               {"frosted": DWMWCP_ROUND, "clear": DWMWCP_DONOTROUND}.get(mode, DWMWCP_DEFAULT))
-    dword_attr(hwnd, DWMWA_BORDER_COLOR, DWMWA_COLOR_NONE if mode == "clear" else DWMWA_COLOR_DEFAULT)
+               {"frosted": DWMWCP_ROUND, "clear": DWMWCP_DONOTROUND, "steam2013": DWMWCP_DONOTROUND}.get(mode, DWMWCP_DEFAULT))
+    dword_attr(hwnd, DWMWA_BORDER_COLOR, DWMWA_COLOR_NONE if mode in ("clear",) + SOLID_MODES else DWMWA_COLOR_DEFAULT)
     if mode != "clear" and has_region(hwnd):   # clear glass cuts its own shape (set_shape)
         user32.SetWindowRgn(hwnd, None, True)
 
@@ -535,7 +545,7 @@ def tray_icon(mode: str, sizes=(16, 20, 24, 32, 48, 64)):
     rim when clear, Liquid's teal sky with a wave of water when liquid, a
     sunny sky over a green hill when aero, the moon over spiky grass for
     Nullscapes, a crescent moon and stars for Eternal Night, a row of fangs in crimson
-    for Deprivation, grey when off."""
+    for Deprivation, the old client's charcoal with its blue corner for Steam 2013, grey when off."""
     from PySide6.QtCore import QPointF, QRectF, Qt
     from PySide6.QtGui import QColor, QIcon, QLinearGradient, QPainter, QPainterPath, QPen, QPixmap, QRadialGradient
 
@@ -572,11 +582,23 @@ def tray_icon(mode: str, sizes=(16, 20, 24, 32, 48, 64)):
         else:
             top, bottom = {"frosted": ((70, 160, 255, 235), (20, 60, 150, 235)),
                            "clear": ((120, 200, 255, 90), (40, 110, 200, 70)),
+                           "steam2013": ((92, 89, 86, 255), (23, 22, 20, 255)),
                            "off": ((150, 156, 166, 230), (80, 86, 96, 230))}[mode]
             fill.setColorAt(0, QColor(*top))
             fill.setColorAt(1, QColor(*bottom))
         p.fillPath(body, fill)
-        if mode == "nullscapes":   # the moon over spiky grass
+        if mode == "steam2013":   # three list lines, the picked one on the old selection blue; the frame's blue corner
+            p.save()
+            p.setClipPath(body)
+            p.setPen(Qt.NoPen)
+            p.fillRect(QRectF(px * 0.16, px * 0.40, px * 0.68, px * 0.13), QColor(77, 103, 140))
+            for k, tone in enumerate((166, 229, 138)):
+                p.fillRect(QRectF(px * 0.22, px * (0.26 + 0.19 * k), px * (0.44, 0.52, 0.36)[k], px * 0.055), QColor(tone, tone - 2, tone - 4))
+            corner = QLinearGradient(px * 0.55, px * 0.55, px, px)
+            corner.setColorAt(0, QColor(77, 103, 140, 0)); corner.setColorAt(1, QColor(77, 103, 140, 255))
+            p.fillRect(QRectF(0, 0, px, px), corner)
+            p.restore()
+        elif mode == "nullscapes":   # the moon over spiky grass
             p.save()
             p.setClipPath(body)
             glow = QRadialGradient(QPointF(px * 0.5, px * 0.58), px * 0.42)
@@ -1181,6 +1203,123 @@ def theme_greys(css: str) -> str:
     return _greys[key]
 
 
+# ------------------------------------------------------------- the 2013 skin's own pictures
+# Steam still ships the old client's pictures in its graphics folder (the piston watermark, the nav
+# arrows, the BIG PICTURE button, view buttons, scrollbar pieces, checkboxes, window buttons...). The
+# Steam 2013 mode uses those very files: each becomes a CSS variable holding the picture
+# (--g-icon-button-back: url(data:image/png...)), so nothing of Valve's is in this theme's download and
+# the look is the real one. A picture that's missing is left out; the theme's CSS has drawn fallbacks.
+
+SKIN_2013_PICTURES = (
+    "clienttexture2 logo4 icon_button_back icon_button_back_over icon_button_back_down icon_button_back_disabled "
+    "icon_button_forward icon_button_forward_over icon_button_forward_down icon_button_forward_disabled "
+    "icon_button_fullscreen icon_button_fullscreen_over icon_button_fullscreen_down icon_button_search "
+    "icon_button_detail icon_button_detail_over icon_button_detail_down icon_button_list icon_button_list_over "
+    "icon_button_list_down icon_button_grid icon_button_grid_over icon_button_grid_down icon_button_home "
+    "icon_button_home_over icon_button_reload icon_button_reload_over icon_button_stop icon_button_stop_over "
+    "icon_collapse icon_collapse_over icon_expand icon_expand_over icon_play icon_play_hover icon_play_down "
+    "icon_install icon_install_hover icon_buy icon_buy_hover icon_pause icon_scroll_handle icon_scroll_handle_over "
+    "icon_scroll_handle_horiz icon_up_default icon_up_hover icon_down_default icon_down_hover icon_left_default "
+    "icon_right_default inbox_notification inbox_notification_inactive icon_addgame icon_addgame_over "
+    "icon_friendslist icon_friendslist_over icon_dropdown chkSelStd chkUnselStd chkSelFocus chkUnselFocus radSelStd "
+    "radUnselStd icon_close icon_close_hover icon_download icon_download_hover icon_details resizer "
+    "avatarBorderOnline avatarBorderInGame avatarBorderOffline achievementbg win32_win_close win32_win_close_hover "
+    "win32_win_max win32_win_max_hover win32_win_min win32_win_min_hover win32_win_restore win32_win_restore_hover "
+    "icon_workshop nav_highlight_selected html_lock html_lock_disabled tiny_x_default tiny_x_hover "
+    "friendslist_header2").split()
+
+
+def tga_rows(data: bytes):
+    """(width, height, [RGBA row bytes, top row first]) of a true-colour TGA (24 or 32 bit, plain or
+    run-length packed), or None for anything else."""
+    if len(data) < 18:
+        return None
+    id_len, has_map, kind = data[0], data[1], data[2]
+    w, h, bits, descriptor = struct.unpack_from("<HHBB", data, 12)
+    if has_map or kind not in (2, 10) or bits not in (24, 32) or not w or not h:
+        return None
+    n, step, pos = w * h, bits // 8, 18 + id_len
+    if kind == 2:
+        px = data[pos:pos + n * step]
+    else:
+        out = bytearray()
+        while len(out) < n * step and pos < len(data):
+            head = data[pos]
+            pos += 1
+            count = (head & 0x7F) + 1
+            if head & 0x80:   # a run: one pixel, repeated
+                out += data[pos:pos + step] * count
+                pos += step
+            else:
+                out += data[pos:pos + count * step]
+                pos += count * step
+        px = bytes(out[:n * step])
+    if len(px) < n * step:
+        return None
+    rgba = bytearray(n * 4)
+    rgba[0::4], rgba[1::4], rgba[2::4] = px[2::step], px[1::step], px[0::step]   # the file is BGR(A)
+    rgba[3::4] = px[3::step] if step == 4 else b"\xff" * n
+    rows = [bytes(rgba[i * w * 4:(i + 1) * w * 4]) for i in range(h)]
+    if not descriptor & 0x20:   # stored bottom row first unless the descriptor says otherwise
+        rows.reverse()
+    return w, h, rows
+
+
+def png_bytes(w: int, h: int, rows) -> bytes:
+    def chunk(tag, body):
+        return struct.pack(">I", len(body)) + tag + body + struct.pack(">I", zlib.crc32(tag + body) & 0xFFFFFFFF)
+    return (b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", w, h, 8, 6, 0, 0, 0))
+            + chunk(b"IDAT", zlib.compress(b"".join(b"\x00" + r for r in rows), 9)) + chunk(b"IEND", b""))
+
+
+_pictures = [None, "", 0.0]   # the files' stamp, the css, when they were last looked at
+
+
+def skin_2013_pictures() -> str:
+    """:root{--g-<name>: url(data:image/png...); --g-<name>-w/-h: its size} for the old skin's pictures
+    in this PC's Steam folder; worked out again only when those files change."""
+    if _pictures[0] is not None and time.monotonic() - _pictures[2] < 60:
+        return _pictures[1]   # looked a moment ago
+    steam = steam_dir()
+    if not steam:
+        return ""
+    found = []
+    for name in SKIN_2013_PICTURES:
+        for ext in (".tga", ".png"):
+            path = os.path.join(steam, "graphics", name + ext)
+            if os.path.isfile(path):
+                found.append((name, path))
+                break
+    try:
+        stamp = tuple((path, os.path.getmtime(path), os.path.getsize(path)) for _, path in found)
+    except OSError:
+        return _pictures[1]
+    if _pictures[0] == stamp:
+        _pictures[2] = time.monotonic()
+        return _pictures[1]
+    parts = []
+    for name, path in found:
+        try:
+            with open(path, "rb") as f:
+                data = f.read()
+        except OSError:
+            continue
+        if path.endswith(".png"):
+            w, h = struct.unpack_from(">II", data, 16) if data[:8] == b"\x89PNG\r\n\x1a\n" else (0, 0)
+            png = data
+        else:
+            got = tga_rows(data)
+            if not got:
+                continue
+            w, h = got[0], got[1]
+            png = png_bytes(*got)
+        var = "--g-" + name.lower().replace("_", "-")
+        parts.append(f"{var}:url(data:image/png;base64,{base64.b64encode(png).decode()});{var}-w:{w}px;{var}-h:{h}px")
+    _pictures[:] = [stamp, "\n/* the 2013 skin's own pictures, from this PC's Steam folder */\n:root{" + ";".join(parts) + "}\n",
+                    time.monotonic()]
+    return _pictures[1]
+
+
 class Theme:
     """Puts the theme into every Steam page and keeps it there. Runs on its own
     thread (Steam can be slow to answer); set `mode` to switch the glass."""
@@ -1218,7 +1357,7 @@ class Theme:
             mode = "frosted"   # as bundle() does when the level can't be put together
         css = ""
         if mode != "off":
-            with open(os.path.join(THEME_DIR, "web.css"), encoding="utf-8") as f:
+            with open(os.path.join(THEME_DIR, "web2013.css" if mode in SOLID_MODES else "web.css"), encoding="utf-8") as f:
                 css = f.read()
         key = hashlib.sha1((css + js + mode).encode()).hexdigest()[:16] if css else ""
         return f"({js})({json.dumps({'css': css, 'mode': mode, 'key': key})});", key
@@ -1232,6 +1371,10 @@ class Theme:
             with open(os.path.join(THEME_DIR, name), encoding="utf-8") as f:
                 return f.read()
 
+        if mode == "steam2013":   # the old skin itself: nothing of the glass theme under it
+            under = steam_greys() + skin_2013_pictures()
+            lib, friends, js = under + read("steam2013.css"), under + read("friends2013.css"), read("steam2013.js")
+            return lib, friends, js, hashlib.sha1((lib + friends + js).encode()).hexdigest()[:16]
         files = level_files(mode) if mode in LEVEL_MODES else None
         if mode in LEVEL_MODES and not files:
             mode = "frosted"   # the level can't be put together here: plain glass instead
@@ -1327,6 +1470,8 @@ class Theme:
                 continue
             scene = js if t.get("title") in SCENE_WINDOWS else ""
             want = key + ("w" if scene else "")
+            if mode in SOLID_MODES and str(t.get("title") or "").startswith(("SP Overlay", "Steam Big Picture")):
+                scene = want = ""   # an opaque skin has no place over a running game, or in Big Picture
             try:
                 have = ws_eval(t["webSocketDebuggerUrl"],
                                f"(document.getElementById({STYLE_ID!r}) || {{dataset: {{}}}}).dataset.key || ''")
@@ -1340,6 +1485,7 @@ class Theme:
                     if (window.__ggAero) window.__ggAero.stop();
                     if (window.__ggNull) window.__ggNull.stop();
                     if (window.__ggNight) window.__ggNight.stop();
+                    if (window.__gg2013) window.__gg2013.stop();
                     if (!{json.dumps(want)}) {{ if (s) s.remove(); return; }}
                     if (!s) {{ s = document.createElement("style"); s.id = {STYLE_ID!r};
                               (document.head || document.documentElement).appendChild(s); }}
