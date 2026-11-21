@@ -77,7 +77,7 @@ Installed builds (SteamGlass.exe, put there by SteamGlassUpdater.exe) keep
 glass-mode.txt in %APPDATA%\SteamGlass and add "Check for updates…" to the menu.
 helper.log in the same folder notes mode changes and anything that went wrong.
 "Start with Windows" in the menu adds or removes the helper under the Run key."""
-__version__ = "1.7.0"
+__version__ = "1.7.1"
 
 import base64
 import ctypes

@@ -107,10 +107,10 @@ body.DesktopUI, body.DesktopUI * { font-family: var(--font) !important; }   /* A
 ._39oUCO1OuizVPwcnnv88no { position: relative !important; height: 22px !important; min-height: 22px !important; align-items: flex-start !important; background: none !important; }   /* positioned: its words lie over the watermark, not under it */
 
 /* MenuBar MenuButton: 14 (11px), the dim label colour; a grey-to-blue pill under the pointer */
-._1Ky59qmywxOUtNcI1cgmkX { height: 22px !important; padding: 3px 0 0 6px !important; gap: 0 !important; align-items: center !important; }
+._1Ky59qmywxOUtNcI1cgmkX { height: 22px !important; padding: 3px 0 0 5px !important; gap: 0 !important; align-items: center !important; }
 ._1Ky59qmywxOUtNcI1cgmkX ._2Lu3d-5qLmW4i19ysTt2jT {
   height: 18px !important;
-  padding: 0 7px !important;
+  padding: 0 7px 0 6px !important;
   margin: 0 !important;
   border-radius: 2px !important;
   font: 400 11px/18px var(--font) !important;
@@ -149,16 +149,17 @@ body.DesktopUI, body.DesktopUI * { font-family: var(--font) !important; }   /* A
   color: rgb(191, 191, 191) !important;
 }
 ._3cykd-VfN_xBxf3Qxriccm ._2Szzh5sKyGgnLUR870zbDE:not(._3LKQ3S_yqrebeNLF6aeiog):hover { color: #fff !important; }
-._3cykd-VfN_xBxf3Qxriccm ._2Szzh5sKyGgnLUR870zbDE._1oEwirQksXfZ-3RWWslbAR {   /* inbox_button_active */
+/* green while something is new: the announcements button says so with one class, the inbox with another */
+._3cykd-VfN_xBxf3Qxriccm ._2Szzh5sKyGgnLUR870zbDE:is(._1oEwirQksXfZ-3RWWslbAR, ._3L1c8C0o_xXzPy26aoLBFd) {   /* inbox_button_active */
   border-color: rgb(100, 117, 55) !important;
   background: linear-gradient(rgb(92, 126, 16), rgb(51, 49, 48)) !important;
   color: #fff !important;
 }
-._3cykd-VfN_xBxf3Qxriccm ._2Szzh5sKyGgnLUR870zbDE._1oEwirQksXfZ-3RWWslbAR:hover { background: linear-gradient(rgb(92, 126, 16), rgb(121, 166, 21)) !important; }
+._3cykd-VfN_xBxf3Qxriccm ._2Szzh5sKyGgnLUR870zbDE:is(._1oEwirQksXfZ-3RWWslbAR, ._3L1c8C0o_xXzPy26aoLBFd):hover { background: linear-gradient(rgb(92, 126, 16), rgb(121, 166, 21)) !important; }
 ._3cykd-VfN_xBxf3Qxriccm ._2Szzh5sKyGgnLUR870zbDE svg { width: 14px !important; height: 14px !important; }
 /* the notifications tab wears the old envelope */
 ._3cykd-VfN_xBxf3Qxriccm ._2Szzh5sKyGgnLUR870zbDE.RtSv39ZoBOySnb8XQ5hJf { background: var(--g-inbox-notification-inactive, none) center 6px no-repeat, linear-gradient(rgb(38, 38, 37), rgb(51, 49, 48)) !important; }
-._3cykd-VfN_xBxf3Qxriccm ._2Szzh5sKyGgnLUR870zbDE.RtSv39ZoBOySnb8XQ5hJf._1oEwirQksXfZ-3RWWslbAR { background: var(--g-inbox-notification, none) center 6px no-repeat, linear-gradient(rgb(92, 126, 16), rgb(51, 49, 48)) !important; }
+._3cykd-VfN_xBxf3Qxriccm ._2Szzh5sKyGgnLUR870zbDE.RtSv39ZoBOySnb8XQ5hJf:is(._1oEwirQksXfZ-3RWWslbAR, ._3L1c8C0o_xXzPy26aoLBFd) { background: var(--g-inbox-notification, none) center 6px no-repeat, linear-gradient(rgb(92, 126, 16), rgb(51, 49, 48)) !important; }
 ._3cykd-VfN_xBxf3Qxriccm ._2Szzh5sKyGgnLUR870zbDE.RtSv39ZoBOySnb8XQ5hJf svg { opacity: 0 !important; }
 
 /* account_balance | account_URL: plain 14 (11px) text, no picture */
@@ -195,11 +196,12 @@ body.DesktopUI, body.DesktopUI * { font-family: var(--font) !important; }   /* A
 }
 ._3cykd-VfN_xBxf3Qxriccm ._3yD46y5pd3zOGR7CzKs0mC ._2jphjrSifC6orDT4g_7Wd::after { content: "|"; margin-left: 8px; color: var(--label2); }
 
-/* BIG PICTURE: the old 92x64 button under the window buttons */
+/* BIG PICTURE: the old 92x64 button at its own size under the window buttons, its arrows running to
+   12 from the window's edge, as on the client of 2014 (the picture itself is wider than what is drawn in it) */
 ._3cykd-VfN_xBxf3Qxriccm ._2Szzh5sKyGgnLUR870zbDE._3LKQ3S_yqrebeNLF6aeiog {
   position: absolute !important;
-  top: 38px;
-  right: 8px;
+  top: 40px;
+  right: -8px;
   z-index: 3;
   width: 92px !important;
   height: 64px !important;
@@ -208,7 +210,7 @@ body.DesktopUI, body.DesktopUI * { font-family: var(--font) !important; }   /* A
   border: 0 !important;
   border-radius: 0 !important;
   box-shadow: none !important;
-  background: var(--g-icon-button-fullscreen, none) center / 86px 60px no-repeat !important;
+  background: var(--g-icon-button-fullscreen, none) 0 0 no-repeat !important;
 }
 ._3cykd-VfN_xBxf3Qxriccm ._2Szzh5sKyGgnLUR870zbDE._3LKQ3S_yqrebeNLF6aeiog:hover { background-image: var(--g-icon-button-fullscreen-over, none) !important; }
 ._3cykd-VfN_xBxf3Qxriccm ._2Szzh5sKyGgnLUR870zbDE._3LKQ3S_yqrebeNLF6aeiog:active { background-image: var(--g-icon-button-fullscreen-down, none) !important; }
@@ -219,7 +221,7 @@ body.DesktopUI, body.DesktopUI * { font-family: var(--font) !important; }   /* A
 .qP17eBPXkfezFfexZ4hC3 { flex: 0 0 56px !important; width: 56px !important; }
 .qP17eBPXkfezFfexZ4hC3 .title-area-children { display: none !important; }
 .qP17eBPXkfezFfexZ4hC3 .title-area-highlight { display: none !important; }
-.qP17eBPXkfezFfexZ4hC3 .title-bar-actions { height: 22px !important; padding: 7px 2px 0 0 !important; gap: 0 !important; align-items: flex-start !important; }
+.qP17eBPXkfezFfexZ4hC3 .title-bar-actions { height: 22px !important; padding: 6px 6px 0 0 !important; gap: 0 !important; align-items: flex-start !important; }
 .qP17eBPXkfezFfexZ4hC3 .title-area-icon {
   width: 18px !important;
   height: 16px !important;
@@ -274,7 +276,7 @@ body.DesktopUI, body.DesktopUI * { font-family: var(--font) !important; }   /* A
 
 ._2D64jIEK7wpUR_NlObDW76 ._2Lu3d-5qLmW4i19ysTt2jT {
   height: 40px !important;
-  margin: 0 8px 0 0 !important;
+  margin: 2px 8px 0 0 !important;        /* the capitals stand from y 38 to 55 */
   padding: 0 5px !important;
   background: none !important;
   border: 0 !important;
@@ -1019,7 +1021,6 @@ body.DesktopUI ._1ijTaXJJA5YWl_fW2IxcaT ::-webkit-scrollbar-button:single-button
 .OhSdLYuggDtBcWjYP0j_9 .avatarHolder img.avatar { width: 32px !important; height: 32px !important; border-radius: 0 !important; box-shadow: 0 0 0 1px rgba(23, 22, 20, 0.4) !important; }
 
 /* ------------------------------------------------------------- corrections to the window's edges */
-._3cykd-VfN_xBxf3Qxriccm ._2Szzh5sKyGgnLUR870zbDE._3LKQ3S_yqrebeNLF6aeiog { right: -2px; }   /* BIG PICTURE runs to the window's edge */
 ._1ZS_xta5HMXzR8JgxDH6n7 .uE7Pj4tb2n3_Bx4vjEX0a svg { fill: none; }
 ._1ijTaXJJA5YWl_fW2IxcaT ._2sYIghGVXJr6tsQVvcryy8 ._2mZ8LlvoUiyeEUtIWuTri { height: 26px !important; line-height: 26px !important; overflow: visible !important; }
 
@@ -1120,14 +1121,14 @@ body.DesktopUI :is(textarea, input)::selection { color: #fff; background: var(--
   position: relative !important;
   height: 30px !important;
   margin: 0 !important;
-  padding: 0 48px 0 0 !important;
+  padding: 0 42px 0 0 !important;
 }
 ._3vCzSrrXZzZjVJFZNg9SGu ._1TdaAqMFadi0UTqilrkelR ._1KrJ3sFAqPBN9mfpaNTU5F { display: none !important; }
 ._3vCzSrrXZzZjVJFZNg9SGu ._1TdaAqMFadi0UTqilrkelR::after {       /* FriendPanel: the account's picture (the mode's script supplies it) */
   content: "";
   position: absolute;
-  right: 0;
-  top: 3px;
+  right: -1px;
+  top: 9px;
   width: 40px;
   height: 40px;
   box-sizing: border-box;
@@ -1476,6 +1477,7 @@ body.ModalDialogBody .title-area-children, body.ModalDialogBody .title-area-chil
   box-shadow: 0 0 0 1px var(--border-disabled) !important;
   background: linear-gradient(var(--dialog), var(--almost-black)) !important;
 }
+._1rDh5rXSFZJOqCa4UpnI4z > ._1fuML-ekRbTEzgzC597yGP { width: auto !important; }   /* the console: Steam's own 100% plus the margins would reach past the right edge */
 ._1bq4x9pa4-9RLY-dXWUZTp { background: none !important; }
 ._1bq4x9pa4-9RLY-dXWUZTp ._3Mbhnlk1Go2j8yCdjthzc7 { border: 0 !important; border-radius: 0 !important; box-shadow: none !important; background: var(--start) !important; }
 ._1bq4x9pa4-9RLY-dXWUZTp ._3Mbhnlk1Go2j8yCdjthzc7._2KB3yVOsiRCK9qK6mwKl9c { background: var(--start-subtle) !important; }
