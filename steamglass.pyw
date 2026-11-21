@@ -77,7 +77,7 @@ Installed builds (SteamGlass.exe, put there by SteamGlassUpdater.exe) keep
 glass-mode.txt in %APPDATA%\SteamGlass and add "Check for updates…" to the menu.
 helper.log in the same folder notes mode changes and anything that went wrong.
 "Start with Windows" in the menu adds or removes the helper under the Run key."""
-__version__ = "1.7.2"
+__version__ = "1.7.3"
 
 import base64
 import ctypes
@@ -1414,7 +1414,9 @@ def skin_2013_pictures() -> str:
 # pages only comes round once a second, so a new window (the friends list, a chat, a menu, a dialog)
 # would show Steam's own look until then. This script, kept in SharedJSContext, wraps open(): the
 # moment Steam has written a new window's skeleton, in the same turn and before anything is drawn,
-# the sheet is in it. A window is a friends window if .friendsui-container turns up in it, which
+# the sheet is in it (writing the skeleton gives the window this page's own address in place of
+# about:blank, so a window can't be told by its address: any window whose document can be reached
+# is one of Steam's). A window is a friends window if .friendsui-container turns up in it, which
 # happens a little later, so the sheet is swapped the instant it does (again before it is drawn),
 # and for its first seconds the sheet is kept behind the style sheets Steam itself adds.
 BIRTH_JS = """((lib, friends, key, solid) => {
@@ -1422,8 +1424,8 @@ BIRTH_JS = """((lib, friends, key, solid) => {
   const st = window.__ggBirth || (window.__ggBirth = {});
   st.lib = lib; st.friends = friends; st.key = key; st.solid = solid;
   st.dress = w => {
-    const d = w.document;
-    if (!st.key || !d || !d.documentElement || !/^about:blank/.test(w.location.href)) return;
+    const d = w.document;   // a window showing some other site throws here, and is left alone
+    if (!st.key || !d || !d.documentElement) return;
     if (st.solid && /^(SP Overlay|Steam Big Picture)/.test(d.title || "")) return;
     let s = d.getElementById(ID);
     if (s && s.dataset.key) return;
