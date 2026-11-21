@@ -4,10 +4,10 @@
    The 2013 store and community were charcoal: a black page with a grey glow at its top, dark grey
    panels, light grey Arial, and green where there was something to buy. Today's pages are navy
    and blue. web-glass.js marks their blue parts (Steam's blue, cyan and indigo; never the green
-   discounts or the coloured deal labels): small parts with no pictures in them are drawn through
-   a greyscale filter, which keeps their hover looks, and panels that hold game pictures get only
-   their own background in grey, so the pictures keep their colours. This sheet draws those greys,
-   the old page background and the old typeface. The mode arrives as
+   discounts and buttons or the coloured deal labels): small parts with no pictures in them are
+   drawn through a greyscale filter, which keeps their hover looks, and panels that hold game
+   pictures get only their own background in grey, so the pictures keep their colours. This sheet
+   draws those greys, the old page background and the old typeface. The mode arrives as
    <html data-gg-glass="steam2013">. */
 
 html[data-gg-glass="steam2013"] [data-gg-mono] { filter: grayscale(1) !important; }
@@ -31,10 +31,14 @@ html[data-gg-glass="steam2013"] body.v6,
 html[data-gg-glass="steam2013"] body.v7 {
   background: radial-gradient(ellipse 1100px 460px at 50% 0, rgb(64, 62, 60) 0, rgba(38, 37, 36, 0.6) 55%, rgba(0, 0, 0, 0) 100%) no-repeat #000 !important;
 }
-html[data-gg-glass="steam2013"] :is(.responsive_page_frame, .responsive_page_content, .responsive_page_template_content, .responsive_page_template_content > .page_content_ctn, #responsive_page_template_content, .pagecontent, .page_background_holder ~ .page_content_ctn, .home_page_gutter, body > div.pagecontent, .apphub_background, .profile_page, #footer, #footer_spacer) {
+html[data-gg-glass="steam2013"] :is(.responsive_page_frame, .responsive_page_content, .responsive_page_template_content, .responsive_page_template_content > .page_content_ctn, #responsive_page_template_content, .pagecontent, .page_background_holder ~ .page_content_ctn, .home_page_gutter, body > div.pagecontent, .profile_page, #footer, #footer_spacer) {
   background-color: transparent !important;
 }
 html[data-gg-glass="steam2013"] :is(.home_page_body_ctn, .home_page_content, #store_header, .store_header, #global_header, .supernav_container) { background-color: transparent !important; background-image: none !important; }
+/* the community's page-wide blue art (the hubs' backdrop, a featured game's picture): the old pages
+   were plain. A store page keeps its game's own backdrop, as it did then. */
+html[data-gg-glass="steam2013"] :is(.apphub_background, .community_home_background, .workshop_home_background, .discussions_header_bg, .market_header_bg) { background-image: none !important; background-color: transparent !important; }
+html[data-gg-glass="steam2013"] :is(.profile_background_holder_content, .profile_animated_background) { filter: grayscale(0.35) brightness(0.8); }
 
 /* Arial, as everywhere in the 2013 client and on its pages */
 html[data-gg-glass="steam2013"] body,

@@ -82,8 +82,29 @@
     return Number.isFinite(a) ? `rgba(${y}, ${y}, ${y}, ${a})` : `rgb(${y}, ${y}, ${y})`;
   });
   const bluePanel = s => LOOKS.some(([p]) => blue(s[p]));
+  // Steam 2013 keeps what was never blue: a green "Add to Cart" inside a blue box must stay green, so
+  // such a box is not put through the filter whole (it gets its own background in grey instead)
+  const vivid = text => {
+    for (const m of String(text).replace(/url\([^)]*\)/g, "").matchAll(COLOR)) {
+      const [r, g, b, a = 1] = m[1].split(",").map(Number);
+      const mx = Math.max(r, g, b), d = mx - Math.min(r, g, b);
+      if (!(a >= 0.4) || mx < 60 || d / mx < 0.35) continue;
+      let h = 60 * (mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4);
+      if (h < 0) h += 360;
+      if (h < 160 || h > 280) return true;
+    }
+    return false;
+  };
+  const keeps = e => {
+    if (!SOLID) return false;
+    for (const c of e.getElementsByTagName("*")) {
+      const cs = getComputedStyle(c);
+      if (vivid(cs.backgroundColor) || vivid(cs.backgroundImage)) return true;
+    }
+    return false;
+  };
   const small = (e, s) => {   // no pictures in it (a picture set as a background counts unless it's an icon)
-    if (e.querySelector(PICTURES) || e.getElementsByTagName("*").length > 40) return false;
+    if (e.querySelector(PICTURES) || e.getElementsByTagName("*").length > 40 || keeps(e)) return false;
     if (!s.backgroundImage.includes("url(")) return true;
     const r = e.getBoundingClientRect();
     return r.width > 0 && r.width <= 96 && r.height <= 96;

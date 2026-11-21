@@ -1245,16 +1245,16 @@ body.DesktopUI .DialogDropDown .DialogDropDown_CurrentDisplay, body.DesktopUI .D
 body.DesktopUI .DialogDropDown_Arrow { width: 12px !important; height: 22px !important; background: var(--g-icon-down-default, none) center no-repeat !important; }
 body.DesktopUI .DialogDropDown_Arrow svg { display: none !important; }
 /* PageTab: 13 (10px) capitals on PropertySheetBG, a Divider line under the row; the open one lighter */
-body.DesktopUI :is(.DialogTabs, ._1-vlriAtKYDViAEunue4VO) { border-bottom: 1px solid var(--divider) !important; background: none !important; }
-body.DesktopUI :is(.PagedSettingsDialog_PageListItem, ._1UEEmNDZ7Ta3enwTf5T0O0) {
+body.DesktopUI .DialogTabs { border-bottom: 1px solid var(--divider) !important; background: none !important; }
+body.DesktopUI .PagedSettingsDialog_PageListItem {
   border-radius: 0 !important;
   font: 400 11px/20px var(--font) !important;
   letter-spacing: 0 !important;
   text-transform: none !important;
   color: var(--label) !important;
 }
-body.DesktopUI :is(.PagedSettingsDialog_PageListItem, ._1UEEmNDZ7Ta3enwTf5T0O0):hover { color: var(--text-hover) !important; }
-body.DesktopUI :is(.PagedSettingsDialog_PageListItem, ._1UEEmNDZ7Ta3enwTf5T0O0).Active { background: var(--focus) !important; color: #fff !important; }
+body.DesktopUI .PagedSettingsDialog_PageListItem:hover { color: var(--text-hover) !important; }
+body.DesktopUI .PagedSettingsDialog_PageListItem.Active { background: var(--focus) !important; color: #fff !important; }
 body.DesktopUI :is(.PagedSettingsDialog_PageList, .PagedSettingsDialog_PageListColumn) { background: var(--dark-client) !important; }
 body.DesktopUI .PagedSettingsDialog_PageContent { background: var(--dialog) !important; }
 /* the tooltip: a small sheet-grey note */
@@ -1304,16 +1304,180 @@ body.DesktopUI :is(textarea, input.DialogInput, input[type="text"], input[type="
   color: var(--border) !important;
   background: none !important;
 }
-._1bGewp3tfzqAF6fVTFFUOz > ._29p1jfvZ-VdlXK24_7UGsK {
-  box-sizing: border-box !important;
-  margin: 0 9px !important;
-  border: 1px solid var(--border-disabled) !important;
-  background: var(--almost-black) !important;
-}
-._1bGewp3tfzqAF6fVTFFUOz > ._29p1jfvZ-VdlXK24_7UGsK:first-child { margin-top: 33px !important; }   /* no address row */
-
 /* the note Steam hangs over the bottom of the page (a restart is waiting, and the like) */
 ._1J21tLst5SEhBPkVRT53UV { border: 0 !important; border-top: 1px solid var(--border-disabled) !important; box-shadow: none !important; background: var(--sheet) !important; font: 400 11px/16px var(--font) !important; color: var(--text) !important; }
 
 /* a menu's window is only as big as the menu */
 html:has(> body.ContextMenuPopupBody), body.ContextMenuPopupBody { background: transparent !important; }
+
+/* ------------------------------------------------------------- web pages: the panel's line
+   Steam lays its web view exactly over the host element's box, so the 1px line cannot be the
+   host's own border (the page would cover it): it is drawn around it, and the host sits 1 inside. */
+._1bGewp3tfzqAF6fVTFFUOz { position: relative !important; }
+._1bGewp3tfzqAF6fVTFFUOz::after {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  left: 9px;
+  right: 9px;
+  top: 33px;
+  bottom: 0;
+  border: 1px solid var(--border-disabled);
+  background: var(--almost-black);
+  pointer-events: none;
+}
+._1bGewp3tfzqAF6fVTFFUOz > .UkR3sY319PuaUNuUWks2K { position: relative !important; z-index: 1; }
+._1bGewp3tfzqAF6fVTFFUOz > ._29p1jfvZ-VdlXK24_7UGsK {
+  position: relative !important;
+  z-index: 1;
+  margin: 1px 10px !important;
+  border: 0 !important;
+  background: none !important;
+}
+._1bGewp3tfzqAF6fVTFFUOz > ._29p1jfvZ-VdlXK24_7UGsK:first-child { margin-top: 34px !important; }
+
+/* ------------------------------------------------------------- the library's other pages
+   Home (today's shelves stand where the grid view was), Collections, one collection, a game's
+   achievements: headings as the details page writes them (bold 15px capitals in the page's
+   colour) with no rule beside them, the rest in the 12px of the list. */
+._3VQUewWB8g6Z5qB4C7dGFr, ._17uEBe5Ri8TMsnfELvs8-N, ._3Sb2o_mQ30IDRh0C72QUUu { background-image: none !important; background-color: transparent !important; }
+:is(._2hfibYuzyMOQ0sj2egsHh0, ._3ONu7-h8EhRcUI72YoSVbD, ._2oJt3qYLAqr6xMjnpmBFLN) {
+  font: 700 15px/19px var(--font) !important;
+  letter-spacing: 0 !important;
+  text-transform: uppercase !important;
+  color: var(--details) !important;
+}
+._3Xgxj6vaGiKSEal2iaSrYl { font: 400 12px/19px var(--font) !important; color: var(--label2) !important; }
+:is(._2wbrxC_eBJa8BqRcsMJhlb, ._1grg9gmk1v5ri4iOuDymaz, ._1PhK8scyztOxjJwWUpkiLJ) { visibility: hidden !important; }
+._3BFcmjAaMyP6GTPwc0VyWi ._34I5HgBL6QP2CcuI4emtaM { display: none !important; }      /* the "?" bubbles */
+/* a shelf's name is a drop-down: a heading with a small arrow */
+.V7RuDNUxhxoBRaiGWbk3B ._23SnllqT_AqZ1C_QHcNQ4Z :is(.DialogDropDown, button.DialogDropDown) {
+  height: 20px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: none !important;
+  color: var(--details) !important;
+}
+.V7RuDNUxhxoBRaiGWbk3B ._23SnllqT_AqZ1C_QHcNQ4Z .DialogDropDown .DialogDropDown_CurrentDisplay,
+.V7RuDNUxhxoBRaiGWbk3B ._23SnllqT_AqZ1C_QHcNQ4Z .DialogDropDown .DialogDropDown_CurrentDisplay * {
+  font: 700 15px/20px var(--font) !important;
+  text-transform: uppercase !important;
+  color: var(--details) !important;
+  background: none !important;
+}
+.V7RuDNUxhxoBRaiGWbk3B ._23SnllqT_AqZ1C_QHcNQ4Z .DialogDropDown:hover .DialogDropDown_CurrentDisplay { color: #fff !important; }
+.V7RuDNUxhxoBRaiGWbk3B ._23SnllqT_AqZ1C_QHcNQ4Z .DialogDropDown_Arrow { height: 20px !important; margin-left: 4px !important; background-color: transparent !important; }
+.V7RuDNUxhxoBRaiGWbk3B ._1ANYFgwMyPpwJjIndAdGSr { font: 400 11px/14px var(--font) !important; letter-spacing: 0 !important; color: var(--label2) !important; }
+._2aw5aUUo3lrK6wxJb4_ms5 { font: 400 11px/28px var(--font) !important; letter-spacing: 0 !important; text-transform: uppercase !important; color: var(--label-focus) !important; }
+._2aw5aUUo3lrK6wxJb4_ms5:hover { color: #fff !important; }
+._1ljKTq3H58WbDZGNPfM0TY { font: 400 11px/21px var(--font) !important; letter-spacing: 0 !important; text-transform: uppercase !important; color: var(--label-disabled) !important; }
+/* a collection is a grid of games: the grid button lights, not the details one */
+._3xRRJfD2xy95i9NhJxLTp0:has(._2q70uOe6xM3-c5XIVfBLe6) ._2TKEazUUS3TlniZfpc8OOe::after { background: var(--g-icon-button-detail, none) center no-repeat; }
+._3xRRJfD2xy95i9NhJxLTp0:has(._2q70uOe6xM3-c5XIVfBLe6) ._2TKEazUUS3TlniZfpc8OOe a._3pSPluBgf0NeR1kkCLWMhR:not(._30KGSfPjPskFlnrSxBfkiK) { background: var(--g-icon-button-grid-over, var(--g-icon-button-grid, none)) center no-repeat, linear-gradient(var(--focus2), var(--focus)) !important; }
+
+/* a game's page: what stands in its boxes is 12px text on the box itself (no lighter panels inside) */
+.OhSdLYuggDtBcWjYP0j_9 ._31ptFGGMZrSQc5BCX1e5lm :not(button, button *, .DialogButton, .DialogButton *, h2, h2 *, h4, h4 *, textarea, input) { font-size: 12px !important; letter-spacing: 0 !important; }
+.OhSdLYuggDtBcWjYP0j_9 ._38t1mljBjmJfqjpVzMT1CG { margin: 0 0 6px !important; padding: 0 !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important; background: none !important; }
+.OhSdLYuggDtBcWjYP0j_9 ._1u7tlq5OcUVR8p7-ic_ZVw { border: 1px solid var(--border-disabled) !important; border-radius: 0 !important; background: var(--almost-black) !important; }
+.OhSdLYuggDtBcWjYP0j_9 ._1u7tlq5OcUVR8p7-ic_ZVw > * { border-radius: 0 !important; background: var(--details) !important; }
+
+/* ------------------------------------------------------------- Settings and its kind
+   The old Settings: a list of pages down the left (the open one on the Focus blue), the page on
+   the lighter PropertySheetBG, plain 14 (11px) labels with a control beside each, check boxes
+   where today has switches. */
+body.DesktopUI .PageListColumn { padding-top: 34px !important; border-right: 1px solid var(--border-disabled) !important; background: var(--dialog) !important; }
+body.DesktopUI .PageListColumn ._2rjVTGz8aLvqOdz5v2gq5C { margin: 0 0 10px !important; padding: 0 8px 0 12px !important; font: 400 11px/14px var(--font) !important; letter-spacing: 0 !important; text-transform: none !important; color: var(--border-focus) !important; }
+body.DesktopUI .PageListColumn ._1-vlriAtKYDViAEunue4VO {
+  height: 22px !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 8px 0 12px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: none !important;
+  color: var(--label) !important;
+  align-items: center !important;
+}
+body.DesktopUI .PageListColumn ._1-vlriAtKYDViAEunue4VO:hover { color: var(--text-hover) !important; }
+body.DesktopUI .PageListColumn ._1-vlriAtKYDViAEunue4VO._2DpXjzK3WWsOtUWUrcuOG7 { background: var(--focus) !important; color: #fff !important; }
+body.DesktopUI .PageListColumn ._1-vlriAtKYDViAEunue4VO ._1rD8X96FdnksZLvRRlEiCR { display: none !important; }   /* the pages had no icons */
+body.DesktopUI .PageListColumn ._1-vlriAtKYDViAEunue4VO ._2PPbMrzl8PKBwpkjYs9b0i { font: 400 11px/22px var(--font) !important; letter-spacing: 0 !important; color: inherit !important; }
+body.DesktopUI :is(.DialogContentTransition, .DialogContentTransition > .DialogContent) { border: 0 !important; box-shadow: none !important; background: var(--sheet) !important; }
+body.DesktopUI .DialogContentTransition .DialogHeader { margin: 6px 0 8px !important; font: 700 15px/19px var(--font) !important; text-transform: uppercase !important; color: var(--text) !important; }
+body.DesktopUI .SettingsDialogSubHeader { height: auto !important; margin: 8px 0 2px !important; padding: 0 !important; font: 700 11px/16px var(--font) !important; letter-spacing: 0 !important; text-transform: uppercase !important; color: var(--label-focus) !important; }
+/* a setting: its name, what it does in smaller dim words, the control at the right */
+body.DesktopUI .eKmEXJCm_lgme24Fp_HWt {
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 4px 6px 4px 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: none !important;
+}
+body.DesktopUI .eKmEXJCm_lgme24Fp_HWt::before, body.DesktopUI .eKmEXJCm_lgme24Fp_HWt::after { display: none !important; }
+body.DesktopUI .eKmEXJCm_lgme24Fp_HWt ._3jMlJm4PQCA8SfNlUR99Fo { font: 400 11px/15px var(--font) !important; letter-spacing: 0 !important; color: var(--label) !important; }
+body.DesktopUI .eKmEXJCm_lgme24Fp_HWt:hover ._3jMlJm4PQCA8SfNlUR99Fo { color: var(--text-hover) !important; }
+body.DesktopUI :is(._1W1to_azoBRG95oNAFpf9Q, ._3w92Ej5Kq7nbt5WACQ6jwI) { font: 400 11px/14px var(--font) !important; letter-spacing: 0 !important; color: var(--label2) !important; }
+body.DesktopUI :is(._1W1to_azoBRG95oNAFpf9Q, ._3w92Ej5Kq7nbt5WACQ6jwI) a, body.DesktopUI ._1ApAAvLebqhw20EWJ8lPQD { font-size: 11px !important; color: var(--text) !important; }
+/* CheckButton for today's switch */
+body.DesktopUI ._9Ql-oVe_j8E-vsDdyVdWo {
+  width: 21px !important;
+  min-width: 21px !important;
+  height: 21px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: var(--g-chkunselstd, none) center no-repeat !important;
+}
+body.DesktopUI ._9Ql-oVe_j8E-vsDdyVdWo:hover { background-image: var(--g-chkunselfocus, var(--g-chkunselstd, none)) !important; }
+body.DesktopUI ._9Ql-oVe_j8E-vsDdyVdWo.yLrDAetGoWx0GYqA6ShfS { background-image: var(--g-chkselstd, none) !important; }
+body.DesktopUI ._9Ql-oVe_j8E-vsDdyVdWo.yLrDAetGoWx0GYqA6ShfS:hover { background-image: var(--g-chkselfocus, var(--g-chkselstd, none)) !important; }
+body.DesktopUI ._9Ql-oVe_j8E-vsDdyVdWo > * { display: none !important; }
+/* a dialog's own window: the Frame's title (14, the dim title colour) and its close button */
+body.ModalDialogBody .TitleBar .title-area-highlight { display: none !important; }
+body.ModalDialogBody .title-bar-actions .title-area-icon {
+  width: 18px !important;
+  height: 16px !important;
+  margin: 7px 4px 0 0 !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+  background: center no-repeat !important;
+  opacity: 1 !important;
+}
+body.ModalDialogBody .title-bar-actions .title-area-icon svg { display: none !important; }
+body.ModalDialogBody .title-bar-actions .title-area-icon-inner { background: none !important; }
+body.ModalDialogBody .title-bar-actions .closeButton { background-image: var(--g-win32-win-close, none) !important; background-color: transparent !important; }
+body.ModalDialogBody .title-bar-actions .closeButton:hover { background-image: var(--g-win32-win-close-hover, none) !important; background-color: transparent !important; }
+body.ModalDialogBody .title-bar-actions .minimizeButton { background-image: var(--g-win32-win-min, none) !important; }
+body.ModalDialogBody .title-bar-actions .maximizeButton { background-image: var(--g-win32-win-max, none) !important; }
+body.ModalDialogBody .title-area-children, body.ModalDialogBody .title-area-children * { font: 400 11px/22px var(--font) !important; color: var(--border-focus) !important; }
+
+/* ------------------------------------------------------------- Downloads, the console
+   Pages of their own (no games list beside them): they take the same panel as the library, 10 in
+   from the window's sides from y 103, inside the 1px line, on the grey-to-black gradient. */
+.RGNMWtyj73_-WdhflrmuY > ._3BFcmjAaMyP6GTPwc0VyWi,
+._1rDh5rXSFZJOqCa4UpnI4z > ._1fuML-ekRbTEzgzC597yGP {
+  margin: 34px 11px 1px !important;
+  box-shadow: 0 0 0 1px var(--border-disabled) !important;
+  background: linear-gradient(var(--dialog), var(--almost-black)) !important;
+}
+._1bq4x9pa4-9RLY-dXWUZTp { background: none !important; }
+._1bq4x9pa4-9RLY-dXWUZTp ._3Mbhnlk1Go2j8yCdjthzc7 { border: 0 !important; border-radius: 0 !important; box-shadow: none !important; background: var(--start) !important; }
+._1bq4x9pa4-9RLY-dXWUZTp ._3Mbhnlk1Go2j8yCdjthzc7._2KB3yVOsiRCK9qK6mwKl9c { background: var(--start-subtle) !important; }
+._1bq4x9pa4-9RLY-dXWUZTp :is(h1, h2, h3, [class*="Title"], [class*="Header"]) { letter-spacing: 0 !important; }
+._1fuML-ekRbTEzgzC597yGP .GTdO0X-5EOwChz3fc2iLU, ._1fuML-ekRbTEzgzC597yGP .GTdO0X-5EOwChz3fc2iLU * { font: 400 12px/15px Consolas, "Courier New", monospace !important; color: var(--text) !important; }
+._1fuML-ekRbTEzgzC597yGP form { border-top: 1px solid var(--border-disabled) !important; background: none !important; }
+
+/* Settings: the small words under a setting read on the lighter sheet */
+body.DesktopUI .DialogContentTransition :is(._1W1to_azoBRG95oNAFpf9Q, ._3w92Ej5Kq7nbt5WACQ6jwI) { color: var(--label-disabled) !important; }
+
+/* Downloads: its headings as the details page writes them, the rest in the list's 12px */
+._1bq4x9pa4-9RLY-dXWUZTp .TK9wvF55dyA6RcOclozC8 { font: 700 15px/19px var(--font) !important; letter-spacing: 0 !important; text-transform: uppercase !important; color: var(--details) !important; }
+._1bq4x9pa4-9RLY-dXWUZTp ._1CGnw50aAma6AYKF51Qzsm { font: 400 12px/19px var(--font) !important; color: var(--label2) !important; }
+._1bq4x9pa4-9RLY-dXWUZTp ._1nCT-M7nZcoNzedbVzbXha { font: 400 12px/16px var(--font) !important; color: var(--label) !important; }
+._1bq4x9pa4-9RLY-dXWUZTp ._1iulCOMUxV6sBbqoKo_yXw { font: 700 10px/13px var(--font) !important; letter-spacing: 0 !important; color: var(--label-focus) !important; }
+._1bq4x9pa4-9RLY-dXWUZTp .eXF8xL2LUtzeWMbK-FSRz { font: 400 12px/15px var(--font) !important; color: var(--text) !important; }
