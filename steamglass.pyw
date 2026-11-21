@@ -57,12 +57,14 @@ in glass-mode.txt next to this file (changes apply live):
            the time; everything is drawn in CSS, with no pictures. Steam's blue goes olive
            underneath (olives), so the parts the mode doesn't name fit in.
   steam2017  the grey skin again, as it stood on the client of January 2017 (steam2017.css,
-           friends2017.css, web2017.css): the 2013 mode's charcoal, taken further after a
-           collage of that client's windows. The green inbox tab with its count, the boxed
-           VR button, games under banded headings, the two-line friends corner, the Downloads
-           page of that time, the old friends window, chat, Settings and dialogs. The store
-           and community stay blue, as they already were then. Under it the same greys and the
-           same pictures from this PC's Steam folder as Steam 2013.
+           friends2017.css, web2017.css): the 2013 mode's charcoal taken further after a collage
+           of that client's windows. The green inbox flag, the boxed VR button, games under
+           banded headings, the dim status line, the Downloads page of that time, the inbox
+           menu, the old friends window, chat, Settings and dialogs. The collage shows the grey
+           skin of 2010 to 2014 kept on the later client, so its numbers are that skin's (the
+           last grey steam.styles and layouts, July 2014) and the collage's own. The store and
+           community stay blue, as they already were then (no grey pass in web-glass.js). Under
+           it the same greys and the same pictures from this PC's Steam folder as Steam 2013.
   off      Steam's own windows.
 
 A tray icon switches between them (it writes glass-mode.txt). Its "Song toggle"

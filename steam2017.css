@@ -725,7 +725,7 @@ body.DesktopUI ._1ijTaXJJA5YWl_fW2IxcaT ::-webkit-scrollbar-button:single-button
 }
 ._1ijTaXJJA5YWl_fW2IxcaT ._2-O4ZG0KrnSrzISHBKctFQ * { font: inherit !important; color: inherit !important; }
 ._1ijTaXJJA5YWl_fW2IxcaT ._2-O4ZG0KrnSrzISHBKctFQ ._1vO6BoiVslZgs1kqDGdUs8 { height: 26px !important; padding: 0 5.8px 0 7.22px !important; transform: none !important; opacity: 1 !important; filter: none !important; }
-._1ijTaXJJA5YWl_fW2IxcaT ._2-O4ZG0KrnSrzISHBKctFQ :is(.ga1hyw11cdBVodrCAidPF, ._2-J2nMJ1zmDok8-jqXlf1e) { display: none !important; }
+._1ijTaXJJA5YWl_fW2IxcaT ._2-O4ZG0KrnSrzISHBKctFQ :is(.ga1hyw11cdBVodrCAidPF, ._2-J2nMJ1zmDok8-jqXlf1e, ._2kzMb_F7UTOEdecAFftN-l) { display: none !important; }   /* no icons, friend marks or progress rings: an updating game is told by its yellow */
 ._1ijTaXJJA5YWl_fW2IxcaT ._2-O4ZG0KrnSrzISHBKctFQ:hover { color: #fff !important; }
 ._1ijTaXJJA5YWl_fW2IxcaT ._2-O4ZG0KrnSrzISHBKctFQ._5YTBr7WwIfzVU_3nUtAph { color: var(--label-disabled) !important; }           /* GameItem_Uninstalled */
 ._1ijTaXJJA5YWl_fW2IxcaT ._2-O4ZG0KrnSrzISHBKctFQ._5YTBr7WwIfzVU_3nUtAph:hover { color: var(--label) !important; }
@@ -1627,6 +1627,19 @@ body.ModalDialogBody .title-bar-actions .minimizeButton { background-image: var(
 body.ModalDialogBody .title-bar-actions .maximizeButton { background-image: var(--g-win32-win-max, none) !important; }
 body.ModalDialogBody .title-area-children, body.ModalDialogBody .title-area-children * { font: 400 11px/22px var(--font) !important; color: var(--border-focus) !important; }
 
+/* ------------------------------------------------------------- dialogs, as the collage shows them
+   A Button's words stand at its left (VGUI aligns them west, 7 in), and the buttons along a
+   dialog's foot are at least 92 wide. A page lies on the FillBG gradient (64 62 60 down to
+   71 69 67). A ComboBox is ButtonFace2 down to the page grey inside a ButtonBorder line, its arrow
+   behind a 1px rule. */
+body.DesktopUI :is(button.DialogButton, .DialogButton, ._1kCN0pAntrcGCSmcc-vYdk, ._39ZurKJQex6v69aXzvc_nj) { padding: 0 12px 0 7px !important; text-align: left !important; justify-content: flex-start !important; border-radius: 3px !important; }
+body.DesktopUI :is(.DialogFooter, .DialogTwoColLayout, ._1Y0rtNbI8M7j_KQ_1fPcCz) > :is(button.DialogButton, .DialogButton) { min-width: 92px !important; }
+body.DesktopUI :is(.DialogContentTransition, .DialogContentTransition > .DialogContent, .PagedSettingsDialog_PageContent) { background: linear-gradient(rgb(64, 62, 60), rgb(71, 69, 67)) !important; }
+body.DesktopUI :is(.DialogDropDown, button.DialogDropDown) { padding: 0 0 0 6px !important; border-radius: 2px !important; background: linear-gradient(var(--face2), rgb(76, 74, 73)) !important; }
+body.DesktopUI .DialogDropDown_Arrow { box-sizing: content-box !important; width: 9px !important; height: 14px !important; margin: 0 0 0 6px !important; padding: 0 6px !important; border-left: 1px solid var(--border) !important; }
+body.DesktopUI :is(.DialogBodyText, .DialogBody) a, body.DesktopUI .DialogContent a:not(.DialogButton) { color: var(--label) !important; text-decoration: underline !important; }
+body.DesktopUI :is(.DialogBodyText, .DialogBody) a:hover, body.DesktopUI .DialogContent a:not(.DialogButton):hover { color: var(--text-hover) !important; }
+
 /* ------------------------------------------------------------- Downloads, the console
    Pages of their own (no games list beside them): they take the same panel as the library, 10 in
    from the window's sides from y 103, inside the 1px line, on the grey-to-black gradient. */
@@ -1636,6 +1649,7 @@ body.ModalDialogBody .title-area-children, body.ModalDialogBody .title-area-chil
   box-shadow: 0 0 0 1px var(--border-disabled) !important;
   background: linear-gradient(var(--dialog), var(--almost-black)) !important;
 }
+._1rDh5rXSFZJOqCa4UpnI4z > ._1fuML-ekRbTEzgzC597yGP { width: auto !important; }   /* the console: Steam's own 100% plus the margins would reach past the right edge */
 ._1bq4x9pa4-9RLY-dXWUZTp { background: var(--almost-black) !important; }
 /* the search-and-view bar stayed above these pages too, empty: its two pieces, as over the library */
 .RGNMWtyj73_-WdhflrmuY:has(> ._3BFcmjAaMyP6GTPwc0VyWi) { position: relative !important; }
