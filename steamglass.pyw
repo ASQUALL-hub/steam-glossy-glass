@@ -67,8 +67,8 @@ in glass-mode.txt next to this file (changes apply live):
            it the same greys and the same pictures from this PC's Steam folder as Steam 2013.
   skins    game-styled looks, one file each (skin-NAME.css; the tray lists every one it finds):
            Secret Agent (a 007-style dossier: manila tabs, a typewritten games list, black and
-           gold), Ocarina (the blue-violet panels, gold names and hearts of Ocarina of Time's
-           menus), HEV (Half-Life's amber suit display) and Determination (Undertale's white-lined
+           gold), Ocarina (Ocarina of Time's pause menu: carved stone slabs, round buttons for
+           tabs, hearts, the bracket cursor), HEV (Half-Life's amber suit display) and Determination (Undertale's white-lined
            boxes and red heart). Each is the Steam 2005 mode's sheets with other values for their
            named settings, a few rules of its own, and Steam's blue put through the skin's own
            tones (its @ramp). All drawn in CSS: no pictures, nobody's artwork.
@@ -84,7 +84,7 @@ Installed builds (SteamGlass.exe, put there by SteamGlassUpdater.exe) keep
 glass-mode.txt in %APPDATA%\SteamGlass and add "Check for updates…" to the menu.
 helper.log in the same folder notes mode changes and anything that went wrong.
 "Start with Windows" in the menu adds or removes the helper under the Run key."""
-__version__ = "1.8.0"
+__version__ = "1.8.1"
 
 import base64
 import ctypes

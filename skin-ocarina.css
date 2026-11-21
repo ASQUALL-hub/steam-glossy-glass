@@ -1,222 +1,399 @@
 /* Glossy Glass for Steam: the "Ocarina" skin.
 
-   After the menus of The Legend of Zelda: Ocarina of Time: the file-select screen's blue-violet
-   panels with their pale outlines on a night sky, names in gold, the picked line glowing as the
-   cursor does, three hearts in the top-left corner as on the game's own screen, the play button
-   in the green of the B button and the bottom bar's three buttons as yellow C buttons.
-   Everything is drawn in CSS: no pictures, no symbols or artwork of Nintendo's. It sits on the
-   Steam 2005 mode's sheets (see the top of steam2005.css for the settings below).
+   After the pause menu of The Legend of Zelda: Ocarina of Time: a slab of carved stone in front
+   of a cave wall, its inside black, each of the window's tabs with a slab of its own colour (red,
+   blue, green and olive, as the menu's four sides have). The tabs are the menu's round buttons
+   with their white, black-edged words; hearts and the green magic bar lie in the top-left corner;
+   the picked line carries the white corner brackets of the cursor; the bottom bar's buttons are
+   the grey-blue name bar with its yellow words, a rupee count beside them.
+   Everything is drawn in CSS and a little inline SVG (a noise filter for the stone, plain shapes
+   for the hearts and the rupee): no pictures or artwork of Nintendo's. It sits on the Steam 2005
+   mode's sheets (see the top of steam2005.css for the settings below).
 
    @name Ocarina (Zelda style)
-   @corners round
-   @icon 84,94,214 16,14,56 255,220,90 70,140,255
-   @ramp 0:4,4,22 30:16,18,60 60:30,34,100 110:64,72,160 165:130,140,225 220:205,212,255 255:255,255,255
-   @lift 6
+   @corners square
+   @icon 96,112,150 28,34,52 255,226,64 255,255,255
+   @ramp 0:4,4,6 30:16,18,22 60:34,38,46 110:70,78,92 165:140,150,166 220:210,216,226 255:255,255,255
+   @lift 0
 */
 
 /* ==== both ==== */
 html:root {
-  --gold: rgb(255, 220, 90);
-  --line: rgb(112, 122, 226);                /* the panels' pale outline */
-  --glow: rgb(190, 220, 255);
-  --serif: "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif;
+  /* the stone's relief: noise lit from the top left, mid grey where it is flat, laid over a colour with "hard-light" */
+  --rock: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='384' height='384'%3E%3Cfilter id='s' x='0' y='0' width='100%25' height='100%25' color-interpolation-filters='sRGB'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.026' numOctaves='5' seed='11' stitchTiles='stitch'/%3E%3CfeDiffuseLighting surfaceScale='8' diffuseConstant='0.58' lighting-color='white'%3E%3CfeDistantLight azimuth='225' elevation='60'/%3E%3C/feDiffuseLighting%3E%3C/filter%3E%3Crect width='384' height='384' filter='url(%23s)'/%3E%3C/svg%3E");
+  /* ten hearts over the magic bar */
+  --hud: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='136' height='26'%3E%3Cdefs%3E%3Cpath id='h' d='M6 10.6 1.3 5.9C-.6 3.9.7.6 3.3.6 4.5.6 5.5 1.2 6 2.2 6.5 1.2 7.5.6 8.7.6c2.6 0 3.9 3.3 2 5.3z' fill='%23f02a26' stroke='%23560000' stroke-width='1'/%3E%3C/defs%3E%3Cg transform='translate(1 1)'%3E%3Cuse href='%23h'/%3E%3Cuse href='%23h' x='13'/%3E%3Cuse href='%23h' x='26'/%3E%3Cuse href='%23h' x='39'/%3E%3Cuse href='%23h' x='52'/%3E%3Cuse href='%23h' x='65'/%3E%3Cuse href='%23h' x='78'/%3E%3Cuse href='%23h' x='91'/%3E%3Cuse href='%23h' x='104'/%3E%3Cuse href='%23h' x='117'/%3E%3C/g%3E%3Crect x='1.5' y='15.5' width='118' height='9' rx='2.5' fill='%23000' stroke='%23fff' stroke-width='1.6'/%3E%3Crect x='3.4' y='17.4' width='114.2' height='5.2' fill='%2320d030'/%3E%3C/svg%3E");
+  --rupee: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='22'%3E%3Cpath d='M7 1 13 6.5v9L7 21 1 15.5v-9z' fill='%2338c83c' stroke='%23063c0a' stroke-width='1.4'/%3E%3Cpath d='M7 4.6 10.2 7.6v6.8L7 17.4 3.8 14.4V7.6z' fill='%239cf08c'/%3E%3Cpath d='M7 4.6v12.8M3.8 7.6l6.4 6.8M10.2 7.6l-6.4 6.8' stroke='%2338c83c' stroke-width='.7'/%3E%3C/svg%3E");
+  /* the cursor: four white corner brackets */
+  --cursor:
+    linear-gradient(#fff, #fff) 0 0 / 7px 2px no-repeat, linear-gradient(#fff, #fff) 0 0 / 2px 7px no-repeat,
+    linear-gradient(#fff, #fff) 100% 0 / 7px 2px no-repeat, linear-gradient(#fff, #fff) 100% 0 / 2px 7px no-repeat,
+    linear-gradient(#fff, #fff) 0 100% / 7px 2px no-repeat, linear-gradient(#fff, #fff) 0 100% / 2px 7px no-repeat,
+    linear-gradient(#fff, #fff) 100% 100% / 7px 2px no-repeat, linear-gradient(#fff, #fff) 100% 100% / 2px 7px no-repeat;
+  --edged: 1px 0 0 #000, -1px 0 0 #000, 0 1px 0 #000, 0 -1px 0 #000, 1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 0 2px 0 #000;
+  --carved: -1px -1px 0 rgba(0, 0, 0, 0.3), 1px 1px 0 rgba(255, 255, 255, 0.34);
+  --raised: inset 2px 2px 0 rgba(255, 255, 255, 0.3), inset -2px -2px 0 rgba(0, 0, 0, 0.5);
+  --sunken: inset 2px 2px 0 rgba(0, 0, 0, 0.7), inset -2px -2px 0 rgba(255, 255, 255, 0.22);
+  --slate: 108, 118, 156;                    /* the name bar */
+  --black: rgb(5, 5, 9);                     /* a slab's inside */
+  --gold: rgb(255, 226, 64);
 
-  --rim: rgb(6, 6, 26);
-  --rim-light: rgba(150, 160, 255, 0.4);
-  --title: rgb(14, 12, 48);
-  --title-text: var(--gold);
-  --strip: rgb(18, 16, 58);
-  --tab: rgb(58, 64, 168);
-  --tab-hover: rgb(78, 86, 204);
-  --panel: rgb(30, 32, 98);
-  --face: rgb(56, 62, 160);
-  --list: rgb(16, 18, 62);
-  --edge: rgb(88, 98, 196);
-  --dim: rgb(122, 130, 194);
-  --soft: rgb(204, 211, 255);
+  --rim: #000;
+  --rim-light: rgba(255, 255, 255, 0.16);
+  --title: transparent;
+  --title-text: #fff;
+  --strip: rgb(58, 44, 32);
+  --tab: rgb(96, 106, 142);
+  --tab-hover: rgb(124, 134, 172);
+  --panel: rgb(62, 84, 116);
+  --face: rgb(70, 78, 104);
+  --list: var(--black);
+  --edge: rgb(78, 88, 114);
+  --dim: rgb(122, 128, 144);
+  --soft: rgb(208, 212, 222);
   --yellow: var(--gold);
-  --olive: rgb(10, 10, 36);
-  --inset: rgb(14, 16, 54);
-  --light: var(--line);
-  --shadow: var(--line);
-  --track: rgb(20, 22, 70);
-  --pick: rgb(58, 112, 240);
+  --olive: rgb(54, 72, 100);
+  --inset: var(--black);
+  --light: rgb(126, 146, 178);
+  --shadow: rgb(12, 16, 26);
+  --track: rgb(18, 20, 28);
+  --pick: rgb(72, 86, 124);
   --ink: #fff;
   --on-accent: rgb(40, 28, 0);
-  --ring: rgb(8, 48, 20);
-  --pick-bg: rgb(58, 112, 240);
+  --ring: #000;
+  --pick-bg: rgba(255, 255, 255, 0.12);
   --pick-ink: #fff;
-  --bar: rgb(8, 8, 30);
-  --bar-tab-a: rgb(255, 232, 110);
-  --bar-tab-b: rgb(214, 160, 20);
-  --bar-icon: rgb(72, 50, 0);
-  --field: rgb(10, 12, 44);
-  --bevel: var(--line);
-  --btn-a: rgb(88, 98, 216);
-  --btn-b: rgb(56, 62, 160);
-  --btn-ha: rgb(112, 124, 240);
-  --btn-hb: rgb(70, 78, 190);
-  --btn-da: rgb(46, 52, 140);
-  --btn-db: rgb(70, 78, 190);
-  --play-a: rgb(96, 214, 104);
-  --play-b: rgb(28, 138, 52);
-  --hi: rgba(255, 255, 255, 0.3);
-  --shade: rgba(120, 140, 255, 0.22);
-  --note-bg: rgb(70, 56, 10);
-  --note-edge: rgb(200, 160, 40);
-  --menu-off: rgb(92, 98, 152);
-  --r-field: 8px;
-  --r-btn: 9px;
-  --r-box: 10px;
-  --r-play: 14px;
-  --r-win: 10px;
+  --bar: transparent;
+  --bar-tab-a: rgb(124, 134, 172);
+  --bar-tab-b: rgb(84, 92, 126);
+  --bar-icon: var(--gold);
+  --field: rgb(3, 3, 6);
+  --bevel: rgb(126, 146, 178);
+  --btn-a: rgb(124, 134, 172);
+  --btn-b: rgb(80, 88, 122);
+  --btn-ha: rgb(146, 156, 196);
+  --btn-hb: rgb(96, 104, 142);
+  --btn-da: rgb(66, 72, 102);
+  --btn-db: rgb(92, 100, 136);
+  --play-a: rgb(84, 222, 96);
+  --play-b: rgb(18, 140, 44);
+  --hi: rgba(255, 255, 255, 0.4);
+  --shade: rgba(255, 255, 255, 0.08);
+  --note-bg: rgb(255, 244, 150);
+  --note-edge: #000;
+  --menu-off: rgb(112, 116, 130);
+  --r-field: 0px;
+  --r-btn: 2px;
+  --r-box: 0px;
+  --r-play: 15px;
+  --r-win: 0px;
   --font: "Trebuchet MS", "Segoe UI", Tahoma, sans-serif;
-  --tick: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='13' height='13'%3E%3Cpath d='M3 6.5 5.5 9 10 3.5' fill='none' stroke='rgb(255,220,90)' stroke-width='2'/%3E%3C/svg%3E");
-  --up: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='6'%3E%3Cpath d='M0 5.5 4.5 1 9 5.5z' fill='rgb(204,211,255)'/%3E%3C/svg%3E");
-  --down: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='6'%3E%3Cpath d='M0 .5 4.5 5 9 .5z' fill='rgb(204,211,255)'/%3E%3C/svg%3E");
+  --tick: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='13' height='13'%3E%3Cpath d='M3 6.5 5.5 9 10 3.5' fill='none' stroke='rgb(255,226,64)' stroke-width='2'/%3E%3C/svg%3E");
+  --up: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='6'%3E%3Cpath d='M0 5.5 4.5 1 9 5.5z' fill='rgb(208,212,222)'/%3E%3C/svg%3E");
+  --down: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='6'%3E%3Cpath d='M0 .5 4.5 5 9 .5z' fill='rgb(208,212,222)'/%3E%3C/svg%3E");
   /* the friends windows' own names for the same things */
   --white: #fff;
-  --pale: rgb(182, 192, 250);
-  --dull: rgb(112, 120, 184);
+  --pale: rgb(190, 196, 210);
+  --dull: rgb(122, 128, 144);
+}
+@keyframes gg-ocarina-cursor {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
 }
 
 /* ==== main ==== */
-@keyframes gg-ocarina-cursor {
-  0%, 100% { box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.3), 0 0 0 0 rgba(190, 220, 255, 0); }
-  50% { box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.95), 0 0 8px 1px rgba(190, 220, 255, 0.55); }
-}
-
-/* the window: a night sky */
+/* the window: the cave wall behind the menu, darker towards its top and bottom */
 ._1ENHEsrSLcTRtPQFl1F-wL {
   background:
-    radial-gradient(ellipse 60% 70% at 16% 0%, rgba(126, 82, 210, 0.42), transparent 70%),
-    radial-gradient(ellipse 50% 60% at 88% 8%, rgba(60, 96, 228, 0.34), transparent 70%),
-    radial-gradient(ellipse 70% 50% at 50% 100%, rgba(96, 60, 190, 0.3), transparent 75%),
-    var(--strip) !important;
+    linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.22) 86px, rgba(0, 0, 0, 0.22) calc(100% - 70px), rgba(0, 0, 0, 0.55)),
+    var(--rock) 0 0 / 384px 384px,
+    rgb(104, 80, 56) !important;
+  background-blend-mode: normal, hard-light, normal !important;
 }
-/* the title bar: clear over the sky, the name in gold, three hearts before it */
+/* the title bar: clear over the wall; hearts and the magic bar, then the name in the menu's
+   white, black-edged letters */
 ._39oUCO1OuizVPwcnnv88no::before {
-  padding-left: 76px;
-  background: linear-gradient(rgba(8, 6, 34, 0.75), rgba(8, 6, 34, 0.2));
-  font: 700 13px/27px var(--serif);
+  padding-left: 152px;
+  font: 700 13px/27px var(--font);
   text-transform: none;
-  letter-spacing: 0.5px;
-  text-shadow: 0 1px 0 rgb(40, 20, 0);
+  text-shadow: var(--edged);
 }
 ._39oUCO1OuizVPwcnnv88no::after {
-  content: "\2665\2665\2665";
+  content: "";
   position: absolute;
-  left: 13px;
-  top: 2px;
-  font: 400 17px/26px "Segoe UI Symbol", "Arial Unicode MS", sans-serif;
-  letter-spacing: 2px;
-  color: rgb(246, 44, 44);
-  text-shadow: 0 0 0 #000, 1px 0 0 rgb(90, 0, 0), -1px 0 0 rgb(90, 0, 0), 0 1px 0 rgb(90, 0, 0), 0 -1px 0 rgb(90, 0, 0);
+  left: 9px;
+  top: 3px;
+  width: 136px;
+  height: 26px;
+  background: var(--hud) no-repeat;
   pointer-events: none;
 }
+.qP17eBPXkfezFfexZ4hC3 .title-area-icon { filter: drop-shadow(0 1px 0 #000) drop-shadow(0 0 1px #000); }
+/* the menu's words lie on the wall too */
+._1Ky59qmywxOUtNcI1cgmkX { --edge: rgba(0, 0, 0, 0.55); }
+._1Ky59qmywxOUtNcI1cgmkX ._2Lu3d-5qLmW4i19ysTt2jT { text-shadow: var(--edged) !important; }
+/* the small buttons at its right end: yellow C buttons */
+._3cykd-VfN_xBxf3Qxriccm ._2Szzh5sKyGgnLUR870zbDE,
+._3cykd-VfN_xBxf3Qxriccm ._2Szzh5sKyGgnLUR870zbDE._1oEwirQksXfZ-3RWWslbAR,
+._3cykd-VfN_xBxf3Qxriccm ._2Szzh5sKyGgnLUR870zbDE._3LKQ3S_yqrebeNLF6aeiog {
+  width: 22px !important;
+  min-width: 22px !important;
+  height: 22px !important;
+  border: 1px solid #000 !important;
+  border-radius: 50% !important;
+  box-shadow: inset 0 -2px 3px rgba(120, 70, 0, 0.55), 0 1px 2px rgba(0, 0, 0, 0.6) !important;
+  background: radial-gradient(circle at 36% 28%, rgb(255, 250, 200), rgb(236, 190, 24) 46%, rgb(196, 140, 8)) !important;
+  color: rgb(84, 56, 0) !important;
+}
+._3cykd-VfN_xBxf3Qxriccm ._2Szzh5sKyGgnLUR870zbDE * { color: inherit !important; }
+._3cykd-VfN_xBxf3Qxriccm ._2Szzh5sKyGgnLUR870zbDE:hover { background: radial-gradient(circle at 36% 28%, #fff, rgb(255, 222, 70) 46%, rgb(226, 170, 20)) !important; color: #000 !important; }
+/* something new behind the notices button: it lights up */
+._3cykd-VfN_xBxf3Qxriccm ._2Szzh5sKyGgnLUR870zbDE._3LKQ3S_yqrebeNLF6aeiog { box-shadow: inset 0 -2px 3px rgba(120, 70, 0, 0.4), 0 0 0 2px rgba(255, 255, 255, 0.85), 0 0 8px 2px rgba(255, 240, 140, 0.8) !important; }
+._3cykd-VfN_xBxf3Qxriccm ._3yD46y5pd3zOGR7CzKs0mC { --ink: #fff; --yellow: var(--gold); text-shadow: var(--edged) !important; }
+/* a wallet's balance is counted in rupees */
+._3cykd-VfN_xBxf3Qxriccm ._3yD46y5pd3zOGR7CzKs0mC ._2jphjrSifC6orDT4g_7Wd { padding-left: 13px !important; background: var(--rupee) 0 50% / 9px 14px no-repeat !important; }
 
-/* the tabs: the file-select screen's buttons, the open one lit */
-._2D64jIEK7wpUR_NlObDW76 { align-items: center !important; gap: 6px !important; }
+/* the tabs: the menu's round buttons, a colour each, the word across in white with a black
+   edge; the open one bright, the others dull */
+._2D64jIEK7wpUR_NlObDW76 { align-items: center !important; gap: 0 !important; padding-left: 12px !important; }
 ._2D64jIEK7wpUR_NlObDW76 ._2Lu3d-5qLmW4i19ysTt2jT {
-  height: 25px !important;
-  border: 2px solid rgba(170, 180, 255, 0.55) !important;
-  border-radius: 9px !important;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25) !important;
-  background: linear-gradient(rgba(96, 106, 236, 0.78), rgba(56, 62, 170, 0.78)) !important;
+  --c: 228, 42, 34;
+  position: relative !important;
+  min-width: 78px;
+  height: 30px !important;
+  padding: 0 9px !important;
+  display: flex !important;
+  justify-content: center !important;
+  border-radius: 0 !important;
+  background: none !important;
+  overflow: visible !important;
+  filter: saturate(0.75) brightness(0.68);
 }
-._2D64jIEK7wpUR_NlObDW76 ._2Lu3d-5qLmW4i19ysTt2jT:hover { background: linear-gradient(rgba(124, 136, 255, 0.9), rgba(72, 80, 204, 0.9)) !important; }
-._2D64jIEK7wpUR_NlObDW76 ._19axKcqYRuaJ8vdYKYmtTQ {
-  height: 21px !important;
-  font: 700 13px/20px var(--serif) !important;
-  text-shadow: 0 1px 1px rgb(12, 12, 60) !important;
-}
-._2D64jIEK7wpUR_NlObDW76 ._1gqEjB5QsKT_NftD1dEsdZ,
-._2D64jIEK7wpUR_NlObDW76 ._1gqEjB5QsKT_NftD1dEsdZ:hover {
-  border-color: var(--gold) !important;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 0 9px rgba(190, 220, 255, 0.7) !important;
-  background: linear-gradient(rgb(120, 150, 255), rgb(66, 92, 220)) !important;
-}
-._2D64jIEK7wpUR_NlObDW76 > svg { margin-bottom: 0 !important; color: var(--soft) !important; }
-
-/* the page: one of the screen's panels */
-._1rDh5rXSFZJOqCa4UpnI4z {
-  border: 2px solid var(--line) !important;
-  border-radius: var(--r-win) !important;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1), inset 0 0 40px rgba(10, 10, 60, 0.5) !important;
-  background: linear-gradient(rgba(44, 48, 138, 0.94), rgba(24, 26, 86, 0.94)) !important;
-}
-
-/* the games list: names in white, a collection's in gold; the picked one glows as the cursor does */
-._3x1HklzyDs4TEjACrRO2tB { --tab: rgb(14, 16, 54); box-shadow: inset 0 0 14px rgba(0, 0, 30, 0.6) !important; }
-._1ijTaXJJA5YWl_fW2IxcaT ._2sYIghGVXJr6tsQVvcryy8 { font-family: var(--serif) !important; }
-._1ijTaXJJA5YWl_fW2IxcaT ._1UBpAXP408Ez_L_mXhW5Q9._2-O4ZG0KrnSrzISHBKctFQ,
-._1ijTaXJJA5YWl_fW2IxcaT ._1UBpAXP408Ez_L_mXhW5Q9 ._2-O4ZG0KrnSrzISHBKctFQ,
-._1ijTaXJJA5YWl_fW2IxcaT ._1UBpAXP408Ez_L_mXhW5Q9._2-O4ZG0KrnSrzISHBKctFQ:hover {
-  border-radius: 6px !important;
-  background: linear-gradient(rgb(92, 150, 255), rgb(46, 96, 232)) !important;
-  animation: gg-ocarina-cursor 1.7s ease-in-out infinite;
-}
-
-/* the play button: the green of the B button; its words carry a dark edge */
-:is(._1U7LKpx70kEsz3jJwAFOi-, ._2L3s2nzh7yCnNESfI5_dN1) :is(._3ydigb6zZAjJ0JCDgHwSYA, ._2q-gZ3XJzlvSGHSF-GvSmi) { --hi: rgba(255, 255, 255, 0.5); text-shadow: 0 1px 1px rgb(6, 60, 20) !important; }
-:is(._1U7LKpx70kEsz3jJwAFOi-, ._2L3s2nzh7yCnNESfI5_dN1) :is(._3ydigb6zZAjJ0JCDgHwSYA, ._2q-gZ3XJzlvSGHSF-GvSmi):hover { background: linear-gradient(rgb(132, 236, 138), rgb(40, 164, 66)) !important; }
-:is(._1U7LKpx70kEsz3jJwAFOi-, ._2L3s2nzh7yCnNESfI5_dN1) ._33cnXIqTRgRr49_FNXIHj6 { font: 700 14px/26px var(--serif) !important; }
-
-/* headings: gold, in the serif */
-.OhSdLYuggDtBcWjYP0j_9 h2._3A_c3YHYd4YIjA8Y-olnPl { font: 700 14px/18px var(--serif) !important; color: var(--gold) !important; text-shadow: 0 1px 0 rgb(40, 20, 0) !important; }
-:is(._2hfibYuzyMOQ0sj2egsHh0, ._3ONu7-h8EhRcUI72YoSVbD, ._2oJt3qYLAqr6xMjnpmBFLN, ._1bq4x9pa4-9RLY-dXWUZTp .TK9wvF55dyA6RcOclozC8) { font: 700 15px/20px var(--serif) !important; color: var(--gold) !important; }
-:is(._1U7LKpx70kEsz3jJwAFOi-, ._2L3s2nzh7yCnNESfI5_dN1) ._3rpUkswF6xc_ste4Ros_xM { font: 700 15px/18px var(--serif) !important; color: var(--gold) !important; }
-
-/* the bottom bar: its three buttons are yellow C buttons */
-._1_yS5UP7el0aN4vntx3dx { background: linear-gradient(transparent 0, transparent 14px, var(--bar) 14px) !important; }
-._3vCzSrrXZzZjVJFZNg9SGu :is(._2foCkpRXhqq0UGVE50BWqj, .ip-YZhijAMZcuRoXBGiye, ._1TdaAqMFadi0UTqilrkelR)::before {
-  top: 4px;
-  width: 38px;
-  height: 38px;
-  margin-left: -19px;
+._2D64jIEK7wpUR_NlObDW76 ._2Lu3d-5qLmW4i19ysTt2jT:nth-of-type(2) { --c: 62, 88, 236; }
+._2D64jIEK7wpUR_NlObDW76 ._2Lu3d-5qLmW4i19ysTt2jT:nth-of-type(3) { --c: 30, 172, 62; }
+._2D64jIEK7wpUR_NlObDW76 ._2Lu3d-5qLmW4i19ysTt2jT:nth-of-type(4) { --c: 232, 184, 20; }
+._2D64jIEK7wpUR_NlObDW76 ._2Lu3d-5qLmW4i19ysTt2jT::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 30px;
+  height: 30px;
+  margin-left: -15px;
   box-sizing: border-box;
-  border: 2px solid rgb(110, 78, 0);
+  border: 1px solid rgba(0, 0, 0, 0.8);
   border-radius: 50%;
-  box-shadow: inset 0 -3px 4px rgba(120, 70, 0, 0.5), 0 2px 3px rgba(0, 0, 0, 0.6);
-  background: radial-gradient(circle at 36% 28%, rgb(255, 248, 190), var(--bar-tab-a) 38%, var(--bar-tab-b) 100%);
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.55);
+  background:
+    radial-gradient(circle at 36% 28%, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0) 44%),
+    radial-gradient(circle, rgba(0, 0, 0, 0) 52%, rgba(0, 0, 0, 0.42)),
+    rgb(var(--c));
 }
-._3vCzSrrXZzZjVJFZNg9SGu ._1KrJ3sFAqPBN9mfpaNTU5F { display: flex !important; align-items: center !important; justify-content: center !important; }
-._3vCzSrrXZzZjVJFZNg9SGu ._1KrJ3sFAqPBN9mfpaNTU5F svg { width: 20px !important; height: 20px !important; }
-._3vCzSrrXZzZjVJFZNg9SGu :is(._2foCkpRXhqq0UGVE50BWqj, .ip-YZhijAMZcuRoXBGiye, ._1TdaAqMFadi0UTqilrkelR):hover ._1KrJ3sFAqPBN9mfpaNTU5F { color: #000 !important; }
-._3vCzSrrXZzZjVJFZNg9SGu :is(._2foCkpRXhqq0UGVE50BWqj, .ip-YZhijAMZcuRoXBGiye, ._1TdaAqMFadi0UTqilrkelR):hover::before { filter: brightness(1.15); }
-._3vCzSrrXZzZjVJFZNg9SGu :is(._3OhUxFVlQYr9W5ThxstR8k, ._3wJnTtcTLEp0R7eQj_mK8Y) { color: var(--soft) !important; }
+._2D64jIEK7wpUR_NlObDW76 ._2Lu3d-5qLmW4i19ysTt2jT:hover,
+._2D64jIEK7wpUR_NlObDW76 ._1gqEjB5QsKT_NftD1dEsdZ,
+._2D64jIEK7wpUR_NlObDW76 ._1gqEjB5QsKT_NftD1dEsdZ:hover { background: none !important; filter: none; }
+._2D64jIEK7wpUR_NlObDW76 ._19axKcqYRuaJ8vdYKYmtTQ {
+  position: relative !important;
+  height: 30px !important;
+  font: 700 15px/29px var(--font) !important;
+  color: #fff !important;
+  text-shadow: var(--edged) !important;
+}
+._2D64jIEK7wpUR_NlObDW76 ._1gqEjB5QsKT_NftD1dEsdZ ._19axKcqYRuaJ8vdYKYmtTQ { color: #fff !important; }
+/* back and forward: the grey L and R tags at the menu's sides */
+._2D64jIEK7wpUR_NlObDW76 > svg {
+  box-sizing: border-box !important;
+  width: 30px !important;
+  height: 22px !important;
+  margin: 0 0 0 4px !important;
+  padding: 4px 6px 4px 11px !important;
+  color: rgb(30, 34, 48) !important;
+  background: linear-gradient(rgb(200, 206, 222), rgb(120, 128, 152)) !important;
+  clip-path: polygon(0 50%, 34% 0, 100% 0, 100% 100%, 34% 100%);
+}
+._2D64jIEK7wpUR_NlObDW76 > svg:nth-of-type(2) { padding: 4px 11px 4px 6px !important; clip-path: polygon(0 0, 66% 0, 100% 50%, 66% 100%, 0 100%); }
+._2D64jIEK7wpUR_NlObDW76 > svg:hover { color: #000 !important; background: linear-gradient(#fff, rgb(160, 168, 192)) !important; }
+._2D64jIEK7wpUR_NlObDW76 > svg._2cO0HdvLEGAdhosLekWsmo { opacity: 0.45 !important; }
 
-/* dialogs: a text box's dark blue inside the pale outline; headings in gold */
-body.DesktopUI :is(.DialogContent, .ModalPosition_Content, ._3I6h_oySuLmmLY9TjIKT9s) { border-color: var(--line) !important; }
-body.ModalDialogBody .title-area-children, body.ModalDialogBody .title-area-children * { font: 700 13px/22px var(--serif) !important; color: var(--gold) !important; }
-body.DesktopUI .DialogHeader { font: 700 15px/20px var(--serif) !important; color: var(--gold) !important; }
-body.DesktopUI .PageListColumn ._1-vlriAtKYDViAEunue4VO._2DpXjzK3WWsOtUWUrcuOG7 { border-radius: 0 !important; background: linear-gradient(rgb(92, 150, 255), rgb(46, 96, 232)) !important; }
+/* the page: a slab of carved stone. Store red, Library blue, Community green, your own page olive */
+._1rDh5rXSFZJOqCa4UpnI4z {
+  --stone: 66, 92, 130;
+  border: 1px solid #000 !important;
+  border-radius: 0 !important;
+  box-shadow: var(--raised), inset 0 0 26px rgba(0, 0, 0, 0.3) !important;
+  background: var(--rock) 0 0 / 384px 384px, rgb(var(--stone)) !important;
+  background-blend-mode: hard-light !important;
+}
+._3Z7VQ1IMk4E3HsHvrkLNgo:has(._2D64jIEK7wpUR_NlObDW76 > div:nth-of-type(1)._1gqEjB5QsKT_NftD1dEsdZ) ~ ._1rDh5rXSFZJOqCa4UpnI4z { --stone: 146, 72, 58; --head: "STORE"; }
+._3Z7VQ1IMk4E3HsHvrkLNgo:has(._2D64jIEK7wpUR_NlObDW76 > div:nth-of-type(3)._1gqEjB5QsKT_NftD1dEsdZ) ~ ._1rDh5rXSFZJOqCa4UpnI4z { --stone: 76, 122, 90; --head: "COMMUNITY"; }
+._3Z7VQ1IMk4E3HsHvrkLNgo:has(._2D64jIEK7wpUR_NlObDW76 > div:nth-of-type(4)._1gqEjB5QsKT_NftD1dEsdZ) ~ ._1rDh5rXSFZJOqCa4UpnI4z { --stone: 134, 130, 64; --head: "QUEST STATUS"; }
+/* its heading, carved into the top edge */
+._1rDh5rXSFZJOqCa4UpnI4z::before {
+  content: var(--head, "SELECT ITEM");
+  flex: none;
+  height: 22px;
+  padding-top: 3px;
+  font: 700 17px/22px var(--font);
+  letter-spacing: 1.5px;
+  text-align: center;
+  color: rgba(0, 0, 0, 0.7);
+  text-shadow: var(--carved);
+}
+
+/* what is set into it: black, sunk below the stone's face */
+._3x1HklzyDs4TEjACrRO2tB,
+._3xRRJfD2xy95i9NhJxLTp0 > ._3BFcmjAaMyP6GTPwc0VyWi,
+.RGNMWtyj73_-WdhflrmuY > ._3BFcmjAaMyP6GTPwc0VyWi,
+._1rDh5rXSFZJOqCa4UpnI4z > ._1fuML-ekRbTEzgzC597yGP {
+  border: 2px solid !important;
+  border-color: rgba(0, 0, 0, 0.7) rgba(255, 255, 255, 0.24) rgba(255, 255, 255, 0.24) rgba(0, 0, 0, 0.7) !important;
+  box-shadow: none !important;
+  background: var(--black) !important;
+  overflow: hidden !important;
+}
+._3xRRJfD2xy95i9NhJxLTp0 { padding: 4px 13px 13px !important; }
+._3xRRJfD2xy95i9NhJxLTp0 > ._3BFcmjAaMyP6GTPwc0VyWi, .RGNMWtyj73_-WdhflrmuY > ._3BFcmjAaMyP6GTPwc0VyWi { --panel: var(--black); --list: rgb(16, 18, 26); }
+._1bGewp3tfzqAF6fVTFFUOz::after { border: 2px solid; border-color: rgba(0, 0, 0, 0.7) rgba(255, 255, 255, 0.24) rgba(255, 255, 255, 0.24) rgba(0, 0, 0, 0.7); }
+/* a web page's address: carved into the stone above it */
+._1bGewp3tfzqAF6fVTFFUOz > .UkR3sY319PuaUNuUWks2K .MZPxEZcxAGtPDf1NYtouS { font-weight: 700 !important; color: rgba(0, 0, 0, 0.62) !important; text-shadow: 1px 1px 0 rgba(255, 255, 255, 0.22) !important; }
+._1bGewp3tfzqAF6fVTFFUOz > .UkR3sY319PuaUNuUWks2K { --soft: rgba(0, 0, 0, 0.62); }
+
+/* stone bars with yellow words, as the bar that names the picked thing: the list's Home button,
+   the row of links under the play button */
+._2TKEazUUS3TlniZfpc8OOe a._3pSPluBgf0NeR1kkCLWMhR,
+._3-V8vjmrwuJM6Ws3tsjFJj ._31ptFGGMZrSQc5BCX1e5lm {
+  border: 1px solid #000 !important;
+  box-shadow: var(--raised) !important;
+  background: linear-gradient(rgba(var(--slate), 0.5), rgba(var(--slate), 0.5)), var(--rock) 40px 90px / 384px 384px, rgb(var(--slate)) !important;
+  background-blend-mode: normal, hard-light, normal !important;
+}
+._2TKEazUUS3TlniZfpc8OOe a._3pSPluBgf0NeR1kkCLWMhR:hover { filter: brightness(1.18); }
+._2TKEazUUS3TlniZfpc8OOe ._3O48LaKWcabKx07xdrt1TH { font-size: 12px !important; color: var(--gold) !important; text-shadow: 0 1px 0 rgba(0, 0, 0, 0.8) !important; }
+._3-V8vjmrwuJM6Ws3tsjFJj ._2sNDjgK9EWiPLdNGkjun-w { font-size: 12px !important; text-decoration: none !important; color: var(--gold) !important; text-shadow: 0 1px 0 rgba(0, 0, 0, 0.8) !important; }
+._3-V8vjmrwuJM6Ws3tsjFJj ._7k4qmaN8SUMvv6u-L81uk:hover ._2sNDjgK9EWiPLdNGkjun-w { color: #fff !important; }
+
+/* the games list: the picked game sits in the cursor's corner brackets, which pulse */
+._1ijTaXJJA5YWl_fW2IxcaT ._1UBpAXP408Ez_L_mXhW5Q9 ._1vO6BoiVslZgs1kqDGdUs8 { position: relative !important; }
+._1ijTaXJJA5YWl_fW2IxcaT ._1UBpAXP408Ez_L_mXhW5Q9 ._1vO6BoiVslZgs1kqDGdUs8::after {
+  content: "";
+  position: absolute;
+  inset: 0 1px;
+  background: var(--cursor);
+  pointer-events: none;
+  animation: gg-ocarina-cursor 1.2s ease-in-out infinite;
+}
+
+/* the play button: one of the round buttons drawn long, green */
+:is(._1U7LKpx70kEsz3jJwAFOi-, ._2L3s2nzh7yCnNESfI5_dN1) :is(._3ydigb6zZAjJ0JCDgHwSYA, ._2q-gZ3XJzlvSGHSF-GvSmi) {
+  border-width: 1px !important;
+  box-shadow: inset 0 2px 1px rgba(255, 255, 255, 0.5), inset 0 -4px 6px rgba(0, 60, 10, 0.55), 0 2px 3px rgba(0, 0, 0, 0.6) !important;
+  text-shadow: var(--edged) !important;
+}
+:is(._1U7LKpx70kEsz3jJwAFOi-, ._2L3s2nzh7yCnNESfI5_dN1) :is(._3ydigb6zZAjJ0JCDgHwSYA, ._2q-gZ3XJzlvSGHSF-GvSmi):hover { background: linear-gradient(rgb(140, 246, 146), rgb(34, 170, 62)) !important; }
+:is(._1U7LKpx70kEsz3jJwAFOi-, ._2L3s2nzh7yCnNESfI5_dN1) :is(._3ydigb6zZAjJ0JCDgHwSYA, ._2q-gZ3XJzlvSGHSF-GvSmi) svg { filter: drop-shadow(0 1px 0 #000) drop-shadow(0 -1px 0 #000) drop-shadow(1px 0 0 #000) drop-shadow(-1px 0 0 #000); }
+:is(._1U7LKpx70kEsz3jJwAFOi-, ._2L3s2nzh7yCnNESfI5_dN1) ._33cnXIqTRgRr49_FNXIHj6 { font: 700 15px/27px var(--font) !important; }
+
+/* headings on the black: the name bar's yellow */
+.OhSdLYuggDtBcWjYP0j_9 h2._3A_c3YHYd4YIjA8Y-olnPl { font: 700 14px/18px var(--font) !important; color: var(--gold) !important; }
+:is(._2hfibYuzyMOQ0sj2egsHh0, ._3ONu7-h8EhRcUI72YoSVbD, ._2oJt3qYLAqr6xMjnpmBFLN, ._1bq4x9pa4-9RLY-dXWUZTp .TK9wvF55dyA6RcOclozC8) { font: 700 15px/20px var(--font) !important; color: var(--gold) !important; }
+:is(._1U7LKpx70kEsz3jJwAFOi-, ._2L3s2nzh7yCnNESfI5_dN1) ._3rpUkswF6xc_ste4Ros_xM { color: var(--gold) !important; }
+/* a bar that fills: the magic bar, green in a white edge */
+body.DesktopUI ._1u7tlq5OcUVR8p7-ic_ZVw { height: 10px !important; border: 2px solid #fff !important; border-radius: 3px !important; background: #000 !important; }
+body.DesktopUI ._1u7tlq5OcUVR8p7-ic_ZVw > * { background: rgb(32, 208, 48) !important; }
+
+/* the bottom: the wall again. Each button is the name bar, its words yellow; at the left the
+   rupee count */
+._1_yS5UP7el0aN4vntx3dx { position: relative !important; background: none !important; }
+._1_yS5UP7el0aN4vntx3dx::before {
+  content: "500";
+  position: absolute;
+  left: 20px;
+  bottom: 14px;
+  padding-left: 20px;
+  background: var(--rupee) 0 50% / 14px 22px no-repeat;
+  font: 700 19px/24px var(--font);
+  color: #fff;
+  text-shadow: var(--edged);
+  pointer-events: none;
+}
+._3vCzSrrXZzZjVJFZNg9SGu { padding-left: 104px !important; gap: 10px !important; }
+._3vCzSrrXZzZjVJFZNg9SGu :is(._2foCkpRXhqq0UGVE50BWqj, .ip-YZhijAMZcuRoXBGiye, ._1TdaAqMFadi0UTqilrkelR) {
+  min-width: 150px !important;
+  height: 40px !important;
+  margin-top: 12px !important;
+  padding: 0 14px !important;
+  flex-direction: row !important;
+  justify-content: center !important;
+  gap: 8px !important;
+}
+._3vCzSrrXZzZjVJFZNg9SGu ._1TdaAqMFadi0UTqilrkelR { flex-direction: row-reverse !important; justify-content: center !important; }
+._3vCzSrrXZzZjVJFZNg9SGu :is(._2foCkpRXhqq0UGVE50BWqj, .ip-YZhijAMZcuRoXBGiye, ._1TdaAqMFadi0UTqilrkelR)::before {
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  box-sizing: border-box;
+  border: 1px solid #000;
+  border-radius: 0;
+  box-shadow: var(--raised), 0 2px 4px rgba(0, 0, 0, 0.6);
+  background: linear-gradient(rgba(var(--slate), 0.5), rgba(var(--slate), 0.5)), var(--rock) 70px 30px / 384px 384px, rgb(var(--slate));
+  background-blend-mode: normal, hard-light, normal;
+}
+._3vCzSrrXZzZjVJFZNg9SGu :is(._2foCkpRXhqq0UGVE50BWqj, .ip-YZhijAMZcuRoXBGiye, ._1TdaAqMFadi0UTqilrkelR):hover::before { filter: brightness(1.18); }
+._3vCzSrrXZzZjVJFZNg9SGu ._1KrJ3sFAqPBN9mfpaNTU5F { width: 20px !important; height: 20px !important; display: flex !important; align-items: center !important; justify-content: center !important; filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.8)); }
+._3vCzSrrXZzZjVJFZNg9SGu ._1KrJ3sFAqPBN9mfpaNTU5F svg { width: 20px !important; height: 20px !important; }
+._3vCzSrrXZzZjVJFZNg9SGu :is(._2foCkpRXhqq0UGVE50BWqj, .ip-YZhijAMZcuRoXBGiye, ._1TdaAqMFadi0UTqilrkelR):hover ._1KrJ3sFAqPBN9mfpaNTU5F { color: #fff !important; }
+._3vCzSrrXZzZjVJFZNg9SGu :is(._3OhUxFVlQYr9W5ThxstR8k, ._3wJnTtcTLEp0R7eQj_mK8Y) { font: 700 13px/16px var(--font) !important; text-transform: none !important; color: var(--gold) !important; text-shadow: 0 1px 0 rgba(0, 0, 0, 0.85) !important; }
+
+/* dialogs: the olive slab, the page's name carved into it; the list at its left is black, the
+   open page in the cursor's brackets */
+body.DesktopUI :is(.DialogContent, .ModalPosition_Content, ._3I6h_oySuLmmLY9TjIKT9s) { border-color: #000 !important; }
+body.DesktopUI .ModalPosition_Content {
+  background: linear-gradient(rgba(112, 108, 52, 0.45), rgba(112, 108, 52, 0.45)), var(--rock) 0 0 / 384px 384px, rgb(112, 108, 52) !important;
+  background-blend-mode: normal, hard-light, normal !important;
+}
+body.DesktopUI .DialogContentTransition.Panel, body.DesktopUI .DialogContentTransition > .DialogContent { background: none !important; }
+body.DesktopUI .DialogContentTransition.Panel { box-shadow: var(--raised) !important; }
+body.ModalDialogBody .title-area-children, body.ModalDialogBody .title-area-children * { font: 700 13px/22px var(--font) !important; color: #fff !important; text-shadow: var(--edged) !important; }
+body.DesktopUI .DialogHeader { font: 700 17px/22px var(--font) !important; letter-spacing: 1.5px !important; text-transform: uppercase !important; color: rgba(0, 0, 0, 0.72) !important; text-shadow: var(--carved) !important; }
+body.DesktopUI .PageListColumn ._1-vlriAtKYDViAEunue4VO._2DpXjzK3WWsOtUWUrcuOG7 { background: var(--cursor), rgba(255, 255, 255, 0.12) !important; }
+
+/* menus: a slab of the name bar's stone; the line under the pointer in yellow */
+body.ContextMenuPopupBody .PP7LM0Ow1K5qkR8WElLpt {
+  border: 1px solid #000 !important;
+  box-shadow: var(--raised) !important;
+  padding: 3px !important;
+  background: linear-gradient(rgba(96, 106, 142, 0.5), rgba(96, 106, 142, 0.5)), var(--rock) 0 0 / 384px 384px, rgb(96, 106, 142) !important;
+  background-blend-mode: normal, hard-light, normal !important;
+}
+body.ContextMenuPopupBody .contextMenuItem { font-weight: 700 !important; color: #fff !important; text-shadow: 0 1px 0 rgba(0, 0, 0, 0.75) !important; }
+body.ContextMenuPopupBody .contextMenuItem:is(:hover, .active, .selected, [class*="Active"], [class*="Focused"]) { background: rgba(0, 0, 0, 0.42) !important; color: var(--gold) !important; }
+body.ContextMenuPopupBody .contextMenuItem:is(.disabled, .Disabled, [aria-disabled="true"]) { color: rgba(0, 0, 0, 0.5) !important; text-shadow: 1px 1px 0 rgba(255, 255, 255, 0.18) !important; }
 
 /* ==== friends ==== */
-html, body, body.fullheight { background: linear-gradient(rgb(30, 32, 98), rgb(16, 18, 62)) fixed !important; }
+html, body, body.fullheight { background: var(--rock) 0 0 / 384px 384px, rgb(66, 92, 130) fixed !important; background-blend-mode: hard-light !important; }
 .friendlist, .friendListHeaderContainer, .FriendsListChatSection, .friendsListSectionTitle.chatSectionTitle, .friendListFooter,
 .chatWindow, .chatDialogs, .chatBody, .ChatRoomGroupDialogContents, .chatHeader, .chatTabList, .chatTabSetContainer, .chatEntry { background: none !important; }
-.friendlistListContainer, .chatRoomListContainer, .chatHistoryScroll, .chatHistory, .ChatHistoryContainer, .chatEntry form, .quickAccessFriends { border-radius: 8px !important; }
-.friendGroup .groupName, .friendsListSectionTitle, .groupChatSectionTitle, .friendTab .tabLabel { font-family: var(--serif) !important; font-size: 12px !important; text-transform: none !important; }
-.currentUserContainer .labelHolder :is(.nOdcT-MoOaXGePXLyPe0H, [class*="playerName"]) { font-family: var(--serif) !important; color: var(--gold) !important; }
-.friend.friendSelected, .friend[class*="Selected"] { border-radius: 6px !important; background: linear-gradient(rgb(92, 150, 255), rgb(46, 96, 232)) !important; }
-.unreadFriend { background: rgba(120, 156, 255, 0.34) !important; }
-button, .DialogButton, .chatSubmitButton { border-radius: 8px !important; background: linear-gradient(rgb(88, 98, 216), rgb(56, 62, 160)) !important; }
+.currentUserContainer .labelHolder :is(.nOdcT-MoOaXGePXLyPe0H, [class*="playerName"]) { color: #fff !important; text-shadow: var(--edged) !important; }
+.friendGroup .groupName, .friendsListSectionTitle, .groupChatSectionTitle { color: var(--gold) !important; }
+.friend.friendSelected, .friend[class*="Selected"] { background: var(--cursor), rgba(255, 255, 255, 0.12) !important; }
+.unreadFriend { background: rgba(255, 226, 64, 0.2) !important; }
 
 /* ==== web ==== */
 html[data-gg-glass="ocarina"] {
-  --w-page: rgb(16, 16, 58);
-  --w-ink: rgb(204, 211, 255);
-  --w-head: rgb(255, 220, 90);
-  --w-field: rgb(10, 12, 44);
+  --w-page: rgb(8, 8, 12);
+  --w-ink: rgb(208, 212, 222);
+  --w-head: rgb(255, 226, 64);
+  --w-field: rgb(3, 3, 6);
   --w-field-ink: #fff;
-  --w-dark: rgb(88, 98, 196);
-  --w-light: rgb(88, 98, 196);
-  --w-pick: rgb(58, 112, 240);
-  --w-track: rgb(20, 22, 70);
-  --w-thumb: rgb(72, 80, 196);
-  --w-filter: grayscale(1) sepia(1) hue-rotate(195deg) saturate(1.7) brightness(0.88);
-  --w-photo: grayscale(0.5) sepia(0.6) hue-rotate(195deg) brightness(0.75);
+  --w-dark: #000;
+  --w-light: rgb(78, 88, 114);
+  --w-pick: rgb(72, 86, 124);
+  --w-track: rgb(18, 20, 28);
+  --w-thumb: rgb(96, 106, 142);
+  --w-filter: grayscale(1) sepia(0.4) hue-rotate(185deg) saturate(1.3) brightness(0.9);
+  --w-photo: grayscale(0.4) brightness(0.8);
   --w-font: "Trebuchet MS", "Segoe UI", Arial, sans-serif;
-  --w-r: 8px;
+  --w-r: 0px;
 }
