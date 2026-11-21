@@ -61,10 +61,8 @@
   // holding game pictures, gets data-gg-grey with its own colours in grey (--gg-grey-*), and its
   // insides are looked at one by one. Parts added later (the store loads sections as you scroll)
   // are looked at as they come, and parts that only turn blue under the pointer when it gets there.
-  const MONO = /^(nullscapes|eternalnight|deprivation|steam2013|steam2005)$/.test(cfg.mode);
+  const MONO = /^(nullscapes|eternalnight|deprivation|steam2013|steam2017|steam2005)$/.test(cfg.mode);
   const SOLID = /^steam20(13|05|17)$/.test(cfg.mode);   // an opaque look of its own (web2013.css, web2005.css, web2017.css): nothing to clear
-  // Steam 2017 is a solid mode with no grey pass: in January 2017 the store and community were already blue, so
-  // its pages stay as Steam draws them (web2017.css only adds the client's scrollbars)
   // Steam 2005 turns the blue to the olive client's greens, not to grey: the green of the same
   // brightness, with the dark tones today's pages are made of lifted into the range its windows had
   const OLIVE = cfg.mode !== "steam2005" ? null : [[0, [0, 0, 0]], [44, [40, 46, 34]], [67, [62, 70, 55]], [84, [76, 88, 68]],
@@ -125,10 +123,18 @@
     const r = e.getBoundingClientRect();
     return r.width > 0 && r.width <= 96 && r.height <= 96;
   };
+  // While the page is still arriving, the part being written last (and what it sits in) may get more
+  // put into it, pictures included: it is not given the filter yet (it is looked at again when the
+  // page is whole), only its own colours.
+  const growing = e => {
+    if (document.readyState !== "loading") return false;
+    for (let n = e; n && n !== document.documentElement; n = n.parentNode) if (n.nextSibling) return false;
+    return true;
+  };
   const visit = e => {
     if (e.nodeType !== 1 || e.hasAttribute("data-gg-mono") || e.matches(PICTURES)) return;
     const s = getComputedStyle(e), panel = bluePanel(s);
-    if ((panel || blue(s.color)) && small(e, s)) {
+    if ((panel || blue(s.color)) && small(e, s) && !growing(e)) {
       e.setAttribute("data-gg-mono", "");
       return;
     }
@@ -140,15 +146,32 @@
   };
   const monoAll = () => { if (document.body) visit(document.body); };
 
-  let added = [], addTimer = 0;
+  // New parts are looked at before the frame they first appear in is drawn (requestAnimationFrame
+  // runs ahead of the drawing), so a part does not show blue first and turn a moment later. A page
+  // that is not being drawn has no frames: a timer does it there. A style sheet that has just
+  // arrived can turn parts blue that were looked at before it came, so the whole page is looked at
+  // again then.
+  let added = [], addFrame = 0, addTimer = 0, whole = false;
+  const lookNow = () => {
+    cancelAnimationFrame(addFrame);
+    clearTimeout(addTimer);
+    addFrame = addTimer = 0;
+    const nodes = added;
+    added = [];
+    if (whole) { whole = false; monoAll(); return; }
+    for (const n of nodes) if (n.isConnected && !n.closest("[data-gg-mono]")) visit(n);
+  };
+  const lookSoon = () => {
+    if (addTimer) return;
+    addFrame = requestAnimationFrame(lookNow);
+    addTimer = setTimeout(lookNow, 300);
+  };
   const seeAdded = records => {
     for (const r of records) for (const n of r.addedNodes) if (n.nodeType === 1) added.push(n);
-    if (added.length && !addTimer) addTimer = setTimeout(() => {
-      addTimer = 0;
-      const nodes = added;
-      added = [];
-      for (const n of nodes) if (n.isConnected && !n.closest("[data-gg-mono]")) visit(n);
-    }, 250);
+    if (added.length) lookSoon();
+  };
+  const onSheet = ev => {
+    if (ev.target instanceof Element && ev.target.matches("link, style")) { whole = true; lookSoon(); }
   };
   const hovered = new Set();
   let hoverTimer = 0;
@@ -184,6 +207,7 @@
   if (watch) {
     watch.observe(document, { childList: true, subtree: true });
     addEventListener("mouseover", onOver, { passive: true, capture: true });
+    document.addEventListener("load", onSheet, true);
   }
 
   const again = () => { put(); if (!SOLID) clearWide(); if (MONO) monoAll(); };
@@ -199,6 +223,8 @@
   window.__ggWebStop = () => {
     timers.forEach(clearTimeout);
     clearTimeout(addTimer);
+    cancelAnimationFrame(addFrame);
+    document.removeEventListener("load", onSheet, true);
     clearTimeout(hoverTimer);
     if (mo) mo.disconnect();
     if (watch) watch.disconnect();

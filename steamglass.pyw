@@ -63,7 +63,7 @@ in glass-mode.txt next to this file (changes apply live):
            menu, the old friends window, chat, Settings and dialogs. The collage shows the grey
            skin of 2010 to 2014 kept on the later client, so its numbers are that skin's (the
            last grey steam.styles and layouts, July 2014) and the collage's own. The store and
-           community stay blue, as they already were then (no grey pass in web-glass.js). Under
+           community are grey as in Steam 2013 (the user asked for that). Under
            it the same greys and the same pictures from this PC's Steam folder as Steam 2013.
   off      Steam's own windows.
 
@@ -77,7 +77,7 @@ Installed builds (SteamGlass.exe, put there by SteamGlassUpdater.exe) keep
 glass-mode.txt in %APPDATA%\SteamGlass and add "Check for updates…" to the menu.
 helper.log in the same folder notes mode changes and anything that went wrong.
 "Start with Windows" in the menu adds or removes the helper under the Run key."""
-__version__ = "1.7.3"
+__version__ = "1.7.4"
 
 import base64
 import ctypes
@@ -1473,12 +1473,17 @@ class Theme:
 
     def __init__(self):
         self.answered = False   # Steam has answered on its developer port
-        self.web = {}           # target id -> WebPage: the store and community pages open in Steam
+        self.web = {}           # target id -> WebPage: the web views open in Steam
+        self.web_new = set()    # target ids _watch has just attached to (kept through the pass under way)
+        self.web_want = None    # (script, key) for them, from the last pass
+        self.web_lock = threading.Lock()
         self._stop = threading.Event()
         self._thread = threading.Thread(target=self._run, daemon=True)
+        self._watcher = threading.Thread(target=self._watch, daemon=True)
 
     def start(self):
         self._thread.start()
+        self._watcher.start()
 
     _picture = (None, None, None)   # (path, mtime, data url)
 
@@ -1597,7 +1602,7 @@ class Theme:
             pages = json.load(r)
         self.answered = True
         lib, friends, js, key = self.bundle(mode)
-        web_script, web_key = self.web_bundle(mode)
+        self.web_want = self.web_bundle(mode)
         open_web = set()
         for t in pages:   # the shared page first: new windows get the sheet from it as they are created (BIRTH_JS)
             if t.get("type") == "page" and t.get("title") == "SharedJSContext" and "webSocketDebuggerUrl" in t:
@@ -1612,17 +1617,15 @@ class Theme:
             url = t.get("url", "")
             if t.get("type") != "page" or "webSocketDebuggerUrl" not in t or t.get("title") == "SharedJSContext":
                 continue
-            if url.startswith(("http:", "https:")) and "steamloopback" not in url:
-                # a real website in Steam's window: the store and community get web.css (their own
-                # script leaves other sites, the in-game overlay and Big Picture alone)
+            if url.startswith(("http:", "https:", "data:")) and "steamloopback" not in url:
+                # a web view in Steam's window, showing a website or still the blank page Steam parks
+                # it on: it is attached to whatever it shows, so that the store or the community gets
+                # web.css from the first moment of its first load (the script itself leaves other
+                # sites, the in-game overlay and Big Picture alone)
                 tid = t.get("id")
-                if tid and (steam_site(url) or tid in self.web):
+                if tid:
                     open_web.add(tid)
-                    page = self.web.get(tid)
-                    if page is None or not page.alive:
-                        page = self.web[tid] = WebPage(t["webSocketDebuggerUrl"])
-                        page.start()
-                    page.want(web_script, web_key)
+                    self.web_page(tid, t["webSocketDebuggerUrl"])
                 continue
             scene = js if t.get("title") in SCENE_WINDOWS else ""
             want = key + ("w" if scene else "")
@@ -1653,8 +1656,48 @@ class Theme:
                 }})()""", timeout=5)
             except (OSError, ValueError):
                 pass   # that page went away mid-pass; the next pass catches up
-        for tid in [tid for tid in self.web if tid not in open_web]:
-            self.web.pop(tid).close()   # closed, or showing something else now
+        with self.web_lock:
+            for tid in [tid for tid in self.web if tid not in open_web and tid not in self.web_new]:
+                self.web.pop(tid).close()   # closed, or showing something else now
+            self.web_new.clear()
+
+    def web_page(self, tid: str, ws_url: str):
+        """The connection that keeps a web view themed: started if it isn't there, told what to wear."""
+        if not self.web_want:
+            return
+        with self.web_lock:
+            page = self.web.get(tid)
+            if page is None or not page.alive:
+                page = self.web[tid] = WebPage(ws_url)
+                page.start()
+            page.want(*self.web_want)
+
+    def _watch(self):
+        """Hears of every new page the moment Steam makes it (the browser's own DevTools connection,
+        Target.setDiscoverTargets), so a new web view is attached to at once and not at the next pass,
+        up to a second later, when its first page may already be on screen."""
+        while not self._stop.is_set():
+            try:
+                with urllib.request.urlopen(f"http://127.0.0.1:{CEF_PORT}/json/version", timeout=2) as r:
+                    url = json.load(r)["webSocketDebuggerUrl"]
+                with CDP(url, timeout=5) as browser:
+                    browser.send("Target.setDiscoverTargets", discover=True)
+                    while not self._stop.is_set():
+                        if not browser.waiting(0.5):
+                            continue
+                        message = browser.message()
+                        if message.get("method") not in ("Target.targetCreated", "Target.targetInfoChanged"):
+                            continue
+                        info = message.get("params", {}).get("targetInfo", {})
+                        url, tid = info.get("url", ""), info.get("targetId")
+                        if (tid and info.get("type") == "page" and url.startswith(("http:", "https:", "data:"))
+                                and "steamloopback" not in url and tid not in self.web):
+                            with self.web_lock:
+                                self.web_new.add(tid)   # the pass that is under way may not have it in its list
+                            self.web_page(tid, f"ws://127.0.0.1:{CEF_PORT}/devtools/page/{tid}")
+            except (OSError, ValueError, KeyError):
+                pass   # Steam isn't running, or has just closed
+            self._stop.wait(1.0)
 
     def _run(self):
         mode, problem = None, None
