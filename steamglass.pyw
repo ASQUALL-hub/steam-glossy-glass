@@ -56,6 +56,13 @@ in glass-mode.txt next to this file (changes apply live):
            colours are the old scheme's (76 88 68 and its kin), measured from screenshots of
            the time; everything is drawn in CSS, with no pictures. Steam's blue goes olive
            underneath (olives), so the parts the mode doesn't name fit in.
+  steam2017  the grey skin again, as it stood on the client of January 2017 (steam2017.css,
+           friends2017.css, web2017.css): the 2013 mode's charcoal, taken further after a
+           collage of that client's windows. The green inbox tab with its count, the boxed
+           VR button, games under banded headings, the two-line friends corner, the Downloads
+           page of that time, the old friends window, chat, Settings and dialogs. The store
+           and community stay blue, as they already were then. Under it the same greys and the
+           same pictures from this PC's Steam folder as Steam 2013.
   off      Steam's own windows.
 
 A tray icon switches between them (it writes glass-mode.txt). Its "Song toggle"
@@ -195,9 +202,9 @@ user32.SetWindowLongW.restype = ctypes.c_long
 
 MODES = {"frosted": "Frosted", "clear": "Clear", "liquid": "Liquid", "aero": "Frutiger Aero", "nullscapes": "Nullscapes",
          "eternalnight": "Eternal Night", "deprivation": "Deprivation (unfinished)", "steam2013": "Steam 2013",
-         "steam2005": "Steam 2005",
+         "steam2005": "Steam 2005", "steam2017": "Steam 2017",
          "off": "Off (Steam's normal look)"}
-SOLID_MODES = ("steam2013", "steam2005")   # looks of their own on opaque windows: no glass behind the pages
+SOLID_MODES = ("steam2013", "steam2005", "steam2017")   # looks of their own on opaque windows: no glass behind the pages
 FROSTED_LIKE = ("frosted", "liquid", "aero", "nullscapes", "eternalnight", "deprivation")   # glass kinds Windows draws as frosted
 
 
@@ -460,7 +467,7 @@ def apply(hwnd, mode: str):
     blur_behind(hwnd, mode == "clear")
     dword_attr(hwnd, DWMWA_WINDOW_CORNER_PREFERENCE,
                {"frosted": DWMWCP_ROUND, "clear": DWMWCP_DONOTROUND, "steam2013": DWMWCP_DONOTROUND,
-                "steam2005": DWMWCP_ROUND}.get(mode, DWMWCP_DEFAULT))
+                "steam2005": DWMWCP_ROUND, "steam2017": DWMWCP_DONOTROUND}.get(mode, DWMWCP_DEFAULT))
     dword_attr(hwnd, DWMWA_BORDER_COLOR, DWMWA_COLOR_NONE if mode in ("clear",) + SOLID_MODES else DWMWA_COLOR_DEFAULT)
     if mode != "clear" and has_region(hwnd):   # clear glass cuts its own shape (set_shape)
         user32.SetWindowRgn(hwnd, None, True)
@@ -555,7 +562,8 @@ def tray_icon(mode: str, sizes=(16, 20, 24, 32, 48, 64)):
     sunny sky over a green hill when aero, the moon over spiky grass for
     Nullscapes, a crescent moon and stars for Eternal Night, a row of fangs in crimson
     for Deprivation, the old client's charcoal with its blue corner for Steam 2013, the older one's
-    olive with a yellow line for Steam 2005, grey when off."""
+    olive with a yellow line for Steam 2005, charcoal with the green inbox tab for Steam 2017,
+    grey when off."""
     from PySide6.QtCore import QPointF, QRectF, Qt
     from PySide6.QtGui import QColor, QIcon, QLinearGradient, QPainter, QPainterPath, QPen, QPixmap, QRadialGradient
 
@@ -594,6 +602,7 @@ def tray_icon(mode: str, sizes=(16, 20, 24, 32, 48, 64)):
                            "clear": ((120, 200, 255, 90), (40, 110, 200, 70)),
                            "steam2013": ((92, 89, 86, 255), (23, 22, 20, 255)),
                            "steam2005": ((93, 106, 80, 255), (62, 70, 55, 255)),
+                           "steam2017": ((74, 72, 70, 255), (23, 22, 20, 255)),
                            "off": ((150, 156, 166, 230), (80, 86, 96, 230))}[mode]
             fill.setColorAt(0, QColor(*top))
             fill.setColorAt(1, QColor(*bottom))
@@ -617,6 +626,18 @@ def tray_icon(mode: str, sizes=(16, 20, 24, 32, 48, 64)):
             p.fillRect(QRectF(px * 0.22, px * 0.27, px * 0.40, px * 0.06), QColor(196, 181, 80))
             p.fillRect(QRectF(px * 0.22, px * 0.48, px * 0.50, px * 0.06), QColor(255, 255, 255))
             p.fillRect(QRectF(px * 0.22, px * 0.67, px * 0.34, px * 0.06), QColor(146, 146, 146))
+            p.restore()
+        elif mode == "steam2017":   # the green inbox tab hanging from the top edge, over a list with its picked line
+            p.save()
+            p.setClipPath(body)
+            p.setPen(Qt.NoPen)
+            tab = QLinearGradient(0, 0, 0, px * 0.40)
+            tab.setColorAt(0, QColor(121, 166, 21)); tab.setColorAt(1, QColor(62, 90, 22))
+            p.fillRect(QRectF(px * 0.50, 0, px * 0.34, px * 0.40), tab)
+            p.fillRect(QRectF(px * 0.58, px * 0.17, px * 0.18, px * 0.12), QColor(255, 255, 255))   # its envelope
+            p.fillRect(QRectF(px * 0.14, px * 0.62, px * 0.72, px * 0.14), QColor(49, 66, 89))
+            for k, tone in enumerate((166, 242)):
+                p.fillRect(QRectF(px * 0.20, px * (0.48 + 0.18 * k), px * (0.22, 0.50)[k], px * 0.06), QColor(tone, tone - 2, tone - 4))
             p.restore()
         elif mode == "nullscapes":   # the moon over spiky grass
             p.save()
@@ -1241,8 +1262,8 @@ def olives(css: str) -> str:
 
 
 def solid_under(mode: str) -> str:
-    """What goes under a solid mode's own sheet: Steam's blue in its greys (2013, with the old skin's
-    pictures) or in its olive (2005)."""
+    """What goes under a solid mode's own sheet: Steam's blue in its greys (2013 and 2017, with the old
+    skin's pictures) or in its olive (2005)."""
     if mode == "steam2005":
         steam = steam_greys()
         key = ("olive", hashlib.sha1(steam.encode()).hexdigest())
@@ -1285,7 +1306,14 @@ SKIN_2013_PICTURES = (
     "avatarBorderOnline avatarBorderInGame avatarBorderOffline achievementbg win32_win_close win32_win_close_hover "
     "win32_win_max win32_win_max_hover win32_win_min win32_win_min_hover win32_win_restore win32_win_restore_hover "
     "icon_workshop nav_highlight_selected html_lock html_lock_disabled tiny_x_default tiny_x_hover "
-    "friendslist_header2").split()
+    "friendslist_header2 "
+    # what Steam 2017 adds: the VR button, the inbox menu's icons, the chat's emoticon button, the
+    # arrows beside a friend's name, the friends list's minus and plus
+    "icon_vr icon_vr_over icon_vr_down icon_vr_happy icon_vr_happy_over icon_vr_happy_down inbox_comment inbox_item "
+    "inbox_invite inbox_gift inbox_trade inbox_offlinemessage inbox_moderatormessage inbox_async_game "
+    "icon_emoticon icon_emoticon_hover icon_pause_hover dropdown_online dropdown_ingame dropdown_offline "
+    "icon_collapse_friends icon_expand_friends icon_details_hover resizer_over chkSelDis chkUnselDis radSelFocus "
+    "radUnselFocus icon_addFriend").split()
 
 
 def tga_rows(data: bytes):
