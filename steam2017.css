@@ -788,7 +788,7 @@ body.DesktopUI ._1ijTaXJJA5YWl_fW2IxcaT ::-webkit-scrollbar-button:single-button
   position: absolute;
   z-index: 1;
   left: 4px;
-  top: 20px;
+  top: 21px;
   box-sizing: border-box;
   max-width: calc(100% - 24px);
   height: 46px;
@@ -802,8 +802,8 @@ body.DesktopUI ._1ijTaXJJA5YWl_fW2IxcaT ::-webkit-scrollbar-button:single-button
 }
 
 /* headerimage */
-._2gZXhRmKUk68pA28-5ZmGQ { height: 76px !important; min-height: 0 !important; max-height: none !important; overflow: visible !important; background: none !important; }
-._2gZXhRmKUk68pA28-5ZmGQ .NZMJ6g2iVnFsOOp-lDmIP { display: block !important; height: 76px !important; overflow: visible !important; z-index: auto !important; background: none !important; }
+._2gZXhRmKUk68pA28-5ZmGQ { height: 77px !important; min-height: 0 !important; max-height: none !important; overflow: visible !important; background: none !important; }
+._2gZXhRmKUk68pA28-5ZmGQ .NZMJ6g2iVnFsOOp-lDmIP { display: block !important; height: 77px !important; overflow: visible !important; z-index: auto !important; background: none !important; }
 ._2gZXhRmKUk68pA28-5ZmGQ ._1IX7FPSY9Jb82KhBVBSkZa {
   position: absolute !important;
   z-index: -1;
@@ -1012,7 +1012,7 @@ body.DesktopUI ._1ijTaXJJA5YWl_fW2IxcaT ::-webkit-scrollbar-button:single-button
 ._27RcNu8aXKBpYkHcNNrt-X > ._2r4TK4BAuU-J4FuF_O7v_5._3-V8vjmrwuJM6Ws3tsjFJj {
   position: absolute !important;
   z-index: 1;
-  top: 98px;
+  top: 99px;
   right: 0;
   box-sizing: border-box !important;
   width: 150px !important;
@@ -1198,9 +1198,12 @@ body.DesktopUI :is(textarea, input)::selection { color: #fff; background: var(--
 ._1ijTaXJJA5YWl_fW2IxcaT ._2sYIghGVXJr6tsQVvcryy8 ._29uten9Yy8q-n7woDEOXVF { height: 26px !important; line-height: 26px !important; padding: 0 !important; }
 
 /* ------------------------------------------------------------- the bottom, as it stood
-   + ADD A GAME... 14 in from the left; the downloads line in the middle; VIEW FRIENDS LIST on
-   the right beside the account's picture in its 40px frame. One line of 14 (11px) capitals,
-   44 above the window's bottom edge. */
+   + ADD A GAME... 14 in from the left, VIEW FRIENDS LIST on the right beside the account's picture
+   in its 40px frame (10 in from the right edge, 12 up from the bottom): one line of 14 (11px)
+   capitals, 45 above the window's bottom edge. In the middle the status (uistatuspanel.layout): a
+   dim line 31 above the bottom edge when nothing is coming down ("1 of 1 complete", or the way to
+   the Downloads page); while something is, DOWNLOADING in capitals on the upper line over a
+   slim bar, 300 wide and 3 high, 21 above the bottom edge. */
 ._3vCzSrrXZzZjVJFZNg9SGu ._2foCkpRXhqq0UGVE50BWqj { padding: 0 0 0 2px !important; gap: 6px !important; }
 ._3vCzSrrXZzZjVJFZNg9SGu ._2foCkpRXhqq0UGVE50BWqj ._1KrJ3sFAqPBN9mfpaNTU5F { width: 14px !important; height: 14px !important; margin: 0 0 1px !important; background-image: var(--g-icon-collapse, none); }
 ._3vCzSrrXZzZjVJFZNg9SGu ._2foCkpRXhqq0UGVE50BWqj:hover ._1KrJ3sFAqPBN9mfpaNTU5F { background-image: var(--g-icon-collapse-over, var(--g-icon-collapse, none)); }
@@ -1209,14 +1212,14 @@ body.DesktopUI :is(textarea, input)::selection { color: #fff; background: var(--
   position: relative !important;
   height: 30px !important;
   margin: 0 !important;
-  padding: 0 48px 0 0 !important;
+  padding: 0 42px 0 0 !important;
 }
 ._3vCzSrrXZzZjVJFZNg9SGu ._1TdaAqMFadi0UTqilrkelR ._1KrJ3sFAqPBN9mfpaNTU5F { display: none !important; }
 ._3vCzSrrXZzZjVJFZNg9SGu ._1TdaAqMFadi0UTqilrkelR::after {       /* FriendPanel: the account's picture (the mode's script supplies it) */
   content: "";
   position: absolute;
-  right: 0;
-  top: 3px;
+  right: -1px;
+  top: 8px;
   width: 40px;
   height: 40px;
   box-sizing: border-box;
@@ -1226,6 +1229,34 @@ body.DesktopUI :is(textarea, input)::selection { color: #fff; background: var(--
   background: var(--gg-avatar, none) center / 32px 32px no-repeat, rgb(74, 72, 70);
 }
 ._3vCzSrrXZzZjVJFZNg9SGu .window_resize_grip { position: absolute !important; right: 1px !important; bottom: 1px !important; width: 12px !important; height: 12px !important; }
+/* StatusComplete, StatusPaused (StatusLabelDim): plain dim words on the lower line */
+._3vCzSrrXZzZjVJFZNg9SGu .ip-YZhijAMZcuRoXBGiye { max-width: none !important; cursor: pointer; }
+._3vCzSrrXZzZjVJFZNg9SGu .ip-YZhijAMZcuRoXBGiye > ._3wJnTtcTLEp0R7eQj_mK8Y {
+  position: relative;
+  top: 14px;
+  font: 400 11px/30px var(--font) !important;
+  text-transform: none !important;
+  color: var(--text-disabled) !important;
+}
+._3vCzSrrXZzZjVJFZNg9SGu .ip-YZhijAMZcuRoXBGiye:hover > ._3wJnTtcTLEp0R7eQj_mK8Y { color: #fff !important; }
+/* offline, or no connection: the same capitals as the other two corners */
+._3vCzSrrXZzZjVJFZNg9SGu .ip-YZhijAMZcuRoXBGiye ._1sCy-pm412Smb0wJx0W-4 { font: 400 11px/30px var(--font) !important; letter-spacing: 0 !important; text-transform: uppercase !important; color: var(--label-focus) !important; }
+._3vCzSrrXZzZjVJFZNg9SGu .ip-YZhijAMZcuRoXBGiye:hover ._1sCy-pm412Smb0wJx0W-4 { color: #fff !important; }
+/* StatusDownloading over StatusProgressbar (SlimProgressBar: black, filled in the blue); the game's
+   icon is left out, the old line was words alone */
+._3vCzSrrXZzZjVJFZNg9SGu ._2VtAqT03BpBsVdmxwptn9D { width: 300px !important; height: 30px !important; gap: 0 !important; align-items: flex-start !important; }
+._3vCzSrrXZzZjVJFZNg9SGu ._2VtAqT03BpBsVdmxwptn9D > :not(._2_FomluqqgQ2Hx8ON3AVep) { display: none !important; }
+._3vCzSrrXZzZjVJFZNg9SGu ._2_FomluqqgQ2Hx8ON3AVep { flex: 1 1 auto !important; gap: 0 !important; align-items: stretch !important; }
+._3vCzSrrXZzZjVJFZNg9SGu ._2_FomluqqgQ2Hx8ON3AVep ._1xCcFYWIrJ7W8WRDmGvR3y { height: 30px !important; justify-content: center !important; gap: 6px !important; color: var(--label-focus) !important; }
+._3vCzSrrXZzZjVJFZNg9SGu ._2_FomluqqgQ2Hx8ON3AVep ._1sCy-pm412Smb0wJx0W-4 { flex: none !important; }
+._3vCzSrrXZzZjVJFZNg9SGu ._2_FomluqqgQ2Hx8ON3AVep .wi0pDywRgOCxhG7OqQNaA {
+  --color-progress-bar-foreground: var(--focus2) !important;
+  --color-progress-bar-background: #000 !important;
+  flex: none !important;
+  height: 3px !important;
+  margin: 12px 0 0 !important;
+  border-radius: 0 !important;
+}
 
 /* ------------------------------------------------------------- menus (Menu, MenuItem, MenuSeparator)
    MenuBG1 to MenuBG2 over the first 140px inside a 1px edge with clipped corners; items in bold
@@ -1271,6 +1302,46 @@ body.ContextMenuPopupBody ._21GPYlKBCLsHQpTsHw_RL_ {
   background: var(--divider) !important;
   opacity: 1 !important;
 }
+/* the inbox menu (what drops from the flag): MenuItems 33 apart with a Divider line between them,
+   an icon at the left and bold 14 (11px) words; what is unread in the inbox green
+   (inbox_active_text) and the rest in the inbox grey; the line under the pointer on the Focus blue.
+   Today's menu has a heading with a "view all" button, which stays as a small plain line. */
+body.ContextMenuPopupBody ._1UgM1Pm8SbTWX7_2f-crGt { width: auto !important; padding: 0 !important; }
+body.ContextMenuPopupBody ._1UgM1Pm8SbTWX7_2f-crGt > div { padding: 0 !important; }
+body.ContextMenuPopupBody .MCa4RMSvWJwwWjcZP2wTT { box-sizing: border-box !important; height: 26px !important; min-height: 0 !important; margin: 0 !important; padding: 0 6px 0 12px !important; align-items: center !important; border-bottom: 1px solid var(--divider) !important; background: none !important; }
+body.ContextMenuPopupBody ._3zQLPuC3M-NPNa1tVda9Dz { font: 700 11px/26px var(--font) !important; letter-spacing: 0 !important; text-transform: none !important; color: var(--label) !important; }
+body.ContextMenuPopupBody ._1oERP7bVictkby2hP4BBva { height: 18px !important; min-height: 0 !important; margin: 0 !important; padding: 0 8px !important; border: 1px solid var(--border) !important; border-radius: 2px !important; box-shadow: none !important; background: linear-gradient(var(--face2), var(--sheet)) !important; font: 400 10px/16px var(--font) !important; letter-spacing: 0 !important; text-transform: uppercase !important; color: var(--text) !important; }
+body.ContextMenuPopupBody ._1oERP7bVictkby2hP4BBva:hover { border-color: var(--border-focus) !important; color: var(--text-hover) !important; }
+body.ContextMenuPopupBody ._3sTMvhkGXqBzwhsP2-IA5P { margin: 0 !important; padding: 0 !important; background: none !important; }
+body.ContextMenuPopupBody ._2m6H7Jmk-G-Nrbif_wDoTx { margin: 0 !important; padding: 0 !important; gap: 0 !important; background: none !important; }
+body.ContextMenuPopupBody :is(._3k90ug209sE23xAMqcM74s, ._3zfQA8bEKpisPtsyT4SovP > *) {
+  box-sizing: border-box !important;
+  min-height: 33px !important;
+  margin: 0 !important;
+  padding: 4px 12px !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--divider) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: none !important;
+  color: var(--inbox-text-off) !important;
+  transition: none !important;
+}
+body.ContextMenuPopupBody ._3zfQA8bEKpisPtsyT4SovP { margin: 0 !important; padding: 0 !important; border-radius: 0 !important; background: none !important; }
+body.ContextMenuPopupBody ._3zfQA8bEKpisPtsyT4SovP :is(._30fVm4Rsel-4nUKEiPJgz9, ._2h6KD6p6y4vIgO2Toxx-_K) { height: auto !important; min-height: 0 !important; border-radius: 0 !important; box-shadow: none !important; }
+body.ContextMenuPopupBody ._3zfQA8bEKpisPtsyT4SovP ._2h6KD6p6y4vIgO2Toxx-_K { margin: 0 !important; padding: 0 !important; background: none !important; }
+body.ContextMenuPopupBody ._3zfQA8bEKpisPtsyT4SovP:empty { display: none !important; }
+body.ContextMenuPopupBody :is(._3k90ug209sE23xAMqcM74s, ._3zfQA8bEKpisPtsyT4SovP > *):hover { background: var(--focus) !important; }
+body.ContextMenuPopupBody :is(._3k90ug209sE23xAMqcM74s, ._3zfQA8bEKpisPtsyT4SovP) :is(._1SQjN025UZ0z_8AkWHCsGd, ._3u0Sb5gUTscs0TQlKpA7WZ, .h-lNlCUnCRbIcn38-Oqaw, ._2MGSmn9lIFnmLVIX49POSx, ._3JT9UI68R_-oZc63_NRIcA) { margin: 0 !important; padding: 0 !important; background: none !important; font: 700 11px/16px var(--font) !important; letter-spacing: 0 !important; text-transform: none !important; color: inherit !important; }
+body.ContextMenuPopupBody ._3zfQA8bEKpisPtsyT4SovP :is(._26v9mHAi56x63OwY-jxett, ._3hEeummFKRey8l5VXxZwxz, ._7XKFnSNjW_tHfyxaezoD3) { font: 400 11px/14px var(--font) !important; letter-spacing: 0 !important; color: var(--label-disabled) !important; }
+body.ContextMenuPopupBody :is(._3k90ug209sE23xAMqcM74s, ._3zfQA8bEKpisPtsyT4SovP ._1B1XTNsfuwOaDPAkkr8M42) { color: var(--inbox-text) !important; }
+body.ContextMenuPopupBody :is(._3k90ug209sE23xAMqcM74s, ._3zfQA8bEKpisPtsyT4SovP) ._2auM-VHPU-KKomAWyuWrSV { width: 16px !important; height: 16px !important; margin: 0 12px 0 0 !important; display: inline-flex !important; vertical-align: top; color: rgb(191, 191, 191) !important; }
+body.ContextMenuPopupBody :is(._3k90ug209sE23xAMqcM74s, ._3zfQA8bEKpisPtsyT4SovP) ._2auM-VHPU-KKomAWyuWrSV svg { width: 16px !important; height: 16px !important; color: inherit !important; }
+body.ContextMenuPopupBody ._3k90ug209sE23xAMqcM74s ._2auM-VHPU-KKomAWyuWrSV { background: var(--g-inbox-comment, none) center no-repeat; }   /* unread chat: the old speech bubble */
+body.ContextMenuPopupBody ._3k90ug209sE23xAMqcM74s ._2auM-VHPU-KKomAWyuWrSV:not(:empty) svg { opacity: 0 !important; }
+body.ContextMenuPopupBody ._3zfQA8bEKpisPtsyT4SovP ._3p74fAyjLzNltNbJUf55kk { border-radius: 0 !important; }
+body.ContextMenuPopupBody ._3zfQA8bEKpisPtsyT4SovP ._1pIhbqWsrCVPaGGYc6fT-H { background: var(--inbox2) !important; }
+body.ContextMenuPopupBody :is(.p2CKe5nuC_8YgWL_lZbNn, ._2uHOsFCB_RZYZFsMQiw28v, .cam5nVZiJHP17RZlbXzmE) { font: 400 11px/15px var(--font) !important; letter-spacing: 0 !important; color: var(--inbox-text-off) !important; }
 /* SuperNavMenu: what drops from STORE, LIBRARY, COMMUNITY and the name: the header's dark texture
    between black side lines, plain capitals that turn blue under the pointer */
 body.ContextMenuPopupBody .PP7LM0Ow1K5qkR8WElLpt:has(> .Eq8Px4ixn5sAFSR6_9wWQ) {
@@ -1565,9 +1636,21 @@ body.ModalDialogBody .title-area-children, body.ModalDialogBody .title-area-chil
   box-shadow: 0 0 0 1px var(--border-disabled) !important;
   background: linear-gradient(var(--dialog), var(--almost-black)) !important;
 }
-._1bq4x9pa4-9RLY-dXWUZTp { background: none !important; }
-._1bq4x9pa4-9RLY-dXWUZTp ._3Mbhnlk1Go2j8yCdjthzc7 { border: 0 !important; border-radius: 0 !important; box-shadow: none !important; background: var(--start) !important; }
-._1bq4x9pa4-9RLY-dXWUZTp ._3Mbhnlk1Go2j8yCdjthzc7._2KB3yVOsiRCK9qK6mwKl9c { background: var(--start-subtle) !important; }
+._1bq4x9pa4-9RLY-dXWUZTp { background: var(--almost-black) !important; }
+/* the search-and-view bar stayed above these pages too, empty: its two pieces, as over the library */
+.RGNMWtyj73_-WdhflrmuY:has(> ._3BFcmjAaMyP6GTPwc0VyWi) { position: relative !important; }
+.RGNMWtyj73_-WdhflrmuY:has(> ._3BFcmjAaMyP6GTPwc0VyWi)::before, .RGNMWtyj73_-WdhflrmuY:has(> ._3BFcmjAaMyP6GTPwc0VyWi)::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 10px;
+  width: 275px;
+  height: 26px;
+  border-radius: 1px;
+  background: rgba(56, 54, 53, 0.55);
+  pointer-events: none;
+}
+.RGNMWtyj73_-WdhflrmuY:has(> ._3BFcmjAaMyP6GTPwc0VyWi)::after { left: 288px; right: 96px; width: auto; }
 ._1bq4x9pa4-9RLY-dXWUZTp :is(h1, h2, h3, [class*="Title"], [class*="Header"]) { letter-spacing: 0 !important; }
 ._1fuML-ekRbTEzgzC597yGP .GTdO0X-5EOwChz3fc2iLU, ._1fuML-ekRbTEzgzC597yGP .GTdO0X-5EOwChz3fc2iLU * { font: 400 12px/15px Consolas, "Courier New", monospace !important; color: var(--text) !important; }
 ._1fuML-ekRbTEzgzC597yGP form { border-top: 1px solid var(--border-disabled) !important; background: none !important; }
@@ -1575,9 +1658,61 @@ body.ModalDialogBody .title-area-children, body.ModalDialogBody .title-area-chil
 /* Settings: the small words under a setting read on the lighter sheet */
 body.DesktopUI .DialogContentTransition :is(._1W1to_azoBRG95oNAFpf9Q, ._3w92Ej5Kq7nbt5WACQ6jwI) { color: var(--label-disabled) !important; }
 
-/* Downloads: its headings as the details page writes them, the rest in the list's 12px */
-._1bq4x9pa4-9RLY-dXWUZTp .TK9wvF55dyA6RcOclozC8 { font: 700 15px/19px var(--font) !important; letter-spacing: 0 !important; text-transform: uppercase !important; color: var(--details) !important; }
-._1bq4x9pa4-9RLY-dXWUZTp ._1CGnw50aAma6AYKF51Qzsm { font: 400 12px/19px var(--font) !important; color: var(--label2) !important; }
-._1bq4x9pa4-9RLY-dXWUZTp ._1nCT-M7nZcoNzedbVzbXha { font: 400 12px/16px var(--font) !important; color: var(--label) !important; }
-._1bq4x9pa4-9RLY-dXWUZTp ._1iulCOMUxV6sBbqoKo_yXw { font: 700 10px/13px var(--font) !important; letter-spacing: 0 !important; color: var(--label-focus) !important; }
-._1bq4x9pa4-9RLY-dXWUZTp .eXF8xL2LUtzeWMbK-FSRz { font: 400 12px/15px var(--font) !important; color: var(--text) !important; }
+/* Downloads, as the page stood on the 2017 client: the usage figures over a near-black top (a
+   figure in the light text, its name in dim capitals beside it, both 17 (15px)); each group of
+   downloads under a dark band with the old minus and its name in small capitals; a download on
+   black, its name in bold 17 (15px), its details in small dim capitals with the values lighter,
+   its state at the right in 18 (16px). */
+._1bq4x9pa4-9RLY-dXWUZTp ._373v1eWNyaPKhgnea9FZSt { background: rgb(26, 25, 24) !important; }
+._1bq4x9pa4-9RLY-dXWUZTp ._373v1eWNyaPKhgnea9FZSt ._3Mbhnlk1Go2j8yCdjthzc7 { margin: 0 !important; background: none !important; }
+._1bq4x9pa4-9RLY-dXWUZTp ._vrwj4IQ-vqMravrbJb64 { flex-direction: column !important; align-items: flex-start !important; gap: 0 !important; }
+._1bq4x9pa4-9RLY-dXWUZTp ._26UBk-6weCeV-VClfXNWJZ { width: auto !important; height: 22px !important; display: flex !important; flex-direction: row-reverse !important; align-items: center !important; justify-content: flex-end !important; gap: 6px !important; }
+._1bq4x9pa4-9RLY-dXWUZTp ._26UBk-6weCeV-VClfXNWJZ :is(.Ayu--dDVVaKmP2gNYPAQ0, ._5TdA4FjU9OYsTIaHzloD) { width: auto !important; height: 22px !important; margin: 0 !important; padding: 0 !important; display: flex !important; align-items: center !important; gap: 6px !important; }
+._1bq4x9pa4-9RLY-dXWUZTp ._26UBk-6weCeV-VClfXNWJZ ._3PLc4OJQTCKFtmy81QMYv5 { order: 2; margin: 0 !important; }
+._1bq4x9pa4-9RLY-dXWUZTp ._1iulCOMUxV6sBbqoKo_yXw { position: static !important; margin: 0 !important; padding: 0 !important; font: 400 15px/22px var(--font) !important; letter-spacing: 0 !important; text-transform: uppercase !important; color: var(--label2) !important; }
+._1bq4x9pa4-9RLY-dXWUZTp .eXF8xL2LUtzeWMbK-FSRz { width: auto !important; margin: 0 !important; padding: 0 !important; font: 400 15px/22px var(--font) !important; text-transform: uppercase !important; color: var(--text) !important; }
+/* a group: no box of its own, its heading a band across the page */
+._1bq4x9pa4-9RLY-dXWUZTp ._1ugNiylO2vKXhirsGocAxa { padding: 0 !important; gap: 0 !important; }
+._1bq4x9pa4-9RLY-dXWUZTp ._1ugNiylO2vKXhirsGocAxa ._3Mbhnlk1Go2j8yCdjthzc7 { margin: 5px 0 0 !important; padding: 0 !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important; background: none !important; }
+._1bq4x9pa4-9RLY-dXWUZTp ._1ugNiylO2vKXhirsGocAxa h3.qq2xItSXjpCsNrcxyPJtO {
+  box-sizing: border-box !important;
+  height: 20px !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 14px 0 8px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  border: 0 !important;
+  background: rgb(41, 39, 38) !important;
+  line-height: 20px !important;
+}
+._1bq4x9pa4-9RLY-dXWUZTp ._1ugNiylO2vKXhirsGocAxa h3.qq2xItSXjpCsNrcxyPJtO::before { content: ""; flex: none; width: 14px; height: 14px; background: var(--g-icon-expand, none) center no-repeat; }
+._1bq4x9pa4-9RLY-dXWUZTp .ROxNrcM6LrA4aUyH8IpFp { height: 20px !important; margin: 0 !important; padding: 0 !important; display: flex !important; gap: 6px !important; align-items: center !important; line-height: 20px !important; }
+._1bq4x9pa4-9RLY-dXWUZTp .TK9wvF55dyA6RcOclozC8 { font: 400 11px/20px var(--font) !important; letter-spacing: 0 !important; text-transform: uppercase !important; color: var(--label) !important; }
+._1bq4x9pa4-9RLY-dXWUZTp ._1CGnw50aAma6AYKF51Qzsm { font: 400 11px/20px var(--font) !important; color: var(--label2) !important; }
+._1bq4x9pa4-9RLY-dXWUZTp ._1CTr1yKRkOXnJ4gSS1-1A3 { visibility: hidden !important; }
+._1bq4x9pa4-9RLY-dXWUZTp .qrwf3iWWPa-yXVD0zOlHM, ._1bq4x9pa4-9RLY-dXWUZTp .qrwf3iWWPa-yXVD0zOlHM * { font: 400 11px/20px var(--font) !important; letter-spacing: 0 !important; color: var(--label2) !important; }
+._1bq4x9pa4-9RLY-dXWUZTp ._1ugNiylO2vKXhirsGocAxa .OINnOU8K5HzPe2nzczpZi { margin: 0 !important; padding: 0 !important; gap: 0 !important; border-radius: 0 !important; background: #000 !important; }
+._1bq4x9pa4-9RLY-dXWUZTp ._1zv2D9H37p5yuOJNsCemS3 { margin: 0 !important; padding: 0 !important; border: 0 !important; border-radius: 0 !important; background: none !important; }
+._1bq4x9pa4-9RLY-dXWUZTp ._1ugNiylO2vKXhirsGocAxa ._1zv2D9H37p5yuOJNsCemS3 > ._1nCT-M7nZcoNzedbVzbXha { margin: 0 !important; padding: 12px 24px !important; }
+._1bq4x9pa4-9RLY-dXWUZTp ._1nCT-M7nZcoNzedbVzbXha { font: 400 11px/16px var(--font) !important; color: var(--label) !important; }
+/* a download */
+._1bq4x9pa4-9RLY-dXWUZTp ._21P7c4MWmsU2QSZeL-uyZo { margin: 0 !important; padding: 0 !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important; background: none !important; }
+._1bq4x9pa4-9RLY-dXWUZTp ._1VNuYHM6BPBOJspC6zPf5r { margin: 0 !important; padding: 12px 12px 12px 10px !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important; background: none !important; }
+._1bq4x9pa4-9RLY-dXWUZTp ._21P7c4MWmsU2QSZeL-uyZo:hover ._1VNuYHM6BPBOJspC6zPf5r { background: rgba(92, 89, 86, 0.18) !important; }
+._1bq4x9pa4-9RLY-dXWUZTp ._2pjdgFqp04LlhgtFS0rQn_, ._1bq4x9pa4-9RLY-dXWUZTp ._2pjdgFqp04LlhgtFS0rQn_ * { border-radius: 0 !important; }
+._1bq4x9pa4-9RLY-dXWUZTp ._35eOQ6EeVHNV5HGBrJ1-Vu, ._1bq4x9pa4-9RLY-dXWUZTp ._35eOQ6EeVHNV5HGBrJ1-Vu * { font: 700 15px/20px var(--font) !important; letter-spacing: 0 !important; color: var(--text) !important; }
+._1bq4x9pa4-9RLY-dXWUZTp :is(.sv3ZHPWbrD7yjwx5Mi3u5, ._3a973VY2X3US_cZqA9ZgNF, ._2ckIrOaAwEey3RdOBG-FJS) { font: 400 10px/14px var(--font) !important; letter-spacing: 0 !important; text-transform: uppercase !important; color: var(--label2) !important; }
+._1bq4x9pa4-9RLY-dXWUZTp ._1dHjjSl-57o1KQsQ1m1HSA { font: 400 10px/14px var(--font) !important; letter-spacing: 0 !important; color: var(--text2) !important; }
+._1bq4x9pa4-9RLY-dXWUZTp ._3kXEpnxa2qb5znYMSbKT0p ._1nCT-M7nZcoNzedbVzbXha { font: 400 11px/16px var(--font) !important; text-transform: uppercase !important; color: var(--label-focus) !important; }
+._1bq4x9pa4-9RLY-dXWUZTp ._3kXEpnxa2qb5znYMSbKT0p:hover ._1nCT-M7nZcoNzedbVzbXha { color: #fff !important; }
+._1bq4x9pa4-9RLY-dXWUZTp ._3kXEpnxa2qb5znYMSbKT0p svg { width: 12px !important; height: 12px !important; color: var(--label-disabled) !important; }
+._1bq4x9pa4-9RLY-dXWUZTp ._1SyggnJY6qbRSmbZpkK3-H, ._1bq4x9pa4-9RLY-dXWUZTp ._1SyggnJY6qbRSmbZpkK3-H * { font: 400 11px/16px var(--font) !important; letter-spacing: 0 !important; text-transform: uppercase !important; color: var(--label) !important; }
+._1bq4x9pa4-9RLY-dXWUZTp ._2ns4wnmgr4XBzARpwn2NZ1 { font: 400 16px/20px var(--font) !important; letter-spacing: 0 !important; text-transform: none !important; color: var(--label) !important; }
+._1bq4x9pa4-9RLY-dXWUZTp ._14DhZoqwtCm4l0yDeN6QZe { color: var(--border-disabled) !important; }
+/* the play button of a finished download: a flat grey bar with the old triangle */
+._1bq4x9pa4-9RLY-dXWUZTp .sQZ70orTPi-ELUlaS-ywR { border: 1px solid rgb(97, 95, 93) !important; border-radius: 0 !important; box-shadow: none !important; background: rgb(82, 80, 77) !important; color: var(--text) !important; }
+._1bq4x9pa4-9RLY-dXWUZTp .sQZ70orTPi-ELUlaS-ywR:hover { background: var(--face2) !important; color: #fff !important; }
+/* the active download's bars */
+._1bq4x9pa4-9RLY-dXWUZTp :is(._1vMU1vG5ZtLihr3mfXUymR, ._22WcrscaQSqK56PQKgf5YG) { --color-progress-bar-foreground: var(--focus2) !important; --color-progress-bar-background: #000 !important; border-radius: 0 !important; }
