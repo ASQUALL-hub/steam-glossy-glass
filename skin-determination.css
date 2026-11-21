@@ -1,0 +1,238 @@
+/* Glossy Glass for Steam: the "Determination" skin.
+
+   After the menus of Undertale: black, with everything in white-lined boxes and a plain
+   monospaced face; the picked line turns yellow with the red heart beside it, the tabs and the
+   play button are the orange boxes of FIGHT, ACT, ITEM and MERCY (yellow under the pointer), and
+   at the foot of the window stand LV and the yellow HP bar. Everything is drawn in CSS: no
+   pictures and none of the game's own artwork or type. It sits on the Steam 2005 mode's sheets
+   (see the top of steam2005.css for the settings below).
+
+   @name Determination (Undertale style)
+   @corners square
+   @icon 0,0,0 0,0,0 255,127,39 255,255,0
+   @ramp 0:0,0,0 70:10,10,10 130:64,64,64 200:176,176,176 255:255,255,255
+   @lift 0
+*/
+
+/* ==== both ==== */
+html:root {
+  --sun: rgb(255, 255, 0);
+  --orange: rgb(255, 127, 39);
+  --heart: rgb(255, 0, 0);
+
+  --rim: #000;
+  --rim-light: #fff;
+  --title: #000;
+  --title-text: #fff;
+  --strip: #000;
+  --tab: #000;
+  --tab-hover: #000;
+  --panel: #000;
+  --face: #000;
+  --list: #000;
+  --edge: #fff;
+  --dim: rgb(128, 128, 128);
+  --soft: rgb(200, 200, 200);
+  --yellow: var(--sun);
+  --olive: #000;
+  --inset: #000;
+  --light: #fff;
+  --shadow: #fff;
+  --track: #000;
+  --pick: #000;
+  --ink: #fff;
+  --on-accent: #000;
+  --ring: var(--orange);
+  --pick-bg: #000;
+  --pick-ink: var(--sun);
+  --bar: #000;
+  --bar-tab-a: #000;
+  --bar-tab-b: #000;
+  --bar-icon: var(--orange);
+  --field: #000;
+  --bevel: #fff;
+  --btn-a: #000;
+  --btn-b: #000;
+  --btn-ha: #000;
+  --btn-hb: #000;
+  --btn-da: rgb(40, 40, 40);
+  --btn-db: rgb(40, 40, 40);
+  --play-a: #000;
+  --play-b: #000;
+  --hi: transparent;
+  --shade: rgba(255, 255, 255, 0.12);
+  --note-bg: #000;
+  --note-edge: var(--sun);
+  --menu-off: rgb(110, 110, 110);
+  --r-field: 0px;
+  --r-btn: 0px;
+  --r-box: 0px;
+  --r-play: 0px;
+  --r-win: 0px;
+  --font: "Lucida Console", Consolas, "Courier New", monospace;
+  --tick: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='13' height='13'%3E%3Cpath d='M3 6.5 5.5 9 10 3.5' fill='none' stroke='rgb(255,255,0)' stroke-width='2'/%3E%3C/svg%3E");
+  --up: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='6'%3E%3Cpath d='M0 5.5 4.5 1 9 5.5z' fill='rgb(255,255,255)'/%3E%3C/svg%3E");
+  --down: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='6'%3E%3Cpath d='M0 .5 4.5 5 9 .5z' fill='rgb(255,255,255)'/%3E%3C/svg%3E");
+  /* the friends windows' own names for the same things */
+  --white: #fff;
+  --pale: rgb(200, 200, 200);
+  --dull: rgb(128, 128, 128);
+}
+
+/* ==== main ==== */
+/* the title bar: a line of the story, "* Steam - you" */
+._39oUCO1OuizVPwcnnv88no::before {
+  content: "* Steam" var(--gg-persona, "") ".";
+  box-shadow: inset 0 -1px 0 rgb(64, 64, 64);
+  font-size: 12px;
+  text-transform: none;
+}
+.qP17eBPXkfezFfexZ4hC3 .title-area-icon:hover, body.ModalDialogBody .title-bar-actions .title-area-icon:hover { background: none !important; color: var(--sun) !important; }
+/* the menu: a word under the pointer turns yellow */
+._1Ky59qmywxOUtNcI1cgmkX ._2Lu3d-5qLmW4i19ysTt2jT:is(:hover, .active, [class*="Active"]) { background: none !important; color: var(--sun) !important; }
+
+/* the tabs: the orange boxes of FIGHT and ACT, the open one yellow */
+._2D64jIEK7wpUR_NlObDW76 { align-items: center !important; gap: 8px !important; }
+._2D64jIEK7wpUR_NlObDW76 ._2Lu3d-5qLmW4i19ysTt2jT {
+  --ink: var(--orange);
+  --yellow: var(--sun);
+  height: 25px !important;
+  border: 2px solid var(--orange) !important;
+}
+._2D64jIEK7wpUR_NlObDW76 ._2Lu3d-5qLmW4i19ysTt2jT:hover { --ink: var(--sun); border-color: var(--sun) !important; }
+._2D64jIEK7wpUR_NlObDW76 ._19axKcqYRuaJ8vdYKYmtTQ { height: 21px !important; font-size: 12px !important; line-height: 21px !important; text-transform: uppercase !important; letter-spacing: 1px !important; }
+._2D64jIEK7wpUR_NlObDW76 ._1gqEjB5QsKT_NftD1dEsdZ,
+._2D64jIEK7wpUR_NlObDW76 ._1gqEjB5QsKT_NftD1dEsdZ:hover { border-color: var(--sun) !important; }
+._2D64jIEK7wpUR_NlObDW76 ._1gqEjB5QsKT_NftD1dEsdZ ._19axKcqYRuaJ8vdYKYmtTQ::before { content: "\2665  "; color: var(--heart); }
+._2D64jIEK7wpUR_NlObDW76 > svg { margin-bottom: 0 !important; color: #fff !important; }
+
+/* the page and the boxes on it: black inside a thick white line */
+._1rDh5rXSFZJOqCa4UpnI4z,
+._3x1HklzyDs4TEjACrRO2tB,
+._3-V8vjmrwuJM6Ws3tsjFJj ._31ptFGGMZrSQc5BCX1e5lm,
+.OhSdLYuggDtBcWjYP0j_9 ._31ptFGGMZrSQc5BCX1e5lm,
+.RGNMWtyj73_-WdhflrmuY > ._3BFcmjAaMyP6GTPwc0VyWi,
+._1rDh5rXSFZJOqCa4UpnI4z > ._1fuML-ekRbTEzgzC597yGP { border: 1px solid #fff !important; outline: 2px solid #fff !important; outline-offset: -3px !important; }
+._1rDh5rXSFZJOqCa4UpnI4z { margin-top: 3px !important; }
+._2gZXhRmKUk68pA28-5ZmGQ { border: 3px solid #fff !important; }   /* its picture would lie over a line drawn inside it */
+
+/* the games list: a collection's name in orange, the picked game yellow with the heart before it */
+._3x1HklzyDs4TEjACrRO2tB { --yellow: var(--orange); }
+._1ijTaXJJA5YWl_fW2IxcaT ._2-O4ZG0KrnSrzISHBKctFQ { font-weight: 400 !important; }
+._1ijTaXJJA5YWl_fW2IxcaT ._1UBpAXP408Ez_L_mXhW5Q9._2-O4ZG0KrnSrzISHBKctFQ ._1vO6BoiVslZgs1kqDGdUs8::before {
+  content: "\2665";
+  flex: none;
+  margin: 0 6px 0 3px;
+  font: 400 17px/26px "Segoe UI Symbol", "Arial Unicode MS", sans-serif;
+  color: var(--heart);
+}
+._1ijTaXJJA5YWl_fW2IxcaT ._2sYIghGVXJr6tsQVvcryy8 ._2mZ8LlvoUiyeEUtIWuTri::before { content: "* "; }
+._1ijTaXJJA5YWl_fW2IxcaT ._1PxXcZNpN0cCxbnjEoTdYT { display: none !important; }
+
+/* the play button: orange in its box, yellow under the pointer */
+:is(._1U7LKpx70kEsz3jJwAFOi-, ._2L3s2nzh7yCnNESfI5_dN1) :is(._3ydigb6zZAjJ0JCDgHwSYA, ._2q-gZ3XJzlvSGHSF-GvSmi) { --ink: var(--orange); }
+:is(._1U7LKpx70kEsz3jJwAFOi-, ._2L3s2nzh7yCnNESfI5_dN1) :is(._3ydigb6zZAjJ0JCDgHwSYA, ._2q-gZ3XJzlvSGHSF-GvSmi):hover { --ink: var(--sun); --ring: var(--sun); }
+:is(._1U7LKpx70kEsz3jJwAFOi-, ._2L3s2nzh7yCnNESfI5_dN1) ._33cnXIqTRgRr49_FNXIHj6 { font-size: 15px !important; text-transform: uppercase !important; letter-spacing: 2px !important; }
+
+/* buttons: white in a white line, yellow under the pointer */
+body.DesktopUI :is(button.DialogButton, .DialogButton, ._1kCN0pAntrcGCSmcc-vYdk, ._39ZurKJQex6v69aXzvc_nj):hover:not(.Disabled, :disabled) { border-color: var(--sun) !important; color: var(--sun) !important; }
+body.DesktopUI :is(button.DialogButton, .DialogButton).Primary { --ink: var(--orange); }
+:is(._1U7LKpx70kEsz3jJwAFOi-, ._2L3s2nzh7yCnNESfI5_dN1) ._3qDWQGB0rtwM3qpXTb11Q-:hover { border-color: var(--sun) !important; color: var(--sun) !important; }
+
+/* headings: each begins a line of the story */
+.OhSdLYuggDtBcWjYP0j_9 h2._3A_c3YHYd4YIjA8Y-olnPl::before { content: "*"; margin-right: 7px; }
+:is(._2hfibYuzyMOQ0sj2egsHh0, ._3ONu7-h8EhRcUI72YoSVbD, ._2oJt3qYLAqr6xMjnpmBFLN, ._1bq4x9pa4-9RLY-dXWUZTp .TK9wvF55dyA6RcOclozC8)::before { content: "*"; margin-right: 8px; }
+._3-V8vjmrwuJM6Ws3tsjFJj ._2sNDjgK9EWiPLdNGkjun-w { text-decoration: none !important; }
+._3-V8vjmrwuJM6Ws3tsjFJj ._7k4qmaN8SUMvv6u-L81uk:hover ._2sNDjgK9EWiPLdNGkjun-w { color: var(--sun) !important; }
+
+/* the bottom bar: three orange boxes, and LV and HP at the right */
+._1_yS5UP7el0aN4vntx3dx { position: relative !important; background: linear-gradient(#000 0, #000 13px, #fff 13px, #fff 14px, #000 14px) !important; }
+._1_yS5UP7el0aN4vntx3dx::before {
+  content: "LV 1   HP";
+  position: absolute;
+  right: 196px;
+  bottom: 15px;
+  font: 700 17px/22px var(--font);
+  white-space: pre;
+  color: #fff;
+  pointer-events: none;
+}
+._1_yS5UP7el0aN4vntx3dx::after {
+  content: "20 / 20";
+  position: absolute;
+  right: 44px;
+  bottom: 15px;
+  box-sizing: border-box;
+  width: 144px;
+  padding-left: 62px;
+  background: linear-gradient(var(--sun), var(--sun)) left center / 48px 20px no-repeat;
+  font: 700 17px/22px var(--font);
+  white-space: pre;
+  color: #fff;
+  pointer-events: none;
+}
+._3vCzSrrXZzZjVJFZNg9SGu :is(._2foCkpRXhqq0UGVE50BWqj, .ip-YZhijAMZcuRoXBGiye, ._1TdaAqMFadi0UTqilrkelR)::before {
+  top: 4px;
+  width: 44px;
+  height: 36px;
+  margin-left: -22px;
+  box-sizing: border-box;
+  border: 2px solid var(--orange);
+  border-radius: 0;
+}
+._3vCzSrrXZzZjVJFZNg9SGu ._1KrJ3sFAqPBN9mfpaNTU5F { display: flex !important; align-items: center !important; justify-content: center !important; }
+._3vCzSrrXZzZjVJFZNg9SGu ._1KrJ3sFAqPBN9mfpaNTU5F svg { width: 22px !important; height: 22px !important; }
+._3vCzSrrXZzZjVJFZNg9SGu :is(._3OhUxFVlQYr9W5ThxstR8k, ._3wJnTtcTLEp0R7eQj_mK8Y) { color: var(--orange) !important; }
+._3vCzSrrXZzZjVJFZNg9SGu :is(._2foCkpRXhqq0UGVE50BWqj, .ip-YZhijAMZcuRoXBGiye, ._1TdaAqMFadi0UTqilrkelR):hover ._1KrJ3sFAqPBN9mfpaNTU5F,
+._3vCzSrrXZzZjVJFZNg9SGu :is(._2foCkpRXhqq0UGVE50BWqj, .ip-YZhijAMZcuRoXBGiye, ._1TdaAqMFadi0UTqilrkelR):hover :is(._3OhUxFVlQYr9W5ThxstR8k, ._3wJnTtcTLEp0R7eQj_mK8Y) { color: var(--sun) !important; }
+._3vCzSrrXZzZjVJFZNg9SGu :is(._2foCkpRXhqq0UGVE50BWqj, .ip-YZhijAMZcuRoXBGiye, ._1TdaAqMFadi0UTqilrkelR):hover::before { border-color: var(--sun); }
+
+/* menus and dialogs: the white-lined box; the line under the pointer yellow, the heart before it */
+/* (a narrower face here: Steam sizes a menu's window for its own type, and a wide one would not fit) */
+body.ContextMenuPopupBody { --font: Consolas, "Lucida Console", "Courier New", monospace; }
+body.ContextMenuPopupBody .PP7LM0Ow1K5qkR8WElLpt { padding: 3px !important; outline: 2px solid #fff !important; outline-offset: -3px !important; }
+body.ContextMenuPopupBody .contextMenuItem { position: relative !important; padding: 0 8px 0 17px !important; }
+body.ContextMenuPopupBody .contextMenuItem:is(:hover, .active, .selected, [class*="Active"], [class*="Focused"]) { color: var(--sun) !important; }
+body.ContextMenuPopupBody .contextMenuItem:is(:hover, .active, .selected, [class*="Active"], [class*="Focused"])::before {
+  content: "\2665";
+  position: absolute;
+  left: 4px;
+  top: 0;
+  font: 400 12px/20px "Segoe UI Symbol", "Arial Unicode MS", sans-serif;
+  color: var(--heart);
+}
+body.ContextMenuPopupBody .contextMenuItem:is(.disabled, .Disabled, [aria-disabled="true"]) { color: var(--menu-off) !important; }
+body.ContextMenuPopupBody .contextMenuItem:is(.disabled, .Disabled, [aria-disabled="true"])::before { content: none; }
+body.DesktopUI :is(.DialogContent, .ModalPosition_Content, ._3I6h_oySuLmmLY9TjIKT9s) { border: 3px solid #fff !important; box-shadow: none !important; }
+body.DesktopUI .PageListColumn { border-right: 1px solid #fff !important; }
+body.DesktopUI .DialogHeader::before { content: "*"; margin-right: 8px; }
+
+/* ==== friends ==== */
+.friendlist { outline: 2px solid #fff; outline-offset: -3px; }
+.friend.friendSelected, .friend[class*="Selected"] { background: rgb(36, 36, 36) !important; }
+.friend:is(.friendSelected, [class*="Selected"]) .labelHolder :is(.nOdcT-MoOaXGePXLyPe0H, [class*="playerName"]) { color: var(--sun) !important; }
+.friend:hover { background: rgba(255, 255, 255, 0.1) !important; }
+.unreadFriend { background: rgba(255, 127, 39, 0.3) !important; }
+.friendGroup .groupName, .friendsListSectionTitle, .groupChatSectionTitle, .friendTab .tabLabel { color: var(--orange) !important; }
+.msgText, .msg { color: #fff !important; }
+.isCurrentUser :is(.msgText, .msg), :is(.msgText, .msg).isCurrentUser { color: var(--sun) !important; }
+:is(button, .DialogButton, .chatSubmitButton):hover { border-color: var(--sun) !important; color: var(--sun) !important; }
+::selection { color: #000; background: var(--sun); }
+
+/* ==== web ==== */
+html[data-gg-glass="determination"] {
+  --w-page: #000;
+  --w-ink: rgb(220, 220, 220);
+  --w-head: #fff;
+  --w-field: #000;
+  --w-field-ink: #fff;
+  --w-dark: #fff;
+  --w-light: #fff;
+  --w-pick: rgb(255, 255, 0);
+  --w-pick-ink: #000;
+  --w-track: #000;
+  --w-thumb: rgb(64, 64, 64);
+  --w-filter: grayscale(1) contrast(1.15);
+  --w-photo: grayscale(1) brightness(0.6);
+  --w-font: "Lucida Console", Consolas, "Courier New", monospace;
+}

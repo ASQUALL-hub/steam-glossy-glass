@@ -1,0 +1,191 @@
+/* Glossy Glass for Steam: the "HEV" skin.
+
+   After the suit display of Half-Life: everything in the one amber of its HUD (255 160 0) on
+   black, panels as faint amber cells with thin outlines, the picked line filled solid with its
+   name in black as the weapon menu marks a slot, the play button solid amber, and at the foot of
+   the window the two big read-outs every player knows, health and suit power. Game pictures keep
+   their own colours, as the world does behind the HUD. Everything is drawn in CSS: no pictures,
+   no logos, nothing of Valve's. It sits on the Steam 2005 mode's sheets (see the top of
+   steam2005.css for the settings below).
+
+   @name HEV Suit (Half-Life style)
+   @corners square
+   @icon 40,25,2 0,0,0 255,196,64 255,160,0
+   @ramp 0:0,0,0 28:14,9,2 60:40,25,2 105:104,64,2 160:190,118,4 215:255,168,20 255:255,214,120
+   @lift 0
+*/
+
+/* ==== both ==== */
+html:root {
+  --amber: rgb(255, 160, 0);
+  --amber-bright: rgb(255, 204, 96);
+  --amber-dim: rgb(150, 94, 0);
+  --amber-dark: rgb(64, 40, 0);
+  --cell: rgba(255, 160, 0, 0.1);            /* a HUD cell's faint fill */
+
+  --rim: #000;
+  --rim-light: rgba(255, 160, 0, 0.5);
+  --title: #000;
+  --title-text: var(--amber);
+  --strip: rgb(6, 5, 3);
+  --tab: rgb(30, 19, 1);
+  --tab-hover: rgb(64, 40, 0);
+  --panel: rgb(14, 10, 4);
+  --face: rgb(30, 19, 1);
+  --list: rgb(8, 6, 2);
+  --edge: var(--amber-dim);
+  --dim: rgb(132, 82, 0);
+  --soft: rgb(222, 140, 0);
+  --yellow: var(--amber-bright);
+  --olive: rgb(10, 7, 2);
+  --inset: rgb(4, 3, 1);
+  --light: var(--amber-dim);
+  --shadow: var(--amber-dim);
+  --track: rgb(14, 10, 4);
+  --pick: var(--amber);
+  --ink: rgb(255, 172, 26);
+  --on-accent: #000;
+  --ring: var(--amber-bright);
+  --pick-bg: var(--amber);
+  --pick-ink: #000;
+  --bar: #000;
+  --bar-tab-a: rgba(255, 160, 0, 0.2);
+  --bar-tab-b: rgba(255, 160, 0, 0.06);
+  --bar-icon: var(--amber);
+  --field: rgb(4, 3, 1);
+  --bevel: var(--amber-dim);
+  --btn-a: rgb(52, 33, 0);
+  --btn-b: rgb(30, 19, 0);
+  --btn-ha: rgb(96, 60, 0);
+  --btn-hb: rgb(60, 38, 0);
+  --btn-da: rgb(24, 15, 0);
+  --btn-db: rgb(44, 28, 0);
+  --play-a: rgb(255, 180, 40);
+  --play-b: rgb(236, 142, 0);
+  --hi: rgba(255, 200, 100, 0.18);
+  --shade: rgba(255, 160, 0, 0.16);
+  --note-bg: rgb(64, 40, 0);
+  --note-edge: var(--amber);
+  --menu-off: rgb(110, 68, 0);
+  --r-field: 0px;
+  --r-btn: 2px;
+  --r-box: 3px;
+  --r-play: 3px;
+  --r-win: 4px;
+  --font: Tahoma, Verdana, "Segoe UI", sans-serif;
+  --tick: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='13' height='13'%3E%3Cpath d='M3 6.5 5.5 9 10 3.5' fill='none' stroke='rgb(255,160,0)' stroke-width='2'/%3E%3C/svg%3E");
+  --up: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='6'%3E%3Cpath d='M0 5.5 4.5 1 9 5.5z' fill='rgb(255,160,0)'/%3E%3C/svg%3E");
+  --down: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='6'%3E%3Cpath d='M0 .5 4.5 5 9 .5z' fill='rgb(255,160,0)'/%3E%3C/svg%3E");
+  /* the friends windows' own names for the same things */
+  --white: rgb(255, 196, 64);
+  --pale: rgb(222, 140, 0);
+  --dull: rgb(132, 82, 0);
+}
+
+/* ==== main ==== */
+/* the title bar: amber capitals on black over an amber line */
+._39oUCO1OuizVPwcnnv88no::before { box-shadow: inset 0 -1px 0 var(--amber-dim); letter-spacing: 3px; }
+.qP17eBPXkfezFfexZ4hC3 .title-area-icon:hover, body.ModalDialogBody .title-bar-actions .title-area-icon:hover { background: var(--amber) !important; color: #000 !important; }
+/* the menu: a word under the pointer fills with amber */
+._1Ky59qmywxOUtNcI1cgmkX ._2Lu3d-5qLmW4i19ysTt2jT:is(:hover, .active, [class*="Active"]) { background: var(--amber) !important; color: #000 !important; }
+
+/* the tabs: HUD cells, the open one filled solid */
+._2D64jIEK7wpUR_NlObDW76 ._2Lu3d-5qLmW4i19ysTt2jT {
+  border: 1px solid var(--amber-dim) !important;
+  border-bottom: 0 !important;
+  border-radius: 6px 6px 0 0 !important;
+  background: var(--cell) !important;
+}
+._2D64jIEK7wpUR_NlObDW76 ._2Lu3d-5qLmW4i19ysTt2jT:hover { background: rgba(255, 160, 0, 0.26) !important; }
+._2D64jIEK7wpUR_NlObDW76 ._19axKcqYRuaJ8vdYKYmtTQ { text-transform: uppercase !important; letter-spacing: 1px !important; }
+._2D64jIEK7wpUR_NlObDW76 ._1gqEjB5QsKT_NftD1dEsdZ,
+._2D64jIEK7wpUR_NlObDW76 ._1gqEjB5QsKT_NftD1dEsdZ:hover { border-color: var(--amber) !important; background: var(--amber) !important; }
+._2D64jIEK7wpUR_NlObDW76 ._1gqEjB5QsKT_NftD1dEsdZ ._19axKcqYRuaJ8vdYKYmtTQ { color: #000 !important; }
+
+/* the page and what lies on it: cells with a thin amber outline */
+._1rDh5rXSFZJOqCa4UpnI4z {
+  border: 1px solid var(--amber) !important;
+  border-radius: 0 var(--r-win) var(--r-win) var(--r-win) !important;
+  background: linear-gradient(rgba(255, 160, 0, 0.07), rgba(255, 160, 0, 0.02)), #000 !important;
+}
+._3x1HklzyDs4TEjACrRO2tB, ._2gZXhRmKUk68pA28-5ZmGQ, ._3-V8vjmrwuJM6Ws3tsjFJj ._31ptFGGMZrSQc5BCX1e5lm, .OhSdLYuggDtBcWjYP0j_9 ._31ptFGGMZrSQc5BCX1e5lm { box-shadow: inset 0 0 12px rgba(255, 160, 0, 0.08) !important; }
+
+/* the games list: the picked game filled solid, its name in black; a collection's name over a line */
+._1ijTaXJJA5YWl_fW2IxcaT ._2sYIghGVXJr6tsQVvcryy8 { box-shadow: inset 0 -1px 0 var(--amber-dark) !important; letter-spacing: 1px; }
+._1ijTaXJJA5YWl_fW2IxcaT ._2-O4ZG0KrnSrzISHBKctFQ._5YTBr7WwIfzVU_3nUtAph .ga1hyw11cdBVodrCAidPF { opacity: 0.4; }
+
+/* the play button: solid amber, black capitals */
+:is(._1U7LKpx70kEsz3jJwAFOi-, ._2L3s2nzh7yCnNESfI5_dN1) :is(._3ydigb6zZAjJ0JCDgHwSYA, ._2q-gZ3XJzlvSGHSF-GvSmi) { --ink: #000; --ring: #000; --hi: rgba(255, 255, 255, 0.45); }
+:is(._1U7LKpx70kEsz3jJwAFOi-, ._2L3s2nzh7yCnNESfI5_dN1) :is(._3ydigb6zZAjJ0JCDgHwSYA, ._2q-gZ3XJzlvSGHSF-GvSmi):hover { background: linear-gradient(var(--amber-bright), var(--amber)) !important; }
+:is(._1U7LKpx70kEsz3jJwAFOi-, ._2L3s2nzh7yCnNESfI5_dN1) ._33cnXIqTRgRr49_FNXIHj6 { text-transform: uppercase !important; letter-spacing: 2px !important; }
+/* the figures beside it: larger, as the HUD writes its numbers */
+:is(._1U7LKpx70kEsz3jJwAFOi-, ._2L3s2nzh7yCnNESfI5_dN1) ._2TYVGoD27ZMfjRirKQNLfk { font: 700 13px/15px "Trebuchet MS", var(--font) !important; color: var(--amber-bright) !important; }
+
+/* headings: capitals */
+.OhSdLYuggDtBcWjYP0j_9 h2._3A_c3YHYd4YIjA8Y-olnPl { text-transform: uppercase !important; letter-spacing: 2px !important; }
+:is(._2hfibYuzyMOQ0sj2egsHh0, ._3ONu7-h8EhRcUI72YoSVbD, ._2oJt3qYLAqr6xMjnpmBFLN, ._1bq4x9pa4-9RLY-dXWUZTp .TK9wvF55dyA6RcOclozC8) { text-transform: uppercase !important; letter-spacing: 2px !important; }
+
+/* the bottom bar: its buttons in cells, and the suit's two read-outs at the right */
+._1_yS5UP7el0aN4vntx3dx { position: relative !important; background: linear-gradient(var(--strip) 0, var(--strip) 13px, var(--amber-dim) 13px, var(--amber-dim) 14px, var(--bar) 14px) !important; }
+._1_yS5UP7el0aN4vntx3dx::after {
+  content: "\271A 100   \26A1\FE0E 100";
+  position: absolute;
+  right: 44px;
+  bottom: 9px;
+  font: 700 30px/34px "Trebuchet MS", "Segoe UI Symbol", Tahoma, sans-serif;
+  letter-spacing: 1px;
+  white-space: pre;
+  color: var(--amber);
+  text-shadow: 0 0 8px rgba(255, 160, 0, 0.45);
+  pointer-events: none;
+}
+._3vCzSrrXZzZjVJFZNg9SGu :is(._2foCkpRXhqq0UGVE50BWqj, .ip-YZhijAMZcuRoXBGiye, ._1TdaAqMFadi0UTqilrkelR)::before {
+  top: 4px;
+  width: 44px;
+  height: 36px;
+  margin-left: -22px;
+  box-sizing: border-box;
+  border: 1px solid var(--amber-dim);
+  border-radius: 6px;
+}
+._3vCzSrrXZzZjVJFZNg9SGu ._1KrJ3sFAqPBN9mfpaNTU5F { display: flex !important; align-items: center !important; justify-content: center !important; }
+._3vCzSrrXZzZjVJFZNg9SGu ._1KrJ3sFAqPBN9mfpaNTU5F svg { width: 24px !important; height: 24px !important; }
+._3vCzSrrXZzZjVJFZNg9SGu :is(._2foCkpRXhqq0UGVE50BWqj, .ip-YZhijAMZcuRoXBGiye, ._1TdaAqMFadi0UTqilrkelR):hover ._1KrJ3sFAqPBN9mfpaNTU5F { color: var(--amber-bright) !important; }
+._3vCzSrrXZzZjVJFZNg9SGu :is(._2foCkpRXhqq0UGVE50BWqj, .ip-YZhijAMZcuRoXBGiye, ._1TdaAqMFadi0UTqilrkelR):hover::before { border-color: var(--amber); background: rgba(255, 160, 0, 0.3); }
+
+/* what fills with amber takes black words */
+body.ContextMenuPopupBody .contextMenuItem:is(:hover, .active, .selected, [class*="Active"], [class*="Focused"]) { color: #000 !important; }
+body.ContextMenuPopupBody .contextMenuItem:is(.disabled, .Disabled, [aria-disabled="true"]) { color: var(--menu-off) !important; }
+body.DesktopUI :is(button.DialogButton, .DialogButton, ._1kCN0pAntrcGCSmcc-vYdk, ._39ZurKJQex6v69aXzvc_nj):hover:not(.Disabled, :disabled) { color: var(--amber-bright) !important; }
+body.DesktopUI :is(.DialogContent, .ModalPosition_Content, ._3I6h_oySuLmmLY9TjIKT9s) { border: 1px solid var(--amber) !important; box-shadow: 0 0 18px rgba(255, 160, 0, 0.18) !important; }
+body.ModalDialogBody .title-area-children, body.ModalDialogBody .title-area-children * { letter-spacing: 3px !important; text-transform: uppercase !important; }
+body.DesktopUI .DialogHeader { text-transform: uppercase !important; letter-spacing: 2px !important; }
+
+/* ==== friends ==== */
+.friendlist { border-color: var(--amber) !important; }
+.friend.friendSelected, .friend[class*="Selected"] { background: var(--amber) !important; }
+.friend:is(.friendSelected, [class*="Selected"]) .labelHolder, .friend:is(.friendSelected, [class*="Selected"]) .labelHolder * { color: #000 !important; }
+.friend:hover { background: rgba(255, 160, 0, 0.16) !important; }
+.unreadFriend { background: rgba(255, 160, 0, 0.28) !important; }
+.friendGroup .groupName, .friendsListSectionTitle, .groupChatSectionTitle, .friendTab .tabLabel { letter-spacing: 1px !important; }
+.msgText, .msg { color: var(--amber) !important; }
+.isCurrentUser :is(.msgText, .msg), :is(.msgText, .msg).isCurrentUser { color: var(--amber-bright) !important; }
+::selection { color: #000; background: var(--amber); }
+
+/* ==== web ==== */
+html[data-gg-glass="hev"] {
+  --w-page: rgb(6, 5, 3);
+  --w-ink: rgb(222, 140, 0);
+  --w-head: rgb(255, 172, 26);
+  --w-field: rgb(4, 3, 1);
+  --w-field-ink: rgb(255, 196, 64);
+  --w-dark: rgb(150, 94, 0);
+  --w-light: rgb(150, 94, 0);
+  --w-pick: rgb(255, 160, 0);
+  --w-pick-ink: #000;
+  --w-track: rgb(14, 10, 4);
+  --w-thumb: rgb(64, 40, 0);
+  --w-filter: grayscale(1) sepia(1) saturate(3.2) hue-rotate(-8deg) brightness(0.92);
+  --w-photo: grayscale(1) sepia(1) saturate(2.5) hue-rotate(-8deg) brightness(0.6);
+  --w-font: Tahoma, Verdana, Arial, sans-serif;
+}

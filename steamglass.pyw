@@ -65,6 +65,13 @@ in glass-mode.txt next to this file (changes apply live):
            last grey steam.styles and layouts, July 2014) and the collage's own. The store and
            community are grey as in Steam 2013 (the user asked for that). Under
            it the same greys and the same pictures from this PC's Steam folder as Steam 2013.
+  skins    game-styled looks, one file each (skin-NAME.css; the tray lists every one it finds):
+           Secret Agent (a 007-style dossier: manila tabs, a typewritten games list, black and
+           gold), Ocarina (the blue-violet panels, gold names and hearts of Ocarina of Time's
+           menus), HEV (Half-Life's amber suit display) and Determination (Undertale's white-lined
+           boxes and red heart). Each is the Steam 2005 mode's sheets with other values for their
+           named settings, a few rules of its own, and Steam's blue put through the skin's own
+           tones (its @ramp). All drawn in CSS: no pictures, nobody's artwork.
   off      Steam's own windows.
 
 A tray icon switches between them (it writes glass-mode.txt). Its "Song toggle"
@@ -77,7 +84,7 @@ Installed builds (SteamGlass.exe, put there by SteamGlassUpdater.exe) keep
 glass-mode.txt in %APPDATA%\SteamGlass and add "Check for updates…" to the menu.
 helper.log in the same folder notes mode changes and anything that went wrong.
 "Start with Windows" in the menu adds or removes the helper under the Run key."""
-__version__ = "1.7.4"
+__version__ = "1.8.0"
 
 import base64
 import ctypes
@@ -207,6 +214,65 @@ MODES = {"frosted": "Frosted", "clear": "Clear", "liquid": "Liquid", "aero": "Fr
          "steam2005": "Steam 2005", "steam2017": "Steam 2017",
          "off": "Off (Steam's normal look)"}
 SOLID_MODES = ("steam2013", "steam2005", "steam2017")   # looks of their own on opaque windows: no glass behind the pages
+
+# ------------------------------------------------------------- skins
+# A skin is one file in the theme folder, skin-NAME.css: a game-styled look laid over the Steam 2005
+# mode's sheets, which take their colours and corners from named settings (see the top of
+# steam2005.css). Its first comment says what the helper needs to know:
+#     @name     what the tray menu calls it
+#     @corners  round or square (the window's own corners)
+#     @icon     four colours r,g,b for the tray icon: top, bottom, a bright line, the picked line
+#     @ramp     brightness:r,g,b ...  the colour a grey of that brightness turns to; Steam's blue is
+#               put through it (as Steam 2005 puts it through its olives), so what the skin doesn't
+#               name fits in
+#     @lift     how far dark tones are raised before the ramp (0 keeps a dark look dark)
+# and marker lines split the rest by where it goes:
+#     /* ==== both ==== */     the main window and the friends windows (the settings' values)
+#     /* ==== main ==== */     after steam2005.css
+#     /* ==== friends ==== */  after friends2005.css
+#     /* ==== web ==== */      after web-skin.css, for the store and community pages
+# Dropping another such file in the folder adds a mode: nothing else needs to know its name.
+SKIN_PART = re.compile(r"^/\* ==== (both|main|friends|web) ==== \*/[ \t]*$", re.M)
+
+
+def read_skins() -> dict:
+    found = {}
+    for path in sorted(glob.glob(os.path.join(THEME_DIR, "skin-*.css"))):
+        mode = os.path.basename(path)[5:-4].lower()
+        if not re.fullmatch(r"[a-z][a-z0-9]*", mode) or mode in MODES:
+            continue
+        try:
+            with open(path, encoding="utf-8") as f:
+                head = f.read(6000).split("*/", 1)[0]
+        except OSError:
+            continue
+        tag = {m.group(1): m.group(2).strip() for m in re.finditer(r"@(\w+)[ \t]+([^\n]*)", head)}
+        try:
+            colours = [tuple(int(n) for n in c.split(",")) for c in tag.get("icon", "").split()]
+            ramp = [(int(y), tuple(int(n) for n in c.split(","))) for y, c in (p.split(":") for p in tag.get("ramp", "").split())]
+            lift = float(tag.get("lift", "0"))
+        except ValueError:
+            continue
+        if len(colours) != 4 or len(ramp) < 2 or any(len(c) != 3 for c in colours) or any(len(c) != 3 for _, c in ramp):
+            continue
+        found[mode] = {"name": tag.get("name") or mode.title(), "file": os.path.basename(path), "icon": colours,
+                       "ramp": sorted(ramp), "lift": lift, "round": tag.get("corners", "round") != "square"}
+    return found
+
+
+SKINS = read_skins()
+MODES = {**{k: v for k, v in MODES.items() if k != "off"}, **{k: v["name"] for k, v in SKINS.items()}, "off": MODES["off"]}
+SOLID_MODES += tuple(SKINS)
+
+
+def skin_parts(mode: str) -> dict:
+    """A skin file's sections: both, main, friends, web."""
+    with open(os.path.join(THEME_DIR, SKINS[mode]["file"]), encoding="utf-8") as f:
+        pieces = SKIN_PART.split(f.read())
+    parts = dict.fromkeys(("both", "main", "friends", "web"), "")
+    for name, body in zip(pieces[1::2], pieces[2::2]):
+        parts[name] += body
+    return parts
 FROSTED_LIKE = ("frosted", "liquid", "aero", "nullscapes", "eternalnight", "deprivation")   # glass kinds Windows draws as frosted
 
 
@@ -469,7 +535,8 @@ def apply(hwnd, mode: str):
     blur_behind(hwnd, mode == "clear")
     dword_attr(hwnd, DWMWA_WINDOW_CORNER_PREFERENCE,
                {"frosted": DWMWCP_ROUND, "clear": DWMWCP_DONOTROUND, "steam2013": DWMWCP_DONOTROUND,
-                "steam2005": DWMWCP_ROUND, "steam2017": DWMWCP_DONOTROUND}.get(mode, DWMWCP_DEFAULT))
+                "steam2005": DWMWCP_ROUND, "steam2017": DWMWCP_DONOTROUND,
+                **{k: DWMWCP_ROUND if v["round"] else DWMWCP_DONOTROUND for k, v in SKINS.items()}}.get(mode, DWMWCP_DEFAULT))
     dword_attr(hwnd, DWMWA_BORDER_COLOR, DWMWA_COLOR_NONE if mode in ("clear",) + SOLID_MODES else DWMWA_COLOR_DEFAULT)
     if mode != "clear" and has_region(hwnd):   # clear glass cuts its own shape (set_shape)
         user32.SetWindowRgn(hwnd, None, True)
@@ -565,7 +632,7 @@ def tray_icon(mode: str, sizes=(16, 20, 24, 32, 48, 64)):
     Nullscapes, a crescent moon and stars for Eternal Night, a row of fangs in crimson
     for Deprivation, the old client's charcoal with its blue corner for Steam 2013, the older one's
     olive with a yellow line for Steam 2005, charcoal with the green inbox tab for Steam 2017,
-    grey when off."""
+    a skin's own colours with a list on it (its @icon line), grey when off."""
     from PySide6.QtCore import QPointF, QRectF, Qt
     from PySide6.QtGui import QColor, QIcon, QLinearGradient, QPainter, QPainterPath, QPen, QPixmap, QRadialGradient
 
@@ -599,6 +666,9 @@ def tray_icon(mode: str, sizes=(16, 20, 24, 32, 48, 64)):
         elif mode == "aero":   # Aero's sky, deep blue overhead and pale at the horizon
             for at, rgba in ((0.0, (11, 95, 207, 255)), (0.6, (110, 190, 250, 255)), (1.0, (200, 235, 255, 255))):
                 fill.setColorAt(at, QColor(*rgba))
+        elif mode in SKINS:
+            fill.setColorAt(0, QColor(*SKINS[mode]["icon"][0]))
+            fill.setColorAt(1, QColor(*SKINS[mode]["icon"][1]))
         else:
             top, bottom = {"frosted": ((70, 160, 255, 235), (20, 60, 150, 235)),
                            "clear": ((120, 200, 255, 90), (40, 110, 200, 70)),
@@ -609,7 +679,19 @@ def tray_icon(mode: str, sizes=(16, 20, 24, 32, 48, 64)):
             fill.setColorAt(0, QColor(*top))
             fill.setColorAt(1, QColor(*bottom))
         p.fillPath(body, fill)
-        if mode == "steam2013":   # three list lines, the picked one on the old selection blue; the frame's blue corner
+        if mode in SKINS:   # a list in the skin's colours: a heading, the picked line, one more
+            p.save()
+            p.setClipPath(body)
+            p.setPen(Qt.NoPen)
+            bright, pick = QColor(*SKINS[mode]["icon"][2]), QColor(*SKINS[mode]["icon"][3])
+            p.fillRect(QRectF(px * 0.16, px * 0.44, px * 0.68, px * 0.15), pick)
+            p.fillRect(QRectF(px * 0.22, px * 0.26, px * 0.40, px * 0.07), bright)
+            p.fillRect(QRectF(px * 0.22, px * 0.485, px * 0.50, px * 0.06), QColor(255, 255, 255))
+            dim = QColor(bright)
+            dim.setAlpha(150)
+            p.fillRect(QRectF(px * 0.22, px * 0.68, px * 0.34, px * 0.06), dim)
+            p.restore()
+        elif mode == "steam2013":   # three list lines, the picked one on the old selection blue; the frame's blue corner
             p.save()
             p.setClipPath(body)
             p.setPen(Qt.NoPen)
@@ -1245,27 +1327,46 @@ OLIVE = ((0, (0, 0, 0)), (44, (40, 46, 34)), (67, (62, 70, 55)), (84, (76, 88, 6
          (142, (136, 145, 128)), (220, (216, 222, 211)), (255, (255, 255, 255)))
 
 
-def olive(y: float):
-    """The Steam 2005 colour for a grey of brightness y (0-255)."""
-    y = min(255.0, y + 34 * (1 - y / 255) ** 2)
-    for (y0, c0), (y1, c1) in zip(OLIVE, OLIVE[1:]):
+def ramp_colour(ramp, y: float, lift: float = 34.0):
+    """The colour a grey of brightness y (0-255) takes on a ramp of (brightness, (r, g, b)) steps."""
+    y = min(255.0, y + lift * (1 - y / 255) ** 2)
+    if y <= ramp[0][0]:
+        return ramp[0][1]
+    for (y0, c0), (y1, c1) in zip(ramp, ramp[1:]):
         if y <= y1:
             t = (y - y0) / (y1 - y0)
             return tuple(round(a + (b - a) * t) for a, b in zip(c0, c1))
-    return 255, 255, 255
+    return ramp[-1][1]
 
 
-def olives(css: str) -> str:
-    """greys() output with every grey it wrote turned to the olive of its brightness."""
+def olive(y: float):
+    """The Steam 2005 colour for a grey of brightness y (0-255)."""
+    return ramp_colour(OLIVE, y)
+
+
+def tints(css: str, ramp=OLIVE, lift: float = 34.0) -> str:
+    """greys() output with every grey it wrote turned to the ramp's colour of its brightness."""
     def tint(m):
-        r, g, b = olive(int(m.group(1)))
+        r, g, b = ramp_colour(ramp, int(m.group(1)), lift)
         return f"rgba({r},{g},{b},{m.group(2)})" if m.group(2) else f"rgb({r},{g},{b})"
     return re.sub(r"rgba?\((\d+),\1,\1(?:,([\d.]+))?\)", tint, css)
 
 
+def olives(css: str) -> str:
+    return tints(css)
+
+
 def solid_under(mode: str) -> str:
     """What goes under a solid mode's own sheet: Steam's blue in its greys (2013 and 2017, with the old
-    skin's pictures) or in its olive (2005)."""
+    skin's pictures), in its olive (2005), or in a skin's own tones (its @ramp)."""
+    if mode in SKINS:
+        steam, skin = steam_greys(), SKINS[mode]
+        key = ("skin", mode, hashlib.sha1((steam + repr((skin["ramp"], skin["lift"]))).encode()).hexdigest())
+        if key not in _greys:
+            for old in [k for k in _greys if isinstance(k, tuple) and k[:2] == ("skin", mode)]:
+                del _greys[old]
+            _greys[key] = tints(steam, skin["ramp"], skin["lift"]).replace("Steam's blue in grey", f"Steam's blue in the tones of {skin['name']}")
+        return _greys[key]
     if mode == "steam2005":
         steam = steam_greys()
         key = ("olive", hashlib.sha1(steam.encode()).hexdigest())
@@ -1275,6 +1376,31 @@ def solid_under(mode: str) -> str:
             _greys[key] = olives(steam).replace("Steam's blue in grey", "Steam's blue in olive")
         return _greys[key]
     return steam_greys() + skin_2013_pictures()
+
+
+def solid_sheets(mode: str):
+    """(the main window's sheet, the friends windows' sheet) of a solid mode."""
+    def read(name):
+        with open(os.path.join(THEME_DIR, name), encoding="utf-8") as f:
+            return f.read()
+
+    under = solid_under(mode)
+    if mode in SKINS:   # the 2005 sheets, the skin's settings and its own rules after them
+        part = skin_parts(mode)
+        return (under + read("steam2005.css") + part["both"] + part["main"],
+                under + read("friends2005.css") + part["both"] + part["friends"])
+    return under + read(f"steam{mode[-4:]}.css"), under + read(f"friends{mode[-4:]}.css")
+
+
+def web_sheet(mode: str) -> str:
+    """The sheet a mode puts into Steam's web pages."""
+    def read(name):
+        with open(os.path.join(THEME_DIR, name), encoding="utf-8") as f:
+            return f.read()
+
+    if mode in SKINS:
+        return read("web-skin.css").replace('data-gg-glass="SKIN"', f'data-gg-glass="{mode}"') + skin_parts(mode)["web"]
+    return read(f"web{mode[-4:]}.css" if mode in SOLID_MODES else "web.css")
 
 
 def theme_greys(css: str) -> str:
@@ -1507,12 +1633,13 @@ class Theme:
             js = f.read()
         if mode in LEVEL_MODES and not mode_ready(mode):
             mode = "frosted"   # as bundle() does when the level can't be put together
-        css = ""
-        if mode != "off":
-            with open(os.path.join(THEME_DIR, f"web{mode[-4:]}.css" if mode in SOLID_MODES else "web.css"), encoding="utf-8") as f:
-                css = f.read()
-        key = hashlib.sha1((css + js + mode).encode()).hexdigest()[:16] if css else ""
-        return f"({js})({json.dumps({'css': css, 'mode': mode, 'key': key})});", key
+        css = web_sheet(mode) if mode != "off" else ""
+        cfg = {"css": css, "mode": mode, "solid": mode in SOLID_MODES}
+        if mode in SKINS:   # its blue goes to the skin's tones
+            cfg["ramp"] = [[y, list(c)] for y, c in SKINS[mode]["ramp"]]
+            cfg["lift"] = SKINS[mode]["lift"]
+        key = hashlib.sha1((css + js + json.dumps(cfg, sort_keys=True)).encode()).hexdigest()[:16] if css else ""
+        return f"({js})({json.dumps({**cfg, 'key': key})});", key
 
     def bundle(self, mode: str):
         """(css for library pages, css for friends pages, Liquid's script, key)."""
@@ -1524,8 +1651,7 @@ class Theme:
                 return f.read()
 
         if mode in SOLID_MODES:   # an old skin itself: nothing of the glass theme under it
-            under, year = solid_under(mode), mode[-4:]
-            lib, friends, js = under + read(f"steam{year}.css"), under + read(f"friends{year}.css"), read("steam2013.js")
+            (lib, friends), js = solid_sheets(mode), read("steam2013.js")
             return lib, friends, js, hashlib.sha1((lib + friends + js).encode()).hexdigest()[:16]
         files = level_files(mode) if mode in LEVEL_MODES else None
         if mode in LEVEL_MODES and not files:

@@ -28,7 +28,8 @@ THEME = ["skin.json", "libraryroot.custom.css", "friends.custom.css", "glass-fro
          "gdscene.js", "gdscene-next.js", "nullscapes-live.js", "eternal-night-live.js", "web.css", "web-glass.js",
          "steam2013.css", "friends2013.css", "web2013.css", "steam2013.js",
          "steam2005.css", "friends2005.css", "web2005.css",
-         "steam2017.css", "friends2017.css", "web2017.css"]   # what Millennium loads from steamui\skins\GlossyGlass
+         "steam2017.css", "friends2017.css", "web2017.css", "web-skin.css"]   # what Millennium loads from steamui\skins\GlossyGlass
+THEME += sorted(f.name for f in ROOT.glob("skin-*.css"))   # the skins: each file is a mode of its own (see steamglass.pyw)
 
 
 def version() -> str:

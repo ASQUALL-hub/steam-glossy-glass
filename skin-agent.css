@@ -1,0 +1,229 @@
+/* Glossy Glass for Steam: the "Secret Agent" skin.
+
+   A spy's dossier, after the briefing folders and the black-and-gold of the 007 films and games:
+   a black case with a thin gold line, the Store / Library / Community tabs as the tabs of a
+   manila folder with typewritten names, the games list a typewritten sheet lying in the folder
+   (the picked game struck through in red ink), the page beside it a dark briefing screen, the
+   play button in gold, a red TOP SECRET stamp on the title bar. Everything is drawn in CSS: no
+   pictures, no logos, nobody's artwork. It sits on the Steam 2005 mode's sheets (see the top of
+   steam2005.css for the settings below).
+
+   @name Secret Agent (007 style)
+   @corners square
+   @icon 52,48,42 8,8,7 210,171,69 176,37,28
+   @ramp 0:0,0,0 26:20,19,17 52:38,36,32 96:84,78,66 150:150,140,116 205:216,208,188 255:255,250,236
+   @lift 0
+*/
+
+/* ==== both ==== */
+html:root {
+  --gold: rgb(210, 171, 69);
+  --gold-light: rgb(240, 213, 131);
+  --gold-dark: rgb(140, 109, 31);
+  --manila: rgb(203, 178, 122);
+  --manila-light: rgb(222, 201, 148);
+  --manila-dark: rgb(168, 142, 88);
+  --paper: rgb(236, 227, 199);
+  --paper-ink: rgb(43, 34, 24);
+  --red: rgb(176, 37, 28);
+  --type: "Courier New", Courier, monospace;
+
+  --rim: #000;
+  --rim-light: rgba(210, 171, 69, 0.34);
+  --title: rgb(13, 12, 11);
+  --title-text: var(--gold);
+  --strip: rgb(27, 26, 24);
+  --tab: var(--manila-dark);
+  --tab-hover: rgb(184, 158, 102);
+  --panel: rgb(38, 36, 33);
+  --face: rgb(52, 49, 44);
+  --list: rgb(24, 23, 21);
+  --edge: rgb(8, 8, 7);
+  --dim: rgb(138, 131, 114);
+  --soft: rgb(216, 208, 188);
+  --yellow: var(--gold);
+  --olive: rgb(34, 32, 29);
+  --inset: rgb(20, 19, 18);
+  --light: rgb(92, 86, 72);
+  --shadow: #000;
+  --track: rgb(27, 26, 24);
+  --pick: var(--red);
+  --ink: rgb(244, 238, 221);
+  --on-accent: rgb(20, 16, 10);
+  --ring: var(--gold-dark);
+  --pick-bg: var(--red);
+  --pick-ink: rgb(255, 245, 224);
+  --bar: #000;
+  --bar-tab-a: rgb(44, 42, 38);
+  --bar-tab-b: rgb(27, 26, 24);
+  --bar-icon: var(--gold);
+  --field: rgb(18, 17, 16);
+  --bevel: rgb(92, 86, 72);
+  --btn-a: rgb(62, 58, 52);
+  --btn-b: rgb(40, 38, 34);
+  --btn-ha: rgb(78, 73, 64);
+  --btn-hb: rgb(50, 47, 42);
+  --btn-da: rgb(34, 32, 29);
+  --btn-db: rgb(48, 45, 40);
+  --play-a: rgb(232, 201, 104);
+  --play-b: rgb(178, 139, 44);
+  --hi: rgba(255, 240, 200, 0.16);
+  --shade: rgba(0, 0, 0, 0.3);
+  --note-bg: rgb(58, 46, 14);
+  --note-edge: var(--gold-dark);
+  --menu-off: rgb(110, 104, 90);
+  --r-field: 2px;
+  --r-btn: 2px;
+  --r-box: 3px;
+  --r-play: 3px;
+  --r-win: 5px;
+  --font: Bahnschrift, "Segoe UI", Tahoma, sans-serif;
+  --tick: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='13' height='13'%3E%3Cpath d='M3 6.5 5.5 9 10 3.5' fill='none' stroke='rgb(210,171,69)' stroke-width='1.8'/%3E%3C/svg%3E");
+  --up: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='6'%3E%3Cpath d='M0 5.5 4.5 1 9 5.5z' fill='rgb(210,171,69)'/%3E%3C/svg%3E");
+  --down: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='6'%3E%3Cpath d='M0 .5 4.5 5 9 .5z' fill='rgb(210,171,69)'/%3E%3C/svg%3E");
+  /* the friends windows' own names for the same things */
+  --white: rgb(244, 238, 221);
+  --pale: rgb(185, 176, 154);
+  --dull: rgb(125, 119, 104);
+}
+
+/* ==== main ==== */
+/* the title bar: gold capitals on black over a gold hairline, and the stamp */
+._39oUCO1OuizVPwcnnv88no::before {
+  background: linear-gradient(rgb(24, 22, 20), rgb(8, 8, 7));
+  box-shadow: inset 0 -1px 0 var(--gold-dark);
+  letter-spacing: 2px;
+}
+._39oUCO1OuizVPwcnnv88no::after {
+  content: "TOP SECRET";
+  position: absolute;
+  left: 50%;
+  top: 6px;
+  padding: 0 9px;
+  border: 2px solid var(--red);
+  border-radius: 2px;
+  font: 700 12px/15px var(--type);
+  letter-spacing: 3px;
+  color: var(--red);
+  transform: translateX(-50%) rotate(-2deg);
+  opacity: 0.92;
+  pointer-events: none;
+}
+
+/* the tabs: a manila folder's, their names typed; the open one lighter, its name in red ink */
+._2D64jIEK7wpUR_NlObDW76 ._2Lu3d-5qLmW4i19ysTt2jT {
+  --ink: var(--paper-ink);
+  --yellow: var(--red);
+  --font: var(--type);
+  border-radius: 3px 14px 0 0 !important;
+  background: linear-gradient(var(--manila-dark), rgb(152, 127, 76)) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28), inset 1px 0 0 rgba(255, 255, 255, 0.12) !important;
+}
+._2D64jIEK7wpUR_NlObDW76 ._2Lu3d-5qLmW4i19ysTt2jT:hover { background: linear-gradient(var(--tab-hover), rgb(168, 142, 88)) !important; }
+._2D64jIEK7wpUR_NlObDW76 ._19axKcqYRuaJ8vdYKYmtTQ { font-size: 12px !important; text-transform: uppercase !important; letter-spacing: 0.5px !important; }
+._2D64jIEK7wpUR_NlObDW76 ._1gqEjB5QsKT_NftD1dEsdZ,
+._2D64jIEK7wpUR_NlObDW76 ._1gqEjB5QsKT_NftD1dEsdZ:hover { background: linear-gradient(var(--manila-light), var(--manila)) !important; }
+
+/* the page: the folder itself, with a little grain */
+._1rDh5rXSFZJOqCa4UpnI4z {
+  background:
+    repeating-linear-gradient(91deg, rgba(110, 82, 30, 0.07) 0 1px, transparent 1px 4px),
+    repeating-linear-gradient(1deg, rgba(255, 255, 255, 0.05) 0 2px, transparent 2px 7px),
+    linear-gradient(var(--manila), rgb(190, 164, 108)) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+/* what lies in it beside the list: a dark briefing screen */
+._3xRRJfD2xy95i9NhJxLTp0 > ._3BFcmjAaMyP6GTPwc0VyWi {
+  border: 1px solid #000 !important;
+  border-radius: var(--r-box) !important;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.3), 0 0 0 1px rgba(90, 66, 20, 0.35) !important;
+  background: rgb(27, 26, 24) !important;
+  overflow: hidden !important;
+}
+.RGNMWtyj73_-WdhflrmuY > ._3BFcmjAaMyP6GTPwc0VyWi,
+._1rDh5rXSFZJOqCa4UpnI4z > ._1fuML-ekRbTEzgzC597yGP { box-shadow: 0 1px 0 rgba(255, 255, 255, 0.3), 0 0 0 1px rgba(90, 66, 20, 0.35) !important; }
+/* a web page's address, written on the folder */
+._1bGewp3tfzqAF6fVTFFUOz { --soft: var(--paper-ink); --font: var(--type); }
+
+/* the games list: a typewritten sheet. Everything in it takes the paper's own tones. */
+._3x1HklzyDs4TEjACrRO2tB {
+  --ink: var(--paper-ink);
+  --soft: rgb(96, 80, 58);
+  --dim: rgb(150, 136, 108);
+  --yellow: var(--red);
+  --pick-bg: var(--red);
+  --shade: rgba(120, 88, 24, 0.16);
+  --field: rgb(247, 241, 222);
+  --edge: rgb(138, 115, 68);
+  --ring: var(--paper-ink);
+  --btn-a: rgb(240, 232, 206);
+  --btn-b: rgb(218, 206, 170);
+  --hi: rgba(255, 255, 255, 0.7);
+  --tab: rgb(214, 202, 166);
+  --panel: rgb(176, 152, 100);
+  --bevel: rgb(226, 214, 180);
+  --font: var(--type);
+  --up: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='6'%3E%3Cpath d='M0 5.5 4.5 1 9 5.5z' fill='rgb(43,34,24)'/%3E%3C/svg%3E");
+  --down: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='6'%3E%3Cpath d='M0 .5 4.5 5 9 .5z' fill='rgb(43,34,24)'/%3E%3C/svg%3E");
+  border-radius: 1px !important;
+  box-shadow: 1px 2px 5px rgba(40, 26, 0, 0.45) !important;
+  background: linear-gradient(var(--paper), rgb(228, 218, 186)) !important;
+}
+._1ijTaXJJA5YWl_fW2IxcaT ._2-O4ZG0KrnSrzISHBKctFQ { box-shadow: inset 0 -1px 0 rgba(96, 74, 30, 0.13) !important; }
+._1ijTaXJJA5YWl_fW2IxcaT ._2sYIghGVXJr6tsQVvcryy8 ._2mZ8LlvoUiyeEUtIWuTri { text-decoration: underline; letter-spacing: 1px; }
+._1ijTaXJJA5YWl_fW2IxcaT ._1PxXcZNpN0cCxbnjEoTdYT { display: none !important; }
+
+/* the play button: gold, its words in black */
+:is(._1U7LKpx70kEsz3jJwAFOi-, ._2L3s2nzh7yCnNESfI5_dN1) :is(._3ydigb6zZAjJ0JCDgHwSYA, ._2q-gZ3XJzlvSGHSF-GvSmi) {
+  --ink: rgb(20, 16, 10);
+  --hi: rgba(255, 255, 255, 0.5);
+  --ring: #000;
+}
+:is(._1U7LKpx70kEsz3jJwAFOi-, ._2L3s2nzh7yCnNESfI5_dN1) :is(._3ydigb6zZAjJ0JCDgHwSYA, ._2q-gZ3XJzlvSGHSF-GvSmi):hover { background: linear-gradient(var(--gold-light), var(--gold)) !important; }
+:is(._1U7LKpx70kEsz3jJwAFOi-, ._2L3s2nzh7yCnNESfI5_dN1) ._33cnXIqTRgRr49_FNXIHj6 { text-transform: uppercase !important; letter-spacing: 1.5px !important; }
+
+/* headings on the screen: filed in capitals */
+.OhSdLYuggDtBcWjYP0j_9 h2._3A_c3YHYd4YIjA8Y-olnPl { text-transform: uppercase !important; letter-spacing: 1.5px !important; color: var(--gold) !important; }
+:is(._2hfibYuzyMOQ0sj2egsHh0, ._3ONu7-h8EhRcUI72YoSVbD, ._2oJt3qYLAqr6xMjnpmBFLN, ._1bq4x9pa4-9RLY-dXWUZTp .TK9wvF55dyA6RcOclozC8) { text-transform: uppercase !important; letter-spacing: 1.5px !important; }
+
+/* the small buttons at the menu's right end: dark, not manila */
+._3cykd-VfN_xBxf3Qxriccm { --tab: rgb(44, 42, 38); --tab-hover: rgb(62, 58, 52); }
+
+/* the bottom bar: a gold hairline over black, and at its right end the view down a rifled barrel */
+._1_yS5UP7el0aN4vntx3dx {
+  background:
+    radial-gradient(circle, #fff 0 3px, #000 3.6px 9px, var(--gold-dark) 9.5px 10.5px, transparent 11px 21px, var(--gold-dark) 21.5px 22.5px, #000 23px) right 48px top 17px / 48px 48px no-repeat,
+    repeating-conic-gradient(from 8deg, rgba(210, 171, 69, 0.5) 0 20deg, rgba(210, 171, 69, 0.08) 20deg 45deg) right 48px top 17px / 48px 48px no-repeat,
+    linear-gradient(var(--strip) 0, var(--strip) 13px, var(--gold-dark) 13px, var(--gold-dark) 14px, var(--bar) 14px) !important;
+}
+
+/* dialogs and menus: black with the gold line */
+body.DesktopUI :is(.DialogContent, .ModalPosition_Content, ._3I6h_oySuLmmLY9TjIKT9s) { border-color: #000 !important; box-shadow: 0 0 0 1px var(--gold-dark), 0 0 14px rgba(0, 0, 0, 0.6) !important; }
+body.ModalDialogBody .title-area-children, body.ModalDialogBody .title-area-children * { letter-spacing: 2px !important; text-transform: uppercase !important; color: var(--gold) !important; }
+body.DesktopUI .DialogHeader { text-transform: uppercase !important; letter-spacing: 1.5px !important; color: var(--gold) !important; }
+body.ContextMenuPopupBody .PP7LM0Ow1K5qkR8WElLpt { border-color: var(--gold-dark) !important; }
+
+/* ==== friends ==== */
+.friendlist { border-color: var(--gold-dark) !important; }
+.friendGroup .groupName, .friendsListSectionTitle, .groupChatSectionTitle, .friendTab .tabLabel { font-family: var(--type) !important; letter-spacing: 1px !important; }
+.friend.friendSelected, .friend[class*="Selected"] { background: var(--red) !important; }
+.unreadFriend { background: rgba(176, 37, 28, 0.35) !important; }
+.msgText, .msg { font-family: var(--type) !important; }
+::selection { color: var(--on-accent); background: var(--gold); }
+
+/* ==== web ==== */
+html[data-gg-glass="agent"] {
+  --w-page: rgb(22, 21, 19);
+  --w-ink: rgb(216, 208, 188);
+  --w-head: rgb(210, 171, 69);
+  --w-field: rgb(18, 17, 16);
+  --w-field-ink: rgb(244, 238, 221);
+  --w-dark: #000;
+  --w-light: rgb(92, 86, 72);
+  --w-pick: rgb(176, 37, 28);
+  --w-track: rgb(27, 26, 24);
+  --w-thumb: rgb(62, 58, 52);
+  --w-filter: grayscale(1) sepia(0.28) brightness(0.96);
+  --w-photo: grayscale(0.7) sepia(0.2) brightness(0.75);
+  --w-font: Bahnschrift, "Segoe UI", Arial, sans-serif;
+}

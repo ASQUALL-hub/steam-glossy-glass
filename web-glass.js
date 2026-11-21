@@ -61,21 +61,24 @@
   // holding game pictures, gets data-gg-grey with its own colours in grey (--gg-grey-*), and its
   // insides are looked at one by one. Parts added later (the store loads sections as you scroll)
   // are looked at as they come, and parts that only turn blue under the pointer when it gets there.
-  const MONO = /^(nullscapes|eternalnight|deprivation|steam2013|steam2017|steam2005)$/.test(cfg.mode);
-  const SOLID = /^steam20(13|05|17)$/.test(cfg.mode);   // an opaque look of its own (web2013.css, web2005.css, web2017.css): nothing to clear
+  const MONO = !!cfg.ramp || /^(nullscapes|eternalnight|deprivation|steam2013|steam2017|steam2005)$/.test(cfg.mode);
+  const SOLID = !!cfg.solid || /^steam20(13|05|17)$/.test(cfg.mode);   // an opaque look of its own (web2013.css, web2005.css, web2017.css, a skin's): nothing to clear
   // Steam 2005 turns the blue to the olive client's greens, not to grey: the green of the same
-  // brightness, with the dark tones today's pages are made of lifted into the range its windows had
-  const OLIVE = cfg.mode !== "steam2005" ? null : [[0, [0, 0, 0]], [44, [40, 46, 34]], [67, [62, 70, 55]], [84, [76, 88, 68]],
-    [101, [90, 106, 80]], [142, [136, 145, 128]], [220, [216, 222, 211]], [255, [255, 255, 255]]];
+  // brightness, with the dark tones today's pages are made of lifted into the range its windows had.
+  // A skin (skin-NAME.css) hands over a ramp of its own, and how far it lifts the dark tones.
+  const RAMP = cfg.ramp || (cfg.mode !== "steam2005" ? null : [[0, [0, 0, 0]], [44, [40, 46, 34]], [67, [62, 70, 55]], [84, [76, 88, 68]],
+    [101, [90, 106, 80]], [142, [136, 145, 128]], [220, [216, 222, 211]], [255, [255, 255, 255]]]);
+  const LIFT = cfg.ramp ? cfg.lift || 0 : 34;
   const tone = y => {
-    if (!OLIVE) return [y, y, y];
-    y = Math.min(255, y + 34 * (1 - y / 255) ** 2);
-    for (let i = 1; i < OLIVE.length; i++) {
-      if (y > OLIVE[i][0]) continue;
-      const [y0, a] = OLIVE[i - 1], [y1, b] = OLIVE[i], t = (y - y0) / (y1 - y0);
+    if (!RAMP) return [y, y, y];
+    y = Math.min(255, y + LIFT * (1 - y / 255) ** 2);
+    if (y <= RAMP[0][0]) return RAMP[0][1];
+    for (let i = 1; i < RAMP.length; i++) {
+      if (y > RAMP[i][0]) continue;
+      const [y0, a] = RAMP[i - 1], [y1, b] = RAMP[i], t = (y - y0) / (y1 - y0);
       return a.map((v, k) => Math.round(v + (b[k] - v) * t));
     }
-    return [255, 255, 255];
+    return RAMP[RAMP.length - 1][1];
   };
   const PICTURES = "img, video, canvas, picture, iframe";
   const COLOR = /rgba?\(([^)]*)\)/g;

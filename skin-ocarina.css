@@ -1,0 +1,222 @@
+/* Glossy Glass for Steam: the "Ocarina" skin.
+
+   After the menus of The Legend of Zelda: Ocarina of Time: the file-select screen's blue-violet
+   panels with their pale outlines on a night sky, names in gold, the picked line glowing as the
+   cursor does, three hearts in the top-left corner as on the game's own screen, the play button
+   in the green of the B button and the bottom bar's three buttons as yellow C buttons.
+   Everything is drawn in CSS: no pictures, no symbols or artwork of Nintendo's. It sits on the
+   Steam 2005 mode's sheets (see the top of steam2005.css for the settings below).
+
+   @name Ocarina (Zelda style)
+   @corners round
+   @icon 84,94,214 16,14,56 255,220,90 70,140,255
+   @ramp 0:4,4,22 30:16,18,60 60:30,34,100 110:64,72,160 165:130,140,225 220:205,212,255 255:255,255,255
+   @lift 6
+*/
+
+/* ==== both ==== */
+html:root {
+  --gold: rgb(255, 220, 90);
+  --line: rgb(112, 122, 226);                /* the panels' pale outline */
+  --glow: rgb(190, 220, 255);
+  --serif: "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif;
+
+  --rim: rgb(6, 6, 26);
+  --rim-light: rgba(150, 160, 255, 0.4);
+  --title: rgb(14, 12, 48);
+  --title-text: var(--gold);
+  --strip: rgb(18, 16, 58);
+  --tab: rgb(58, 64, 168);
+  --tab-hover: rgb(78, 86, 204);
+  --panel: rgb(30, 32, 98);
+  --face: rgb(56, 62, 160);
+  --list: rgb(16, 18, 62);
+  --edge: rgb(88, 98, 196);
+  --dim: rgb(122, 130, 194);
+  --soft: rgb(204, 211, 255);
+  --yellow: var(--gold);
+  --olive: rgb(10, 10, 36);
+  --inset: rgb(14, 16, 54);
+  --light: var(--line);
+  --shadow: var(--line);
+  --track: rgb(20, 22, 70);
+  --pick: rgb(58, 112, 240);
+  --ink: #fff;
+  --on-accent: rgb(40, 28, 0);
+  --ring: rgb(8, 48, 20);
+  --pick-bg: rgb(58, 112, 240);
+  --pick-ink: #fff;
+  --bar: rgb(8, 8, 30);
+  --bar-tab-a: rgb(255, 232, 110);
+  --bar-tab-b: rgb(214, 160, 20);
+  --bar-icon: rgb(72, 50, 0);
+  --field: rgb(10, 12, 44);
+  --bevel: var(--line);
+  --btn-a: rgb(88, 98, 216);
+  --btn-b: rgb(56, 62, 160);
+  --btn-ha: rgb(112, 124, 240);
+  --btn-hb: rgb(70, 78, 190);
+  --btn-da: rgb(46, 52, 140);
+  --btn-db: rgb(70, 78, 190);
+  --play-a: rgb(96, 214, 104);
+  --play-b: rgb(28, 138, 52);
+  --hi: rgba(255, 255, 255, 0.3);
+  --shade: rgba(120, 140, 255, 0.22);
+  --note-bg: rgb(70, 56, 10);
+  --note-edge: rgb(200, 160, 40);
+  --menu-off: rgb(92, 98, 152);
+  --r-field: 8px;
+  --r-btn: 9px;
+  --r-box: 10px;
+  --r-play: 14px;
+  --r-win: 10px;
+  --font: "Trebuchet MS", "Segoe UI", Tahoma, sans-serif;
+  --tick: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='13' height='13'%3E%3Cpath d='M3 6.5 5.5 9 10 3.5' fill='none' stroke='rgb(255,220,90)' stroke-width='2'/%3E%3C/svg%3E");
+  --up: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='6'%3E%3Cpath d='M0 5.5 4.5 1 9 5.5z' fill='rgb(204,211,255)'/%3E%3C/svg%3E");
+  --down: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='6'%3E%3Cpath d='M0 .5 4.5 5 9 .5z' fill='rgb(204,211,255)'/%3E%3C/svg%3E");
+  /* the friends windows' own names for the same things */
+  --white: #fff;
+  --pale: rgb(182, 192, 250);
+  --dull: rgb(112, 120, 184);
+}
+
+/* ==== main ==== */
+@keyframes gg-ocarina-cursor {
+  0%, 100% { box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.3), 0 0 0 0 rgba(190, 220, 255, 0); }
+  50% { box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.95), 0 0 8px 1px rgba(190, 220, 255, 0.55); }
+}
+
+/* the window: a night sky */
+._1ENHEsrSLcTRtPQFl1F-wL {
+  background:
+    radial-gradient(ellipse 60% 70% at 16% 0%, rgba(126, 82, 210, 0.42), transparent 70%),
+    radial-gradient(ellipse 50% 60% at 88% 8%, rgba(60, 96, 228, 0.34), transparent 70%),
+    radial-gradient(ellipse 70% 50% at 50% 100%, rgba(96, 60, 190, 0.3), transparent 75%),
+    var(--strip) !important;
+}
+/* the title bar: clear over the sky, the name in gold, three hearts before it */
+._39oUCO1OuizVPwcnnv88no::before {
+  padding-left: 76px;
+  background: linear-gradient(rgba(8, 6, 34, 0.75), rgba(8, 6, 34, 0.2));
+  font: 700 13px/27px var(--serif);
+  text-transform: none;
+  letter-spacing: 0.5px;
+  text-shadow: 0 1px 0 rgb(40, 20, 0);
+}
+._39oUCO1OuizVPwcnnv88no::after {
+  content: "\2665\2665\2665";
+  position: absolute;
+  left: 13px;
+  top: 2px;
+  font: 400 17px/26px "Segoe UI Symbol", "Arial Unicode MS", sans-serif;
+  letter-spacing: 2px;
+  color: rgb(246, 44, 44);
+  text-shadow: 0 0 0 #000, 1px 0 0 rgb(90, 0, 0), -1px 0 0 rgb(90, 0, 0), 0 1px 0 rgb(90, 0, 0), 0 -1px 0 rgb(90, 0, 0);
+  pointer-events: none;
+}
+
+/* the tabs: the file-select screen's buttons, the open one lit */
+._2D64jIEK7wpUR_NlObDW76 { align-items: center !important; gap: 6px !important; }
+._2D64jIEK7wpUR_NlObDW76 ._2Lu3d-5qLmW4i19ysTt2jT {
+  height: 25px !important;
+  border: 2px solid rgba(170, 180, 255, 0.55) !important;
+  border-radius: 9px !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25) !important;
+  background: linear-gradient(rgba(96, 106, 236, 0.78), rgba(56, 62, 170, 0.78)) !important;
+}
+._2D64jIEK7wpUR_NlObDW76 ._2Lu3d-5qLmW4i19ysTt2jT:hover { background: linear-gradient(rgba(124, 136, 255, 0.9), rgba(72, 80, 204, 0.9)) !important; }
+._2D64jIEK7wpUR_NlObDW76 ._19axKcqYRuaJ8vdYKYmtTQ {
+  height: 21px !important;
+  font: 700 13px/20px var(--serif) !important;
+  text-shadow: 0 1px 1px rgb(12, 12, 60) !important;
+}
+._2D64jIEK7wpUR_NlObDW76 ._1gqEjB5QsKT_NftD1dEsdZ,
+._2D64jIEK7wpUR_NlObDW76 ._1gqEjB5QsKT_NftD1dEsdZ:hover {
+  border-color: var(--gold) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 0 9px rgba(190, 220, 255, 0.7) !important;
+  background: linear-gradient(rgb(120, 150, 255), rgb(66, 92, 220)) !important;
+}
+._2D64jIEK7wpUR_NlObDW76 > svg { margin-bottom: 0 !important; color: var(--soft) !important; }
+
+/* the page: one of the screen's panels */
+._1rDh5rXSFZJOqCa4UpnI4z {
+  border: 2px solid var(--line) !important;
+  border-radius: var(--r-win) !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1), inset 0 0 40px rgba(10, 10, 60, 0.5) !important;
+  background: linear-gradient(rgba(44, 48, 138, 0.94), rgba(24, 26, 86, 0.94)) !important;
+}
+
+/* the games list: names in white, a collection's in gold; the picked one glows as the cursor does */
+._3x1HklzyDs4TEjACrRO2tB { --tab: rgb(14, 16, 54); box-shadow: inset 0 0 14px rgba(0, 0, 30, 0.6) !important; }
+._1ijTaXJJA5YWl_fW2IxcaT ._2sYIghGVXJr6tsQVvcryy8 { font-family: var(--serif) !important; }
+._1ijTaXJJA5YWl_fW2IxcaT ._1UBpAXP408Ez_L_mXhW5Q9._2-O4ZG0KrnSrzISHBKctFQ,
+._1ijTaXJJA5YWl_fW2IxcaT ._1UBpAXP408Ez_L_mXhW5Q9 ._2-O4ZG0KrnSrzISHBKctFQ,
+._1ijTaXJJA5YWl_fW2IxcaT ._1UBpAXP408Ez_L_mXhW5Q9._2-O4ZG0KrnSrzISHBKctFQ:hover {
+  border-radius: 6px !important;
+  background: linear-gradient(rgb(92, 150, 255), rgb(46, 96, 232)) !important;
+  animation: gg-ocarina-cursor 1.7s ease-in-out infinite;
+}
+
+/* the play button: the green of the B button; its words carry a dark edge */
+:is(._1U7LKpx70kEsz3jJwAFOi-, ._2L3s2nzh7yCnNESfI5_dN1) :is(._3ydigb6zZAjJ0JCDgHwSYA, ._2q-gZ3XJzlvSGHSF-GvSmi) { --hi: rgba(255, 255, 255, 0.5); text-shadow: 0 1px 1px rgb(6, 60, 20) !important; }
+:is(._1U7LKpx70kEsz3jJwAFOi-, ._2L3s2nzh7yCnNESfI5_dN1) :is(._3ydigb6zZAjJ0JCDgHwSYA, ._2q-gZ3XJzlvSGHSF-GvSmi):hover { background: linear-gradient(rgb(132, 236, 138), rgb(40, 164, 66)) !important; }
+:is(._1U7LKpx70kEsz3jJwAFOi-, ._2L3s2nzh7yCnNESfI5_dN1) ._33cnXIqTRgRr49_FNXIHj6 { font: 700 14px/26px var(--serif) !important; }
+
+/* headings: gold, in the serif */
+.OhSdLYuggDtBcWjYP0j_9 h2._3A_c3YHYd4YIjA8Y-olnPl { font: 700 14px/18px var(--serif) !important; color: var(--gold) !important; text-shadow: 0 1px 0 rgb(40, 20, 0) !important; }
+:is(._2hfibYuzyMOQ0sj2egsHh0, ._3ONu7-h8EhRcUI72YoSVbD, ._2oJt3qYLAqr6xMjnpmBFLN, ._1bq4x9pa4-9RLY-dXWUZTp .TK9wvF55dyA6RcOclozC8) { font: 700 15px/20px var(--serif) !important; color: var(--gold) !important; }
+:is(._1U7LKpx70kEsz3jJwAFOi-, ._2L3s2nzh7yCnNESfI5_dN1) ._3rpUkswF6xc_ste4Ros_xM { font: 700 15px/18px var(--serif) !important; color: var(--gold) !important; }
+
+/* the bottom bar: its three buttons are yellow C buttons */
+._1_yS5UP7el0aN4vntx3dx { background: linear-gradient(transparent 0, transparent 14px, var(--bar) 14px) !important; }
+._3vCzSrrXZzZjVJFZNg9SGu :is(._2foCkpRXhqq0UGVE50BWqj, .ip-YZhijAMZcuRoXBGiye, ._1TdaAqMFadi0UTqilrkelR)::before {
+  top: 4px;
+  width: 38px;
+  height: 38px;
+  margin-left: -19px;
+  box-sizing: border-box;
+  border: 2px solid rgb(110, 78, 0);
+  border-radius: 50%;
+  box-shadow: inset 0 -3px 4px rgba(120, 70, 0, 0.5), 0 2px 3px rgba(0, 0, 0, 0.6);
+  background: radial-gradient(circle at 36% 28%, rgb(255, 248, 190), var(--bar-tab-a) 38%, var(--bar-tab-b) 100%);
+}
+._3vCzSrrXZzZjVJFZNg9SGu ._1KrJ3sFAqPBN9mfpaNTU5F { display: flex !important; align-items: center !important; justify-content: center !important; }
+._3vCzSrrXZzZjVJFZNg9SGu ._1KrJ3sFAqPBN9mfpaNTU5F svg { width: 20px !important; height: 20px !important; }
+._3vCzSrrXZzZjVJFZNg9SGu :is(._2foCkpRXhqq0UGVE50BWqj, .ip-YZhijAMZcuRoXBGiye, ._1TdaAqMFadi0UTqilrkelR):hover ._1KrJ3sFAqPBN9mfpaNTU5F { color: #000 !important; }
+._3vCzSrrXZzZjVJFZNg9SGu :is(._2foCkpRXhqq0UGVE50BWqj, .ip-YZhijAMZcuRoXBGiye, ._1TdaAqMFadi0UTqilrkelR):hover::before { filter: brightness(1.15); }
+._3vCzSrrXZzZjVJFZNg9SGu :is(._3OhUxFVlQYr9W5ThxstR8k, ._3wJnTtcTLEp0R7eQj_mK8Y) { color: var(--soft) !important; }
+
+/* dialogs: a text box's dark blue inside the pale outline; headings in gold */
+body.DesktopUI :is(.DialogContent, .ModalPosition_Content, ._3I6h_oySuLmmLY9TjIKT9s) { border-color: var(--line) !important; }
+body.ModalDialogBody .title-area-children, body.ModalDialogBody .title-area-children * { font: 700 13px/22px var(--serif) !important; color: var(--gold) !important; }
+body.DesktopUI .DialogHeader { font: 700 15px/20px var(--serif) !important; color: var(--gold) !important; }
+body.DesktopUI .PageListColumn ._1-vlriAtKYDViAEunue4VO._2DpXjzK3WWsOtUWUrcuOG7 { border-radius: 0 !important; background: linear-gradient(rgb(92, 150, 255), rgb(46, 96, 232)) !important; }
+
+/* ==== friends ==== */
+html, body, body.fullheight { background: linear-gradient(rgb(30, 32, 98), rgb(16, 18, 62)) fixed !important; }
+.friendlist, .friendListHeaderContainer, .FriendsListChatSection, .friendsListSectionTitle.chatSectionTitle, .friendListFooter,
+.chatWindow, .chatDialogs, .chatBody, .ChatRoomGroupDialogContents, .chatHeader, .chatTabList, .chatTabSetContainer, .chatEntry { background: none !important; }
+.friendlistListContainer, .chatRoomListContainer, .chatHistoryScroll, .chatHistory, .ChatHistoryContainer, .chatEntry form, .quickAccessFriends { border-radius: 8px !important; }
+.friendGroup .groupName, .friendsListSectionTitle, .groupChatSectionTitle, .friendTab .tabLabel { font-family: var(--serif) !important; font-size: 12px !important; text-transform: none !important; }
+.currentUserContainer .labelHolder :is(.nOdcT-MoOaXGePXLyPe0H, [class*="playerName"]) { font-family: var(--serif) !important; color: var(--gold) !important; }
+.friend.friendSelected, .friend[class*="Selected"] { border-radius: 6px !important; background: linear-gradient(rgb(92, 150, 255), rgb(46, 96, 232)) !important; }
+.unreadFriend { background: rgba(120, 156, 255, 0.34) !important; }
+button, .DialogButton, .chatSubmitButton { border-radius: 8px !important; background: linear-gradient(rgb(88, 98, 216), rgb(56, 62, 160)) !important; }
+
+/* ==== web ==== */
+html[data-gg-glass="ocarina"] {
+  --w-page: rgb(16, 16, 58);
+  --w-ink: rgb(204, 211, 255);
+  --w-head: rgb(255, 220, 90);
+  --w-field: rgb(10, 12, 44);
+  --w-field-ink: #fff;
+  --w-dark: rgb(88, 98, 196);
+  --w-light: rgb(88, 98, 196);
+  --w-pick: rgb(58, 112, 240);
+  --w-track: rgb(20, 22, 70);
+  --w-thumb: rgb(72, 80, 196);
+  --w-filter: grayscale(1) sepia(1) hue-rotate(195deg) saturate(1.7) brightness(0.88);
+  --w-photo: grayscale(0.5) sepia(0.6) hue-rotate(195deg) brightness(0.75);
+  --w-font: "Trebuchet MS", "Segoe UI", Arial, sans-serif;
+  --w-r: 8px;
+}

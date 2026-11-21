@@ -6,6 +6,10 @@ a local server that answers the page's own root-relative requests from this PC's
     /                              the snapshots there are
     /snap/NAME.html?theme=a.css,b.css    a snapshot with those theme files linked last (none = stock);
                                    &js=a.js runs a mode's script in it, &css=... adds a rule
+    /snap/NAME.html?mode=MODE      a snapshot as the helper would dress it in a solid mode (a skin
+                                   too), its script running; &friends=1 for a friends or chat window
+    /__mode/MODE/lib.css           what the helper puts into the main window in that mode
+    /__mode/MODE/friends.css       ... and into the friends windows
     /__theme/FILE                  the theme's files (this repo)
     /assets/APPID/FILE             Steam's library pictures (appcache/librarycache)
     anything else                  Steam's steamui folder (css, images, fonts...)
@@ -81,7 +85,9 @@ class Handler(BaseHTTPRequestHandler):
             names = sorted(n for n in os.listdir(self.snaps) if n.endswith(".html"))
             rows = "".join(f'<li><a href="/snap/{html.escape(n)}">{html.escape(n)}</a> (stock)'
                            + "".join(f' &middot; <a href="/snap/{html.escape(n)}?theme={sheets}&js=steam2013.js">{label}</a>'
-                                     for label, sheets in SOLID_LINKS) + "</li>" for n in names)
+                                     for label, sheets in SOLID_LINKS)
+                           + "".join(f' &middot; <a href="/snap/{html.escape(n)}?mode={mode}">{html.escape(skin["name"])}</a>'
+                                     for mode, skin in helper().SKINS.items()) + "</li>" for n in names)
             return self.send(f"<!doctype html><title>Steam snapshots</title><ul>{rows}</ul>".encode())
         if path.startswith("/snap/"):
             src = inside(self.snaps, path[len("/snap/"):])
@@ -91,6 +97,14 @@ class Handler(BaseHTTPRequestHandler):
                 page = f.read()
             names = [name for name in ",".join(query.get("theme", [])).split(",") if name]
             links = "".join(f'<link rel="stylesheet" href="/__theme/{html.escape(name)}">' for name in names)
+            mode = (query.get("mode") or [""])[0]
+            if mode in helper().SOLID_MODES:
+                which = "friends" if query.get("friends") else "lib"
+                links += f'<link rel="stylesheet" href="/__mode/{mode}/{which}.css">'
+                if which == "lib":
+                    scaled = "preview2005.css" if mode == "steam2005" or mode in helper().SKINS else "preview.css"
+                    links += f'<link rel="stylesheet" href="/__theme/tools/{scaled}">'
+                    query.setdefault("js", []).append("steam2013.js")
             for year in SOLID_YEARS:   # what the helper puts under a solid mode's sheet
                 if any(year in os.path.basename(name) for name in names):
                     links = f'<link rel="stylesheet" href="/__under/steam{year}.css">' + links
@@ -104,6 +118,11 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(page.encode("utf-8"))
         if path.startswith("/__under/steam") and path[len("/__under/steam"):-4] in SOLID_YEARS and path.endswith(".css"):
             return self.send(helper().solid_under(path[9:-4]).encode("utf-8"), "text/css; charset=utf-8")
+        if path.startswith("/__mode/"):
+            mode, _, which = path[len("/__mode/"):].partition("/")
+            if mode not in helper().SOLID_MODES or which not in ("lib.css", "friends.css"):
+                return self.send(b"no such mode", "text/plain", 404)
+            return self.send(helper().solid_sheets(mode)[which == "friends.css"].encode("utf-8"), "text/css; charset=utf-8")
         if path.startswith("/__theme/"):
             return self.file(inside(REPO, path[len("/__theme/"):]))
         if path.startswith("/assets/"):

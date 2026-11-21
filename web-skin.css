@@ -1,0 +1,66 @@
+/* Glossy Glass for Steam: Steam's web pages (the store, the community, profiles, the market...)
+   under a skin (skin-NAME.css).
+
+   The same work as web2005.css, with every colour left to the skin: web-glass.js marks the pages'
+   blue parts (never the green discounts and buttons or the coloured deal labels) and gives the
+   panels that hold game pictures their own background in the skin's tone of the same brightness
+   (the skin's @ramp), so the pictures keep their colours; small parts with no pictures in them are
+   drawn through the skin's filter (--w-filter). This sheet draws those, the page colour and the
+   typeface. The helper writes the skin's name where SKIN stands, and the skin's own "web" section
+   follows this sheet: it sets the --w- values on <html data-gg-glass="its name">.
+
+     --w-page    the page                     --w-ink      words
+     --w-head    headings                     --w-field    a field, --w-field-ink its words
+     --w-dark, --w-light   a field's edges (the same twice for a flat line)
+     --w-pick, --w-pick-ink   selected text   --w-track, --w-thumb   scrollbars
+     --w-filter  what turns a small blue part to the skin's tone
+     --w-photo   the filter a profile's own background picture gets
+     --w-font    the typeface                 --w-r        a field's corners */
+
+html[data-gg-glass="SKIN"] [data-gg-mono] { filter: var(--w-filter, grayscale(1)) !important; }
+html[data-gg-glass="SKIN"] [data-gg-grey] {
+  background-color: var(--gg-grey-bg) !important;
+  background-image: var(--gg-grey-img) !important;
+  border-color: var(--gg-grey-border) !important;
+  box-shadow: var(--gg-grey-shadow) !important;
+}
+html[data-gg-glass="SKIN"] [data-gg-grey-hover]:hover {
+  background-color: var(--gg-grey-bg-hover) !important;
+  background-image: var(--gg-grey-img-hover) !important;
+  border-color: var(--gg-grey-border-hover) !important;
+  box-shadow: var(--gg-grey-shadow-hover) !important;
+}
+
+/* the page */
+html[data-gg-glass="SKIN"] { background: var(--w-page) !important; }
+html[data-gg-glass="SKIN"] body,
+html[data-gg-glass="SKIN"] body.v6,
+html[data-gg-glass="SKIN"] body.v7 { background: var(--w-page) !important; }
+html[data-gg-glass="SKIN"] :is(.responsive_page_frame, .responsive_page_content, .responsive_page_template_content, .responsive_page_template_content > .page_content_ctn, #responsive_page_template_content, .pagecontent, .page_background_holder ~ .page_content_ctn, .home_page_gutter, body > div.pagecontent, .profile_page, #footer, #footer_spacer) {
+  background-color: transparent !important;
+}
+html[data-gg-glass="SKIN"] :is(.home_page_body_ctn, .home_page_content, #store_header, .store_header, #global_header, .supernav_container) { background-color: transparent !important; background-image: none !important; }
+html[data-gg-glass="SKIN"] :is(.apphub_background, .community_home_background, .workshop_home_background, .discussions_header_bg, .market_header_bg) { background-image: none !important; background-color: transparent !important; }
+html[data-gg-glass="SKIN"] :is(.profile_background_holder_content, .profile_animated_background) { filter: var(--w-photo, grayscale(0.6) brightness(0.8)); }
+
+/* the typeface */
+html[data-gg-glass="SKIN"] body,
+html[data-gg-glass="SKIN"] body :not(i, [class*="icon"], [class*="Icon"], svg, svg *) { font-family: var(--w-font, "Segoe UI", Arial, sans-serif) !important; }
+
+/* words and fields */
+html[data-gg-glass="SKIN"] body { color: var(--w-ink) !important; }
+html[data-gg-glass="SKIN"] :is(h1, h2, h3, .pageheader, .page_title, .blockbg, .home_page_content h2, .apphub_AppName) { color: var(--w-head, #fff) !important; text-shadow: none !important; letter-spacing: 0 !important; }
+html[data-gg-glass="SKIN"] :is(input[type="text"], input[type="search"], input[type="password"], textarea, select, .searchbox, #store_nav_search_term) {
+  border: 1px solid !important;
+  border-color: var(--w-dark) var(--w-light) var(--w-light) var(--w-dark) !important;
+  border-radius: var(--w-r, 0) !important;
+  box-shadow: none !important;
+  background: var(--w-field) !important;
+  color: var(--w-field-ink, #fff) !important;
+}
+html[data-gg-glass="SKIN"] ::selection { color: var(--w-pick-ink, #fff); background: var(--w-pick); }
+
+/* scrollbars */
+html[data-gg-glass="SKIN"] ::-webkit-scrollbar { width: 15px; height: 15px; background: var(--w-track); }
+html[data-gg-glass="SKIN"] ::-webkit-scrollbar-thumb { border: 1px solid; border-color: var(--w-light) var(--w-dark) var(--w-dark) var(--w-light); border-radius: var(--w-r, 0); background: var(--w-thumb); }
+html[data-gg-glass="SKIN"] ::-webkit-scrollbar-corner { background: var(--w-track); }
