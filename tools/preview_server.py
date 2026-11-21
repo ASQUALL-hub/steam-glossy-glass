@@ -75,7 +75,8 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/":
             names = sorted(n for n in os.listdir(self.snaps) if n.endswith(".html"))
             rows = "".join(f'<li><a href="/snap/{html.escape(n)}">{html.escape(n)}</a> (stock) &middot; '
-                           f'<a href="/snap/{html.escape(n)}?theme=steam2013.css,tools/preview.css&js=steam2013.js">Steam 2013</a></li>' for n in names)
+                           f'<a href="/snap/{html.escape(n)}?theme=steam2013.css,tools/preview.css&js=steam2013.js">Steam 2013</a> &middot; '
+                           f'<a href="/snap/{html.escape(n)}?theme=steam2005.css&js=steam2013.js">Steam 2005</a></li>' for n in names)
             return self.send(f"<!doctype html><title>Steam snapshots</title><ul>{rows}</ul>".encode())
         if path.startswith("/snap/"):
             src = inside(self.snaps, path[len("/snap/"):])
@@ -85,8 +86,9 @@ class Handler(BaseHTTPRequestHandler):
                 page = f.read()
             names = [name for name in ",".join(query.get("theme", [])).split(",") if name]
             links = "".join(f'<link rel="stylesheet" href="/__theme/{html.escape(name)}">' for name in names)
-            if any("2013" in name for name in names):   # what the helper puts under that mode: Steam's blue in grey, the old pictures
-                links = '<link rel="stylesheet" href="/__greys.css"><link rel="stylesheet" href="/__gfx.css">' + links
+            for year in ("2013", "2005"):   # what the helper puts under a solid mode's sheet
+                if any(year in name for name in names):
+                    links = f'<link rel="stylesheet" href="/__under/steam{year}.css">' + links
             extra = "".join(f"<style>{css}</style>" for css in query.get("css", []))
             page = page.replace("</head>", links + extra + "</head>", 1)
             scripts = [name for name in ",".join(query.get("js", [])).split(",") if name]   # a mode's own script
@@ -94,10 +96,8 @@ class Handler(BaseHTTPRequestHandler):
                 tags = "".join(f'<script src="/__theme/{html.escape(name)}"></script>' for name in scripts)
                 page = page.replace("</body>", tags + "</body>", 1) if "</body>" in page else page + tags
             return self.send(page.encode("utf-8"))
-        if path == "/__greys.css":
-            return self.send(helper().steam_greys().encode("utf-8"), "text/css; charset=utf-8")
-        if path == "/__gfx.css":
-            return self.send(helper().skin_2013_pictures().encode("utf-8"), "text/css; charset=utf-8")
+        if path in ("/__under/steam2013.css", "/__under/steam2005.css"):
+            return self.send(helper().solid_under(path[9:-4]).encode("utf-8"), "text/css; charset=utf-8")
         if path.startswith("/__theme/"):
             return self.file(inside(REPO, path[len("/__theme/"):]))
         if path.startswith("/assets/"):

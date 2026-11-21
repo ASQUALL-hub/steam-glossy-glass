@@ -54,15 +54,29 @@
   };
 
   // The GD modes wear matte greys, and the Steam 2013 mode the old charcoal, so Steam's blue goes black
-  // and white there (web.css and web2013.css draw it). A
+  // and white there (web.css and web2013.css draw it); in the Steam 2005 mode it goes olive (web2005.css). A
   // part counts as blue when its background, text, edge or glow is a saturated blue, cyan or indigo
   // (hue 160-280; the green discounts and coloured deal labels stay). A small part with no pictures
   // in it gets data-gg-mono (a greyscale filter, so its hover look stays too); anything bigger, a panel
   // holding game pictures, gets data-gg-grey with its own colours in grey (--gg-grey-*), and its
   // insides are looked at one by one. Parts added later (the store loads sections as you scroll)
   // are looked at as they come, and parts that only turn blue under the pointer when it gets there.
-  const MONO = /^(nullscapes|eternalnight|deprivation|steam2013)$/.test(cfg.mode);
-  const SOLID = cfg.mode === "steam2013";   // an opaque look of its own (web2013.css): nothing to clear
+  const MONO = /^(nullscapes|eternalnight|deprivation|steam2013|steam2005)$/.test(cfg.mode);
+  const SOLID = /^steam20(13|05)$/.test(cfg.mode);   // an opaque look of its own (web2013.css, web2005.css): nothing to clear
+  // Steam 2005 turns the blue to the olive client's greens, not to grey: the green of the same
+  // brightness, with the dark tones today's pages are made of lifted into the range its windows had
+  const OLIVE = cfg.mode !== "steam2005" ? null : [[0, [0, 0, 0]], [44, [40, 46, 34]], [67, [62, 70, 55]], [84, [76, 88, 68]],
+    [101, [90, 106, 80]], [142, [136, 145, 128]], [220, [216, 222, 211]], [255, [255, 255, 255]]];
+  const tone = y => {
+    if (!OLIVE) return [y, y, y];
+    y = Math.min(255, y + 34 * (1 - y / 255) ** 2);
+    for (let i = 1; i < OLIVE.length; i++) {
+      if (y > OLIVE[i][0]) continue;
+      const [y0, a] = OLIVE[i - 1], [y1, b] = OLIVE[i], t = (y - y0) / (y1 - y0);
+      return a.map((v, k) => Math.round(v + (b[k] - v) * t));
+    }
+    return [255, 255, 255];
+  };
   const PICTURES = "img, video, canvas, picture, iframe";
   const COLOR = /rgba?\(([^)]*)\)/g;
   const LOOKS = [["backgroundColor", "bg"], ["backgroundImage", "img"], ["borderColor", "border"], ["boxShadow", "shadow"]];
@@ -78,8 +92,8 @@
     return false;
   };
   const grey = text => String(text).replace(COLOR, (m, inner) => {
-    const [r, g, b, a] = inner.split(",").map(Number), y = Math.round(0.2126 * r + 0.7152 * g + 0.0722 * b);
-    return Number.isFinite(a) ? `rgba(${y}, ${y}, ${y}, ${a})` : `rgb(${y}, ${y}, ${y})`;
+    const [r, g, b, a] = inner.split(",").map(Number), [R, G, B] = tone(Math.round(0.2126 * r + 0.7152 * g + 0.0722 * b));
+    return Number.isFinite(a) ? `rgba(${R}, ${G}, ${B}, ${a})` : `rgb(${R}, ${G}, ${B})`;
   });
   const bluePanel = s => LOOKS.some(([p]) => blue(s[p]));
   // Steam 2013 keeps what was never blue: a green "Add to Cart" inside a blue box must stay green, so

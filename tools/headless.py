@@ -40,7 +40,7 @@ def start():
     profile = os.path.join(tempfile.gettempdir(), "steam-glass-preview-browser")
     subprocess.Popen([exe, "--headless=new", f"--remote-debugging-port={PORT}", "--remote-debugging-address=127.0.0.1",
                       f"--user-data-dir={profile}", "--no-first-run", "--no-default-browser-check", "--disable-extensions",
-                      "--mute-audio", "--force-device-scale-factor=1", "about:blank"],
+                      "--mute-audio", "--disable-gpu", "--force-device-scale-factor=1", "about:blank"],
                      creationflags=0x00000008 | 0x00000200, close_fds=True,
                      stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     for _ in range(100):

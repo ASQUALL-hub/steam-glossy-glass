@@ -1,11 +1,12 @@
-/* Glossy Glass for Steam: the Steam 2013 mode's script (Steam's main window).
+/* Glossy Glass for Steam: the script of the Steam 2013 and Steam 2005 modes (Steam's main window).
 
    The 2013 details page had the game's icon and name in a box at its top, and drew its headings
    in one of three colours (blue, green or red). Today's page only names the game in a header that
    shows once the page is scrolled, so this reads the name and icon from there and hands them to
    the stylesheet as --gg-title and --gg-icon on the page, and picks the heading colour from the
    page's own artwork (--details). It also hands the bottom bar the account's picture
-   (--gg-avatar). Nothing is added to, or moved in, Steam's own markup: only those custom
+   (--gg-avatar) and the window the account's name (--gg-persona: the 2005 title bar reads
+   "STEAM - name"). Nothing is added to, or moved in, Steam's own markup: only those custom
    properties are set, and stop() takes them off again. */
 (() => {
   if (window.__gg2013) window.__gg2013.stop();
@@ -19,7 +20,8 @@
   const ACCOUNT = "._3yD46y5pd3zOGR7CzKs0mC";                                 // the account button (it carries your state)
   const FRAMES = { ingame: "rgb(160, 193, 114)", online: "rgb(128, 165, 198)", offline: "rgb(118, 116, 113)" };   // the picture frames
   const COLOURS = { blue: "rgb(89, 126, 179)", green: "rgb(126, 166, 75)", red: "rgb(173, 69, 71)" };   // GameDetailsBlue, -Green, -Red
-  const PROPS = ["--gg-title", "--gg-icon", "--details"];
+  const FRAME = "._1ENHEsrSLcTRtPQFl1F-wL";                                   // the window
+  const PROPS = ["--gg-title", "--gg-icon", "--details", "--gg-persona"];
   const touched = new Set();
   const colourOf = new Map();   // artwork address -> its colour, worked out once
 
@@ -79,6 +81,15 @@
         set(page, "--gg-title", title && css(title));
         set(page, "--gg-icon", src && "url(" + css(src) + ")");
         accent(page, hero);
+      }
+    }
+    const frame = document.querySelector(FRAME), account = document.querySelector("._3cykd-VfN_xBxf3Qxriccm " + ACCOUNT);
+    if (frame) {
+      let who = "";
+      if (account) for (const c of account.children) if (c.tagName === "DIV" && !c.className && c.textContent.trim()) { who = c.textContent.trim(); break; }
+      if (frame.__gg2013 !== who) {
+        frame.__gg2013 = who;
+        set(frame, "--gg-persona", who && css(" - " + who));
       }
     }
     const bar = document.querySelector(BAR), me = document.querySelector(ME);

@@ -49,6 +49,13 @@ in glass-mode.txt next to this file (changes apply live):
            pictures are the ones Steam still ships in its graphics folder on this PC
            (skin_2013_pictures), so none of Valve's files are in this theme. Steam's blue goes
            grey underneath (greys), so the parts the mode doesn't name fit in too.
+  steam2005  the olive-green client of 2003 to 2005, on today's client (steam2005.css,
+           friends2005.css, web2005.css): the single window of late 2005 with its green title
+           bar, tabs, grey page panel and black icon bar; friends, chat, menus and dialogs in
+           the classic olive with bevelled edges; the store and community in olive too. Its
+           colours are the old scheme's (76 88 68 and its kin), measured from screenshots of
+           the time; everything is drawn in CSS, with no pictures. Steam's blue goes olive
+           underneath (olives), so the parts the mode doesn't name fit in.
   off      Steam's own windows.
 
 A tray icon switches between them (it writes glass-mode.txt). Its "Song toggle"
@@ -61,7 +68,7 @@ Installed builds (SteamGlass.exe, put there by SteamGlassUpdater.exe) keep
 glass-mode.txt in %APPDATA%\SteamGlass and add "Check for updates…" to the menu.
 helper.log in the same folder notes mode changes and anything that went wrong.
 "Start with Windows" in the menu adds or removes the helper under the Run key."""
-__version__ = "1.5.1"
+__version__ = "1.6.0"
 
 import base64
 import ctypes
@@ -188,8 +195,9 @@ user32.SetWindowLongW.restype = ctypes.c_long
 
 MODES = {"frosted": "Frosted", "clear": "Clear", "liquid": "Liquid", "aero": "Frutiger Aero", "nullscapes": "Nullscapes",
          "eternalnight": "Eternal Night", "deprivation": "Deprivation (unfinished)", "steam2013": "Steam 2013",
+         "steam2005": "Steam 2005",
          "off": "Off (Steam's normal look)"}
-SOLID_MODES = ("steam2013",)   # looks of their own on opaque windows: no glass behind the pages
+SOLID_MODES = ("steam2013", "steam2005")   # looks of their own on opaque windows: no glass behind the pages
 FROSTED_LIKE = ("frosted", "liquid", "aero", "nullscapes", "eternalnight", "deprivation")   # glass kinds Windows draws as frosted
 
 
@@ -451,7 +459,8 @@ def apply(hwnd, mode: str):
                {"frosted": DWMSBT_TRANSIENTWINDOW, "clear": DWMSBT_NONE}.get(mode, DWMSBT_AUTO))
     blur_behind(hwnd, mode == "clear")
     dword_attr(hwnd, DWMWA_WINDOW_CORNER_PREFERENCE,
-               {"frosted": DWMWCP_ROUND, "clear": DWMWCP_DONOTROUND, "steam2013": DWMWCP_DONOTROUND}.get(mode, DWMWCP_DEFAULT))
+               {"frosted": DWMWCP_ROUND, "clear": DWMWCP_DONOTROUND, "steam2013": DWMWCP_DONOTROUND,
+                "steam2005": DWMWCP_ROUND}.get(mode, DWMWCP_DEFAULT))
     dword_attr(hwnd, DWMWA_BORDER_COLOR, DWMWA_COLOR_NONE if mode in ("clear",) + SOLID_MODES else DWMWA_COLOR_DEFAULT)
     if mode != "clear" and has_region(hwnd):   # clear glass cuts its own shape (set_shape)
         user32.SetWindowRgn(hwnd, None, True)
@@ -545,7 +554,8 @@ def tray_icon(mode: str, sizes=(16, 20, 24, 32, 48, 64)):
     rim when clear, Liquid's teal sky with a wave of water when liquid, a
     sunny sky over a green hill when aero, the moon over spiky grass for
     Nullscapes, a crescent moon and stars for Eternal Night, a row of fangs in crimson
-    for Deprivation, the old client's charcoal with its blue corner for Steam 2013, grey when off."""
+    for Deprivation, the old client's charcoal with its blue corner for Steam 2013, the older one's
+    olive with a yellow line for Steam 2005, grey when off."""
     from PySide6.QtCore import QPointF, QRectF, Qt
     from PySide6.QtGui import QColor, QIcon, QLinearGradient, QPainter, QPainterPath, QPen, QPixmap, QRadialGradient
 
@@ -583,6 +593,7 @@ def tray_icon(mode: str, sizes=(16, 20, 24, 32, 48, 64)):
             top, bottom = {"frosted": ((70, 160, 255, 235), (20, 60, 150, 235)),
                            "clear": ((120, 200, 255, 90), (40, 110, 200, 70)),
                            "steam2013": ((92, 89, 86, 255), (23, 22, 20, 255)),
+                           "steam2005": ((93, 106, 80, 255), (62, 70, 55, 255)),
                            "off": ((150, 156, 166, 230), (80, 86, 96, 230))}[mode]
             fill.setColorAt(0, QColor(*top))
             fill.setColorAt(1, QColor(*bottom))
@@ -597,6 +608,15 @@ def tray_icon(mode: str, sizes=(16, 20, 24, 32, 48, 64)):
             corner = QLinearGradient(px * 0.55, px * 0.55, px, px)
             corner.setColorAt(0, QColor(77, 103, 140, 0)); corner.setColorAt(1, QColor(77, 103, 140, 255))
             p.fillRect(QRectF(0, 0, px, px), corner)
+            p.restore()
+        elif mode == "steam2005":   # a games list: the picked line black, the heading in the old yellow
+            p.save()
+            p.setClipPath(body)
+            p.setPen(Qt.NoPen)
+            p.fillRect(QRectF(px * 0.16, px * 0.44, px * 0.68, px * 0.14), QColor(0, 0, 0))
+            p.fillRect(QRectF(px * 0.22, px * 0.27, px * 0.40, px * 0.06), QColor(196, 181, 80))
+            p.fillRect(QRectF(px * 0.22, px * 0.48, px * 0.50, px * 0.06), QColor(255, 255, 255))
+            p.fillRect(QRectF(px * 0.22, px * 0.67, px * 0.34, px * 0.06), QColor(146, 146, 146))
             p.restore()
         elif mode == "nullscapes":   # the moon over spiky grass
             p.save()
@@ -1195,6 +1215,45 @@ def steam_greys() -> str:
     return css
 
 
+# The olive client's own greens by brightness: its darkest edge, its lists, its windows, its
+# scrollbars, its light edge, its words. A grey of brightness y takes the green of that brightness;
+# the dark greys today's Steam is made of are lifted first, into the range its windows lived in.
+OLIVE = ((0, (0, 0, 0)), (44, (40, 46, 34)), (67, (62, 70, 55)), (84, (76, 88, 68)), (101, (90, 106, 80)),
+         (142, (136, 145, 128)), (220, (216, 222, 211)), (255, (255, 255, 255)))
+
+
+def olive(y: float):
+    """The Steam 2005 colour for a grey of brightness y (0-255)."""
+    y = min(255.0, y + 34 * (1 - y / 255) ** 2)
+    for (y0, c0), (y1, c1) in zip(OLIVE, OLIVE[1:]):
+        if y <= y1:
+            t = (y - y0) / (y1 - y0)
+            return tuple(round(a + (b - a) * t) for a, b in zip(c0, c1))
+    return 255, 255, 255
+
+
+def olives(css: str) -> str:
+    """greys() output with every grey it wrote turned to the olive of its brightness."""
+    def tint(m):
+        r, g, b = olive(int(m.group(1)))
+        return f"rgba({r},{g},{b},{m.group(2)})" if m.group(2) else f"rgb({r},{g},{b})"
+    return re.sub(r"rgba?\((\d+),\1,\1(?:,([\d.]+))?\)", tint, css)
+
+
+def solid_under(mode: str) -> str:
+    """What goes under a solid mode's own sheet: Steam's blue in its greys (2013, with the old skin's
+    pictures) or in its olive (2005)."""
+    if mode == "steam2005":
+        steam = steam_greys()
+        key = ("olive", hashlib.sha1(steam.encode()).hexdigest())
+        if key not in _greys:
+            for old in [k for k in _greys if isinstance(k, tuple) and k[0] == "olive"]:
+                del _greys[old]
+            _greys[key] = olives(steam).replace("Steam's blue in grey", "Steam's blue in olive")
+        return _greys[key]
+    return steam_greys() + skin_2013_pictures()
+
+
 def theme_greys(css: str) -> str:
     """greys() of the theme's own base stylesheet, with its selectors as they are."""
     key = ("theme", hashlib.sha1(css.encode()).hexdigest())
@@ -1357,7 +1416,7 @@ class Theme:
             mode = "frosted"   # as bundle() does when the level can't be put together
         css = ""
         if mode != "off":
-            with open(os.path.join(THEME_DIR, "web2013.css" if mode in SOLID_MODES else "web.css"), encoding="utf-8") as f:
+            with open(os.path.join(THEME_DIR, f"web{mode[-4:]}.css" if mode in SOLID_MODES else "web.css"), encoding="utf-8") as f:
                 css = f.read()
         key = hashlib.sha1((css + js + mode).encode()).hexdigest()[:16] if css else ""
         return f"({js})({json.dumps({'css': css, 'mode': mode, 'key': key})});", key
@@ -1371,9 +1430,9 @@ class Theme:
             with open(os.path.join(THEME_DIR, name), encoding="utf-8") as f:
                 return f.read()
 
-        if mode == "steam2013":   # the old skin itself: nothing of the glass theme under it
-            under = steam_greys() + skin_2013_pictures()
-            lib, friends, js = under + read("steam2013.css"), under + read("friends2013.css"), read("steam2013.js")
+        if mode in SOLID_MODES:   # an old skin itself: nothing of the glass theme under it
+            under, year = solid_under(mode), mode[-4:]
+            lib, friends, js = under + read(f"steam{year}.css"), under + read(f"friends{year}.css"), read("steam2013.js")
             return lib, friends, js, hashlib.sha1((lib + friends + js).encode()).hexdigest()[:16]
         files = level_files(mode) if mode in LEVEL_MODES else None
         if mode in LEVEL_MODES and not files:

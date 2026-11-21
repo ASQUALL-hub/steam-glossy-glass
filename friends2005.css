@@ -1,0 +1,128 @@
+/* Glossy Glass for Steam: the friends list and chat windows in the "Steam 2005" mode.
+
+   The classic olive windows of 2003 to 2005: an olive sheet with a raised edge (a light line
+   top and left, a dark one bottom and right), lists and conversations sunk into a darker box,
+   flat bevelled buttons, Tahoma. In a conversation the line saying who speaks is pale, what a
+   friend says is in the old yellow and what you say in white, as the instant-message window
+   had it. The colours are the old scheme's own (76 88 68 for a window, 62 70 55 for a list,
+   136 145 128 and 40 46 34 for the edges, 196 181 80 for the yellow). */
+
+html:root {
+  --olive: rgb(76, 88, 68);
+  --inset: rgb(62, 70, 55);
+  --light: rgb(136, 145, 128);
+  --shadow: rgb(40, 46, 34);
+  --track: rgb(90, 106, 80);
+  --pick: rgb(149, 136, 49);
+  --white: rgb(252, 255, 250);
+  --soft: rgb(216, 222, 211);
+  --pale: rgb(184, 196, 176);
+  --dull: rgb(117, 134, 102);
+  --yellow: rgb(196, 181, 80);
+  --title: rgb(93, 106, 80);
+  --font: Tahoma, Verdana, "Segoe UI", sans-serif;
+  --up: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='6'%3E%3Cpath d='M0 5.5 4.5 1 9 5.5z' fill='rgb(216,222,211)'/%3E%3C/svg%3E");
+  --down: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='6'%3E%3Cpath d='M0 .5 4.5 5 9 .5z' fill='rgb(216,222,211)'/%3E%3C/svg%3E");
+}
+
+html, body, body.fullheight { background: var(--olive) !important; font-family: var(--font) !important; color: var(--soft) !important; }
+body * { font-family: var(--font) !important; letter-spacing: 0 !important; text-shadow: none !important; }
+.popup_chat_frame, .chat_main, .chat_main_flex, .friendsListContainer, .FriendsListContent, .listContentContainer { background: none !important; box-shadow: none !important; }
+.friendlist { box-sizing: border-box; border: 1px solid; border-color: var(--light) var(--shadow) var(--shadow) var(--light); background: var(--olive) !important; }
+
+/* the head: your name on the window's own olive, the close button a plain cross */
+.friendListHeaderContainer { border: 0 !important; box-shadow: none !important; background: var(--olive) !important; }
+.friendListHeaderContainer .title-area-highlight, .friendListHeaderContainer .currentUserContainer > svg { display: none !important; }
+.chatTitleBar, .TitleBar { background: none !important; }
+.title-bar-actions .title-area-icon { border-radius: 0 !important; background: none !important; color: var(--soft) !important; opacity: 1 !important; }
+.title-bar-actions .title-area-icon:hover { color: #fff !important; background: rgba(0, 0, 0, 0.18) !important; }
+.title-bar-actions .title-area-icon-inner { background: none !important; }
+.currentUserContainer { background: none !important; }
+.avatarHolder { padding: 0 !important; border: 1px solid var(--shadow) !important; border-radius: 0 !important; box-shadow: none !important; background: var(--inset) !important; }
+.avatarHolder .avatarStatus, .avatarHolder .avatarFrame { display: none !important; }
+.avatarHolder img.avatar, .avatarHolder .avatar { border-radius: 0 !important; }
+.labelHolder { color: var(--dull) !important; }
+.labelHolder.online { color: var(--white) !important; }
+.labelHolder.ingame { color: var(--yellow) !important; }
+.labelHolder * { color: inherit !important; }
+.labelHolder :is(.nOdcT-MoOaXGePXLyPe0H, [class*="playerName"]) { font: 400 13px/16px var(--font) !important; }
+.labelHolder :is(._2Ri005Wg_uXDTa71kdRbcN, [class*="richPresence"], [class*="gameName"], [class*="personaStatus"]) { font: 400 11px/13px var(--font) !important; opacity: 0.8; }
+.currentUserContainer .labelHolder :is(.nOdcT-MoOaXGePXLyPe0H, [class*="playerName"]) { font-weight: 700 !important; }
+.ContextMenuButton svg { color: var(--pale) !important; }
+
+/* the row under it ("Friends", search, add): plain words and small glyphs */
+.socialTabSearchContainer, .socialTabContainer, .friendTab, .friendTab.activeTab { border: 0 !important; box-shadow: none !important; background: none !important; }
+.friendTab .tabLabel { font: 700 11px/20px var(--font) !important; text-transform: uppercase !important; color: var(--yellow) !important; }
+.quickAccessFriends { border: 1px solid !important; border-color: var(--shadow) var(--light) var(--light) var(--shadow) !important; border-radius: 0 !important; background: var(--inset) !important; }
+.quickAccessFriendsMessage { font: 400 11px/14px var(--font) !important; color: var(--pale) !important; }
+.quickAccessFriendsMessageDismiss { background: none !important; color: var(--white) !important; }
+
+/* the list: a darker box sunk into the window */
+.friendlistListContainer {
+  margin: 0 6px !important;
+  border: 1px solid !important;
+  border-color: var(--shadow) var(--light) var(--light) var(--shadow) !important;
+  background: var(--inset) !important;
+}
+.friendGroup { border: 0 !important; background: none !important; }
+.friendGroup .groupName, .friendsListSectionTitle, .groupChatSectionTitle { background: none !important; font: 700 11px/20px var(--font) !important; text-transform: uppercase !important; color: var(--yellow) !important; }
+.friendGroup .groupName * { font: inherit !important; color: inherit !important; }
+.friendGroup .groupName hr, .friendsListSectionTitle hr { display: none !important; }
+.friendGroup .groupCount { opacity: 0.75; }
+.friend { border-radius: 0 !important; box-shadow: none !important; background: none !important; transition: none !important; }
+.friend:hover { background: rgba(0, 0, 0, 0.16) !important; }
+.friend.friendSelected, .friend[class*="Selected"] { background: var(--shadow) !important; }
+.unreadFriend { background: rgba(149, 136, 49, 0.35) !important; }
+.FriendsListChatSection, .friendsListSectionTitle.chatSectionTitle { border: 0 !important; border-top: 1px solid var(--shadow) !important; box-shadow: none !important; background: var(--olive) !important; }
+.chatRoomListContainer { margin: 0 6px 6px !important; border: 1px solid !important; border-color: var(--shadow) var(--light) var(--light) var(--shadow) !important; background: var(--inset) !important; }
+.ChatRoomListGroupItem, .ChatRoomListGroupItem_header { background: none !important; }
+.ChatRoomListGroupItem:hover { background: rgba(0, 0, 0, 0.16) !important; }
+.ChatRoomListGroupItem :is(.groupNameStatusContainer, [class*="chatRoomName"]) { font: 400 12px/15px var(--font) !important; color: var(--white) !important; }
+.friendListFooter { border: 0 !important; background: var(--olive) !important; font: 400 11px/20px var(--font) !important; color: var(--pale) !important; }
+
+/* a conversation */
+.chatWindow, .chatDialogs, .chatBody, .ChatRoomGroupDialogContents { background: var(--olive) !important; }
+.chatHeader, .chatTabList, .chatTabSetContainer { border: 0 !important; box-shadow: none !important; background: var(--olive) !important; }
+.chatTab { border: 1px solid !important; border-color: var(--light) var(--shadow) transparent var(--light) !important; border-radius: 0 !important; background: var(--olive) !important; font: 400 11px/20px var(--font) !important; color: var(--pale) !important; }
+.chatTab.Active, .chatTab.active { color: var(--yellow) !important; }
+.chatHistoryScroll, .chatHistory, .ChatHistoryContainer { border: 1px solid !important; border-color: var(--shadow) var(--light) var(--light) var(--shadow) !important; background: var(--inset) !important; }
+.ChatMessageBlock, .msg { background: none !important; }
+.speakerName, .speaker { font: 400 13px/16px var(--font) !important; color: var(--pale) !important; }
+.msgText, .msg { font: 400 13px/17px var(--font) !important; color: var(--yellow) !important; }
+.isCurrentUser :is(.msgText, .msg), :is(.msgText, .msg).isCurrentUser { color: var(--white) !important; }
+.speakerTimeStamp, .timeStamp, [class*="TimeStamp"] { color: var(--dull) !important; }
+.chatEntry, .chatEntry textarea, .chatentry_wrapper textarea {
+  border: 1px solid !important;
+  border-color: var(--shadow) var(--light) var(--light) var(--shadow) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: var(--inset) !important;
+  font: 400 13px/16px var(--font) !important;
+  color: var(--white) !important;
+}
+.chatEntry { border: 0 !important; background: var(--olive) !important; }
+.chatEntry form { border: 1px solid !important; border-color: var(--shadow) var(--light) var(--light) var(--shadow) !important; border-radius: 0 !important; box-shadow: none !important; background: var(--inset) !important; }
+.chatEntry textarea { border: 0 !important; background: none !important; }
+button, .DialogButton, .chatSubmitButton {
+  border: 1px solid !important;
+  border-color: var(--light) var(--shadow) var(--shadow) var(--light) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: var(--olive) !important;
+  font: 400 12px/20px var(--font) !important;
+  text-transform: none !important;
+  color: var(--white) !important;
+}
+:is(button, .DialogButton, .chatSubmitButton):active { border-color: var(--shadow) var(--light) var(--light) var(--shadow) !important; }
+:is(button, .DialogButton, .chatSubmitButton):is(:disabled, .Disabled, .disabled) { color: var(--dull) !important; }
+::selection { color: #fff; background: var(--pick); }
+
+/* scrollbars: the bevelled olive ones */
+::-webkit-scrollbar { width: 15px !important; height: 15px !important; background: var(--track) !important; }
+::-webkit-scrollbar-track { border: 0 !important; background: var(--track) !important; }
+::-webkit-scrollbar-thumb { min-height: 20px; border: 1px solid !important; border-color: var(--light) var(--shadow) var(--shadow) var(--light) !important; border-radius: 0 !important; background: var(--olive) !important; }
+::-webkit-scrollbar-button { display: none !important; }
+::-webkit-scrollbar-button:single-button { display: block !important; width: 15px !important; height: 15px !important; border: 1px solid !important; border-color: var(--light) var(--shadow) var(--shadow) var(--light) !important; background: center no-repeat var(--olive) !important; }
+::-webkit-scrollbar-button:single-button:vertical:decrement { background-image: var(--up) !important; }
+::-webkit-scrollbar-button:single-button:vertical:increment { background-image: var(--down) !important; }
+::-webkit-scrollbar-corner { background: var(--track) !important; }

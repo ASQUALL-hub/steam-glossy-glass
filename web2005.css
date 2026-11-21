@@ -1,0 +1,59 @@
+/* Glossy Glass for Steam: Steam's web pages (the store, the community, profiles, the market...)
+   in the "Steam 2005" mode.
+
+   steampowered.com in 2005 was olive: a green-grey page (76 88 68) with its content on darker
+   olive panels, pale words, and a khaki yellow for what mattered. Today's pages are navy and
+   blue. web-glass.js marks their blue parts (never the green discounts and buttons or the
+   coloured deal labels): panels that hold game pictures get their own background in the olive
+   of the same brightness, so the pictures keep their colours, and small parts with no pictures
+   in them are drawn through a filter that turns them olive, which keeps their hover looks.
+   This sheet draws those, the old page colour and the old typeface. The mode arrives as
+   <html data-gg-glass="steam2005">. */
+
+html[data-gg-glass="steam2005"] [data-gg-mono] { filter: grayscale(1) sepia(0.42) hue-rotate(38deg) saturate(0.85) brightness(1.1) !important; }
+html[data-gg-glass="steam2005"] [data-gg-grey] {
+  background-color: var(--gg-grey-bg) !important;
+  background-image: var(--gg-grey-img) !important;
+  border-color: var(--gg-grey-border) !important;
+  box-shadow: var(--gg-grey-shadow) !important;
+}
+html[data-gg-glass="steam2005"] [data-gg-grey-hover]:hover {
+  background-color: var(--gg-grey-bg-hover) !important;
+  background-image: var(--gg-grey-img-hover) !important;
+  border-color: var(--gg-grey-border-hover) !important;
+  box-shadow: var(--gg-grey-shadow-hover) !important;
+}
+
+/* the page: the old site's olive */
+html[data-gg-glass="steam2005"] { background: rgb(76, 88, 68) !important; }
+html[data-gg-glass="steam2005"] body,
+html[data-gg-glass="steam2005"] body.v6,
+html[data-gg-glass="steam2005"] body.v7 { background: rgb(76, 88, 68) !important; }
+html[data-gg-glass="steam2005"] :is(.responsive_page_frame, .responsive_page_content, .responsive_page_template_content, .responsive_page_template_content > .page_content_ctn, #responsive_page_template_content, .pagecontent, .page_background_holder ~ .page_content_ctn, .home_page_gutter, body > div.pagecontent, .profile_page, #footer, #footer_spacer) {
+  background-color: transparent !important;
+}
+html[data-gg-glass="steam2005"] :is(.home_page_body_ctn, .home_page_content, #store_header, .store_header, #global_header, .supernav_container) { background-color: transparent !important; background-image: none !important; }
+html[data-gg-glass="steam2005"] :is(.apphub_background, .community_home_background, .workshop_home_background, .discussions_header_bg, .market_header_bg) { background-image: none !important; background-color: transparent !important; }
+html[data-gg-glass="steam2005"] :is(.profile_background_holder_content, .profile_animated_background) { filter: grayscale(0.5) sepia(0.3) hue-rotate(38deg) brightness(0.8); }
+
+/* Verdana and Tahoma, as the site and the client had them */
+html[data-gg-glass="steam2005"] body,
+html[data-gg-glass="steam2005"] body :not(i, [class*="icon"], [class*="Icon"], svg, svg *) { font-family: Verdana, Tahoma, Arial, sans-serif !important; }
+
+/* words: pale on olive; headings white */
+html[data-gg-glass="steam2005"] body { color: rgb(216, 222, 211) !important; }
+html[data-gg-glass="steam2005"] :is(h1, h2, h3, .pageheader, .page_title, .blockbg, .home_page_content h2, .apphub_AppName) { color: #fff !important; text-shadow: none !important; letter-spacing: 0 !important; }
+html[data-gg-glass="steam2005"] :is(input[type="text"], input[type="search"], input[type="password"], textarea, select, .searchbox, #store_nav_search_term) {
+  border: 1px solid !important;
+  border-color: rgb(40, 46, 34) rgb(136, 145, 128) rgb(136, 145, 128) rgb(40, 46, 34) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: rgb(62, 70, 55) !important;
+  color: rgb(252, 255, 250) !important;
+}
+html[data-gg-glass="steam2005"] ::selection { color: #fff; background: rgb(149, 136, 49); }
+
+/* scrollbars: the client's bevelled olive ones */
+html[data-gg-glass="steam2005"] ::-webkit-scrollbar { width: 15px; height: 15px; background: rgb(90, 106, 80); }
+html[data-gg-glass="steam2005"] ::-webkit-scrollbar-thumb { border: 1px solid; border-color: rgb(136, 145, 128) rgb(40, 46, 34) rgb(40, 46, 34) rgb(136, 145, 128); background: rgb(76, 88, 68); }
+html[data-gg-glass="steam2005"] ::-webkit-scrollbar-corner { background: rgb(90, 106, 80); }
