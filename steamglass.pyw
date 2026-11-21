@@ -77,7 +77,7 @@ Installed builds (SteamGlass.exe, put there by SteamGlassUpdater.exe) keep
 glass-mode.txt in %APPDATA%\SteamGlass and add "Check for updates…" to the menu.
 helper.log in the same folder notes mode changes and anything that went wrong.
 "Start with Windows" in the menu adds or removes the helper under the Run key."""
-__version__ = "1.7.1"
+__version__ = "1.7.2"
 
 import base64
 import ctypes
@@ -533,7 +533,7 @@ class Glass:
 
     def tick(self):
         now = time.monotonic()
-        if now - self.last_scan > 0.5:   # look for new windows and a mode change twice a second
+        if now - self.last_scan > 0.2:   # look for new windows and a mode change five times a second
             self.last_scan = now
             want = read_mode()
             if want != self.mode:   # switch: treat every window again
@@ -1409,6 +1409,62 @@ def skin_2013_pictures() -> str:
     return _pictures[1]
 
 
+# Steam builds every window of its own from one page, SharedJSContext: it calls open() there (or on the
+# window that owns the new one), writes the window's skeleton into it and renders. A pass over Steam's
+# pages only comes round once a second, so a new window (the friends list, a chat, a menu, a dialog)
+# would show Steam's own look until then. This script, kept in SharedJSContext, wraps open(): the
+# moment Steam has written a new window's skeleton, in the same turn and before anything is drawn,
+# the sheet is in it. A window is a friends window if .friendsui-container turns up in it, which
+# happens a little later, so the sheet is swapped the instant it does (again before it is drawn),
+# and for its first seconds the sheet is kept behind the style sheets Steam itself adds.
+BIRTH_JS = """((lib, friends, key, solid) => {
+  const ID = %(id)s;
+  const st = window.__ggBirth || (window.__ggBirth = {});
+  st.lib = lib; st.friends = friends; st.key = key; st.solid = solid;
+  st.dress = w => {
+    const d = w.document;
+    if (!st.key || !d || !d.documentElement || !/^about:blank/.test(w.location.href)) return;
+    if (st.solid && /^(SP Overlay|Steam Big Picture)/.test(d.title || "")) return;
+    let s = d.getElementById(ID);
+    if (s && s.dataset.key) return;
+    if (!s) { s = d.createElement("style"); s.id = ID; (d.head || d.documentElement).appendChild(s); }
+    const isFriends = () => !!d.querySelector(".friendsui-container");
+    let now = isFriends();
+    s.textContent = now ? st.friends : st.lib;
+    s.dataset.key = st.key;
+    st.n = (st.n || 0) + 1;   // how many windows got their sheet this way (for checking)
+    const mine = st.key;
+    const o = new w.MutationObserver(() => {
+      const t = d.getElementById(ID);
+      if (!t || t.dataset.key !== mine) { o.disconnect(); return; }
+      if (!now && isFriends()) { now = true; t.textContent = st.friends; }
+      if (t.nextElementSibling && t.parentNode) t.parentNode.appendChild(t);
+    });
+    o.observe(d.documentElement, { childList: true, subtree: true });
+    w.setTimeout(() => o.disconnect(), 15000);
+  };
+  st.wrap = w => {
+    try {
+      if (!w || w.__ggOpen) return;
+      const open = w.__ggOpen = w.open;
+      w.open = function () {
+        const made = open.apply(this, arguments);
+        try {
+          if (made) {
+            st.wrap(made);
+            queueMicrotask(() => { try { st.dress(made); } catch (e) {} });
+          }
+        } catch (e) {}
+        return made;
+      };
+    } catch (e) {}
+  };
+  st.wrap(window);
+  try { for (const p of g_PopupManager.GetPopups()) st.wrap(p.window); } catch (e) {}
+  return st.key;
+})(%(lib)s, %(friends)s, %(key)s, %(solid)s)"""
+
+
 class Theme:
     """Puts the theme into every Steam page and keeps it there. Runs on its own
     thread (Steam can be slow to answer); set `mode` to switch the glass."""
@@ -1541,6 +1597,15 @@ class Theme:
         lib, friends, js, key = self.bundle(mode)
         web_script, web_key = self.web_bundle(mode)
         open_web = set()
+        for t in pages:   # the shared page first: new windows get the sheet from it as they are created (BIRTH_JS)
+            if t.get("type") == "page" and t.get("title") == "SharedJSContext" and "webSocketDebuggerUrl" in t:
+                try:
+                    if ws_eval(t["webSocketDebuggerUrl"], "(window.__ggBirth || {}).key || ''") != key:
+                        ws_eval(t["webSocketDebuggerUrl"], BIRTH_JS % {
+                            "id": json.dumps(STYLE_ID), "lib": json.dumps(lib), "friends": json.dumps(friends),
+                            "key": json.dumps(key), "solid": json.dumps(mode in SOLID_MODES)}, timeout=5)
+                except (OSError, ValueError):
+                    pass
         for t in pages:
             url = t.get("url", "")
             if t.get("type") != "page" or "webSocketDebuggerUrl" not in t or t.get("title") == "SharedJSContext":
@@ -1580,6 +1645,7 @@ class Theme:
                               (document.head || document.documentElement).appendChild(s); }}
                     s.textContent = document.querySelector(".friendsui-container") ? {json.dumps(friends)} : {json.dumps(lib)};
                     s.dataset.key = {json.dumps(want)};
+                    try {{ if (window.opener && window.opener.__ggBirth) window.opener.__ggBirth.wrap(window); }} catch (e) {{}}
                     delete window.__ggAeroImage;   // a picture from before must not outlive its choice
                     {scene}
                 }})()""", timeout=5)
