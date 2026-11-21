@@ -1,10 +1,13 @@
-/* Glossy Glass for Steam: the friends list and chat windows in the "Steam 2013" mode.
+/* Glossy Glass for Steam: the friends list and chat windows in the "Steam 2017" mode.
 
-   The 2013 friends window: the dialog grey with a darker top, your own picture and name at its
-   head, friends 40 apart with their pictures in thick rounded frames, everything coloured by
-   what the friend is doing (the skin's Friends.InGameColor green, OnlineColor blue, grey when
-   offline), group names in small capitals, and "+ ADD A FRIEND..." along the bottom. Arial
-   throughout; the colours and sizes are the old skin's (see steam2013.css). */
+   The old friends window as the collage of the January 2017 client shows it (the grey skin of
+   2010 to 2014, see steam2017.css): the dialog grey under a dark textured top, your own picture
+   and name at its head, a tab over the list, the list itself on a darker panel with each group's
+   name on a band that fades out to the right, friends 40 apart with their pictures in thick
+   rounded frames, everything coloured by what the friend is doing (Friends.InGameColor green,
+   OnlineColor blue, grey when offline). A chat is a tab over a dark history panel, the line you
+   type in a bordered box, and bordered square buttons beside it. Arial throughout. It began as a
+   copy of friends2013.css. */
 
 html:root {
   --black: #000;
@@ -177,4 +180,58 @@ button, .DialogButton, .chatSubmitButton {
 ::-webkit-scrollbar-thumb:hover { background-color: rgba(105, 102, 99, 0.94) !important; }
 ::-webkit-scrollbar-corner { background: transparent !important; }
 
-/* menus opened from here take the main window's Menu look (their pages get steam2013.css) */
+/* ------------------------------------------------------------- what the 2017 collage shows
+   the list on its darker panel inside a 1px line (CFriendsDialog SectionedListPanel) */
+.FriendsListContent { margin: 0 8px !important; border: 1px solid var(--border-disabled) !important; background: linear-gradient(rgb(41, 39, 38), var(--almost-black)) !important; }
+.FriendsListChatSection, .friendsListSectionTitle.chatSectionTitle { margin: 0 !important; background: none !important; }
+.FriendsListChatSection { border-top: 1px solid var(--border-disabled) !important; }
+/* CFriendsListSectionHeader: ButtonFace2 fading out over 251px, the name in the light text, the
+   count beside it dimmer; the minus and plus are Steam's own drawing in the label grey */
+.friendGroup .groupName, .friendsListSectionTitle.chatSectionTitle {
+  box-sizing: border-box !important;
+  height: 20px !important;
+  min-height: 0 !important;
+  margin: 2px 0 2px 2px !important;
+  padding: 0 4px 0 6px !important;
+  align-items: center !important;
+  background: linear-gradient(to right, rgb(92, 89, 86), rgba(92, 89, 86, 0) 251px) 0 0 / 100% 19px no-repeat !important;
+  font: 400 11px/19px var(--font) !important;
+  color: var(--text) !important;
+}
+.friendGroup .groupName .groupCount, .friendGroup .groupName :is([class*="Count"], [class*="count"]) { font: 400 11px/19px var(--font) !important; color: var(--label) !important; opacity: 1; }
+.friendGroup .groupName .ExpandPlusMinus { flex: none !important; width: 14px !important; height: 14px !important; margin: 0 6px 0 0 !important; display: flex !important; align-items: center !important; justify-content: center !important; overflow: visible !important; opacity: 1 !important; }
+.friendGroup .groupName .ExpandPlusMinus .SVGIcon_PlusCircle { flex: none !important; display: block !important; width: 23px !important; height: 23px !important; margin: 0 !important; }
+.friendGroup .groupName .ExpandPlusMinus .SVGIcon_PlusCircle circle { opacity: 0 !important; }
+.friendGroup .groupName .ExpandPlusMinus .SVGIcon_PlusCircle :is(.horizontalLine, .verticalLine) { stroke: var(--label) !important; stroke-width: 22px !important; stroke-linecap: butt !important; }
+.friendGroup .groupName:hover .ExpandPlusMinus .SVGIcon_PlusCircle line { stroke: #fff !important; }
+.groupChatSectionTitle { font: 400 11px/19px var(--font) !important; color: var(--text) !important; }
+/* your own name and state in one size, as the head of the old window had them */
+.currentUserContainer .labelHolder :is(.nOdcT-MoOaXGePXLyPe0H, [class*="playerName"]) { font: 400 12px/15px var(--font) !important; }
+.currentUserContainer .labelHolder :is(._2Ri005Wg_uXDTa71kdRbcN, [class*="richPresence"], [class*="gameName"], [class*="personaStatus"]) { font: 400 12px/14px var(--font) !important; opacity: 1; }
+/* PageTab: the open tab stands on the lighter grey with a line round its top and sides */
+.friendTab .tabLabel {
+  box-sizing: border-box !important;
+  height: 22px !important;
+  padding: 0 14px 0 8px !important;
+  border: 1px solid var(--divider) !important;
+  border-bottom: 0 !important;
+  background: linear-gradient(var(--face2), var(--dialog)) !important;
+  font: 400 10px/21px var(--font) !important;
+  color: var(--text-hover) !important;
+}
+.socialTabSearchContainer { border-bottom: 1px solid var(--divider) !important; margin: 0 8px 4px !important; }
+.socialTabContainer, .friendTab { margin: 0 !important; padding: 0 !important; align-items: flex-end !important; }
+/* a chat: its tab like a PageTab, the history on a panel that darkens downwards, the entry and the
+   buttons beside it as 1px boxes */
+.chatTab { border: 1px solid var(--divider) !important; border-bottom: 0 !important; background: var(--dialog) !important; }
+.chatTab.Active, .chatTab.active { background: linear-gradient(var(--face2), var(--dialog)) !important; }
+.chatHistoryScroll, .chatHistory, .ChatHistoryContainer { background: linear-gradient(rgb(41, 39, 38), var(--almost-black)) !important; }
+.chatEntry button, .chatentry_wrapper button, .chatSubmitButton {
+  border: 1px solid var(--border) !important;
+  border-radius: 2px !important;
+  background: none !important;
+  color: var(--label-disabled) !important;
+}
+:is(.chatEntry button, .chatentry_wrapper button, .chatSubmitButton):hover { border-color: var(--border-focus) !important; color: var(--text-hover) !important; }
+
+/* menus opened from here take the main window's Menu look (their pages get steam2017.css) */
