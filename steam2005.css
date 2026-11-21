@@ -242,8 +242,21 @@ body.DesktopUI, body.DesktopUI * { font-family: var(--font) !important; letter-s
 ._2TKEazUUS3TlniZfpc8OOe ._3O48LaKWcabKx07xdrt1TH { font: 700 11px/20px var(--font) !important; color: #fff !important; }
 ._2TKEazUUS3TlniZfpc8OOe a.eNLOx4LVceeMwRvTVWh3 ._3O48LaKWcabKx07xdrt1TH { color: var(--yellow) !important; }
 ._2TKEazUUS3TlniZfpc8OOe :is(._3AhYljPF4e4E8LaBt-FoY0, ._2CEKFex6JMsAse2lqMMjUp, .tool-tip-source, .xeuK3OqQYpIbPs1mCIS0k) { height: 22px !important; }
-._2TKEazUUS3TlniZfpc8OOe a._30KGSfPjPskFlnrSxBfkiK { width: 26px !important; }
-._2TKEazUUS3TlniZfpc8OOe a._30KGSfPjPskFlnrSxBfkiK .nC-pL16iUnIRcaj1UVnwq { transform: scale(0.62); }
+._2TKEazUUS3TlniZfpc8OOe a._30KGSfPjPskFlnrSxBfkiK { width: 26px !important; align-items: center !important; justify-content: center !important; }
+/* its four squares: small and pale in the middle of the button, yellow while the grid of collections is open */
+._2TKEazUUS3TlniZfpc8OOe a._30KGSfPjPskFlnrSxBfkiK .nC-pL16iUnIRcaj1UVnwq {
+  box-sizing: content-box !important;
+  width: auto !important;
+  height: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  grid-template-columns: 5px 5px !important;
+  grid-template-rows: 5px 5px !important;
+  gap: 2px !important;
+  transform: none !important;
+}
+._2TKEazUUS3TlniZfpc8OOe a._30KGSfPjPskFlnrSxBfkiK ._2tyaVs9BpqcW068aaOrO56 { width: 5px !important; height: 5px !important; border-radius: 0 !important; background: var(--soft) !important; }
+._2TKEazUUS3TlniZfpc8OOe a._30KGSfPjPskFlnrSxBfkiK.eNLOx4LVceeMwRvTVWh3 ._2tyaVs9BpqcW068aaOrO56 { background: var(--yellow) !important; }
 ._1ZS_xta5HMXzR8JgxDH6n7 { padding: 4px 0 0 6px !important; background: none !important; }
 ._1ZS_xta5HMXzR8JgxDH6n7 ._2PF_m-I5yte3WnQhpcz8RC { height: 22px !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important; background: none !important; }
 ._1ZS_xta5HMXzR8JgxDH6n7 ._3kSh7qVSTDcPDePx9kya8C { font: 700 11px/22px var(--font) !important; color: #fff !important; }
@@ -306,6 +319,25 @@ body.DesktopUI, body.DesktopUI * { font-family: var(--font) !important; letter-s
 ._27RcNu8aXKBpYkHcNNrt-X > ._1Qa-Aq8WFiF9584yU_1xuC { display: none !important; }
 ._1SvpjsckP9cPRxO6gCBHrw { font: 400 11px/15px var(--font) !important; color: var(--soft) !important; }
 ._2gZXhRmKUk68pA28-5ZmGQ { margin: 0 10px 0 0 !important; border: 1px solid var(--edge) !important; border-radius: 6px !important; overflow: hidden !important; background: var(--list) !important; }
+/* its picture: Steam draws it at twice its size and sets it back in depth, so that it slides under
+   the page as the page scrolls. A box that clips its corners has no depth, and the picture would
+   show at twice its size: it is drawn flat, the part of it Steam shows before any scrolling. */
+._2gZXhRmKUk68pA28-5ZmGQ ._1IX7FPSY9Jb82KhBVBSkZa { width: 100% !important; height: 100% !important; transform: none !important; }
+._2gZXhRmKUk68pA28-5ZmGQ ._1IX7FPSY9Jb82KhBVBSkZa .HSQWw9HUAP6jtA2OZjS-u { display: none !important; }   /* the blurred copies around it */
+._2gZXhRmKUk68pA28-5ZmGQ .QlR9EFwTdUNm_J5vx54_Z { display: block !important; width: 100% !important; height: 100% !important; }
+._2gZXhRmKUk68pA28-5ZmGQ .QlR9EFwTdUNm_J5vx54_Z img {
+  position: static !important;
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  object-fit: cover !important;
+  object-position: center 32% !important;
+  transform: none !important;
+  -webkit-mask-image: none !important;
+  mask-image: none !important;
+}
 ._2L3s2nzh7yCnNESfI5_dN1 { background: var(--panel) !important; box-shadow: 0 1px 0 var(--edge) !important; }
 :is(._1U7LKpx70kEsz3jJwAFOi-, ._2L3s2nzh7yCnNESfI5_dN1) :is(._3fLo166MlaNqP8r8tTyRz, ._3Y87YQY56ZCOqhgcZFaDc5) { border: 0 !important; box-shadow: none !important; background: none !important; backdrop-filter: none !important; }
 :is(._1U7LKpx70kEsz3jJwAFOi-, ._2L3s2nzh7yCnNESfI5_dN1) ._2_86QNCjVvJTL3Qe6Xztx_ { display: none !important; }
@@ -364,6 +396,7 @@ body.DesktopUI, body.DesktopUI * { font-family: var(--font) !important; letter-s
 }
 :is(._1U7LKpx70kEsz3jJwAFOi-, ._2L3s2nzh7yCnNESfI5_dN1) ._3qDWQGB0rtwM3qpXTb11Q-:hover { background: linear-gradient(rgb(110, 111, 105), rgb(90, 91, 85)) !important; }
 :is(._1U7LKpx70kEsz3jJwAFOi-, ._2L3s2nzh7yCnNESfI5_dN1) ._3qDWQGB0rtwM3qpXTb11Q- svg { width: 14px !important; height: 14px !important; color: inherit !important; }
+:is(._1U7LKpx70kEsz3jJwAFOi-, ._2L3s2nzh7yCnNESfI5_dN1) ._3qDWQGB0rtwM3qpXTb11Q- .zvLq1GUCH3yLuqv_TXBJ1 { color: inherit !important; }
 /* the row of links under it: white bold words, underlined like the old list's links */
 ._3-V8vjmrwuJM6Ws3tsjFJj { background: none !important; box-shadow: none !important; }
 ._3-V8vjmrwuJM6Ws3tsjFJj ._31ptFGGMZrSQc5BCX1e5lm { border: 1px solid var(--edge) !important; border-radius: 6px !important; box-shadow: none !important; background: var(--list) !important; }
