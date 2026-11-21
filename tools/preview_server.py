@@ -20,6 +20,11 @@ import urllib.parse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# The solid modes (the helper's SOLID_MODES): the year in a theme file's name picks the sheet the
+# helper would put under it. The index links each with the preview-only sheet its list scale needs.
+SOLID_YEARS = ("2013", "2017", "2005")
+SOLID_LINKS = (("Steam 2013", "steam2013.css,tools/preview.css"), ("Steam 2017", "steam2017.css,tools/preview.css"),
+               ("Steam 2005", "steam2005.css"))
 
 
 def steam_dir():
@@ -74,9 +79,9 @@ class Handler(BaseHTTPRequestHandler):
         path, query = urllib.parse.unquote(url.path), urllib.parse.parse_qs(url.query)
         if path == "/":
             names = sorted(n for n in os.listdir(self.snaps) if n.endswith(".html"))
-            rows = "".join(f'<li><a href="/snap/{html.escape(n)}">{html.escape(n)}</a> (stock) &middot; '
-                           f'<a href="/snap/{html.escape(n)}?theme=steam2013.css,tools/preview.css&js=steam2013.js">Steam 2013</a> &middot; '
-                           f'<a href="/snap/{html.escape(n)}?theme=steam2005.css&js=steam2013.js">Steam 2005</a></li>' for n in names)
+            rows = "".join(f'<li><a href="/snap/{html.escape(n)}">{html.escape(n)}</a> (stock)'
+                           + "".join(f' &middot; <a href="/snap/{html.escape(n)}?theme={sheets}&js=steam2013.js">{label}</a>'
+                                     for label, sheets in SOLID_LINKS) + "</li>" for n in names)
             return self.send(f"<!doctype html><title>Steam snapshots</title><ul>{rows}</ul>".encode())
         if path.startswith("/snap/"):
             src = inside(self.snaps, path[len("/snap/"):])
@@ -86,9 +91,10 @@ class Handler(BaseHTTPRequestHandler):
                 page = f.read()
             names = [name for name in ",".join(query.get("theme", [])).split(",") if name]
             links = "".join(f'<link rel="stylesheet" href="/__theme/{html.escape(name)}">' for name in names)
-            for year in ("2013", "2005"):   # what the helper puts under a solid mode's sheet
-                if any(year in name for name in names):
+            for year in SOLID_YEARS:   # what the helper puts under a solid mode's sheet
+                if any(year in os.path.basename(name) for name in names):
                     links = f'<link rel="stylesheet" href="/__under/steam{year}.css">' + links
+                    break
             extra = "".join(f"<style>{css}</style>" for css in query.get("css", []))
             page = page.replace("</head>", links + extra + "</head>", 1)
             scripts = [name for name in ",".join(query.get("js", [])).split(",") if name]   # a mode's own script
@@ -96,7 +102,7 @@ class Handler(BaseHTTPRequestHandler):
                 tags = "".join(f'<script src="/__theme/{html.escape(name)}"></script>' for name in scripts)
                 page = page.replace("</body>", tags + "</body>", 1) if "</body>" in page else page + tags
             return self.send(page.encode("utf-8"))
-        if path in ("/__under/steam2013.css", "/__under/steam2005.css"):
+        if path.startswith("/__under/steam") and path[len("/__under/steam"):-4] in SOLID_YEARS and path.endswith(".css"):
             return self.send(helper().solid_under(path[9:-4]).encode("utf-8"), "text/css; charset=utf-8")
         if path.startswith("/__theme/"):
             return self.file(inside(REPO, path[len("/__theme/"):]))

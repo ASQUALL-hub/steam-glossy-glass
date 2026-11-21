@@ -1,0 +1,18 @@
+/* Glossy Glass for Steam: Steam's web pages (the store, the community, profiles, the market...)
+   in the "Steam 2017" mode.
+
+   In January 2017 the store and the community already wore the navy and blue they wear today
+   (the grey skin was the client's alone), so the pages are left as Steam draws them: nothing is
+   turned grey and no background is taken away (web-glass.js runs neither pass for this mode).
+   Only what belonged to the client's own window is put on: its scrollbars, which the old client
+   drew itself beside every page, and its colour for selected text. The mode arrives as
+   <html data-gg-glass="steam2017">. */
+
+/* scrollbars: the client's own (13 wide and 2 in from the edge, a ButtonFace handle) on the dark
+   gutter */
+html[data-gg-glass="steam2017"] ::-webkit-scrollbar { width: 15px; height: 15px; background: rgb(23, 22, 20); }
+html[data-gg-glass="steam2017"] ::-webkit-scrollbar-thumb { border: solid transparent; border-width: 0 2px 0 0; border-radius: 1px; background: rgba(105, 102, 99, 0.784); background-clip: padding-box; }
+html[data-gg-glass="steam2017"] ::-webkit-scrollbar-thumb:hover { background-color: rgba(105, 102, 99, 0.94); }
+html[data-gg-glass="steam2017"] ::-webkit-scrollbar-thumb:horizontal { border-width: 0 0 2px; }
+html[data-gg-glass="steam2017"] ::-webkit-scrollbar-corner { background: rgb(23, 22, 20); }
+html[data-gg-glass="steam2017"] ::selection { color: #fff; background: rgb(64, 90, 128); }

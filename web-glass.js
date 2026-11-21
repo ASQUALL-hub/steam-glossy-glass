@@ -62,7 +62,9 @@
   // insides are looked at one by one. Parts added later (the store loads sections as you scroll)
   // are looked at as they come, and parts that only turn blue under the pointer when it gets there.
   const MONO = /^(nullscapes|eternalnight|deprivation|steam2013|steam2005)$/.test(cfg.mode);
-  const SOLID = /^steam20(13|05)$/.test(cfg.mode);   // an opaque look of its own (web2013.css, web2005.css): nothing to clear
+  const SOLID = /^steam20(13|05|17)$/.test(cfg.mode);   // an opaque look of its own (web2013.css, web2005.css, web2017.css): nothing to clear
+  // Steam 2017 is a solid mode with no grey pass: in January 2017 the store and community were already blue, so
+  // its pages stay as Steam draws them (web2017.css only adds the client's scrollbars)
   // Steam 2005 turns the blue to the olive client's greens, not to grey: the green of the same
   // brightness, with the dark tones today's pages are made of lifted into the range its windows had
   const OLIVE = cfg.mode !== "steam2005" ? null : [[0, [0, 0, 0]], [44, [40, 46, 34]], [67, [62, 70, 55]], [84, [76, 88, 68]],
