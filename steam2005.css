@@ -342,6 +342,10 @@ body.DesktopUI, body.DesktopUI * { font-family: var(--font) !important; letter-s
 :is(._1U7LKpx70kEsz3jJwAFOi-, ._2L3s2nzh7yCnNESfI5_dN1) :is(._3fLo166MlaNqP8r8tTyRz, ._3Y87YQY56ZCOqhgcZFaDc5) { border: 0 !important; box-shadow: none !important; background: none !important; backdrop-filter: none !important; }
 :is(._1U7LKpx70kEsz3jJwAFOi-, ._2L3s2nzh7yCnNESfI5_dN1) ._2_86QNCjVvJTL3Qe6Xztx_ { display: none !important; }
 ._1U7LKpx70kEsz3jJwAFOi- { border: 0 !important; box-shadow: none !important; background: none !important; }
+/* the cloud status beside the play button: the old client showed no such thing there, and its
+   pile of labels (Steam lays every wording it may show over each other to keep the width) lands
+   on the items next to it */
+._2cRYms-zZc4misk9tj3bt8 { display: none !important; }
 /* the play button: the old default button, a black ring around it */
 :is(._1U7LKpx70kEsz3jJwAFOi-, ._2L3s2nzh7yCnNESfI5_dN1) :is(._1FnJ6dPuknQFQ2RTpKTI16, ._2zxzStp5qY5M1evOm8keES) { height: 30px !important; border-radius: 0 !important; box-shadow: none !important; background: none !important; gap: 0 !important; }
 :is(._1U7LKpx70kEsz3jJwAFOi-, ._2L3s2nzh7yCnNESfI5_dN1) ._3ydigb6zZAjJ0JCDgHwSYA {
@@ -435,6 +439,10 @@ body.DesktopUI ._1u7tlq5OcUVR8p7-ic_ZVw > * { height: 100% !important; border-ra
 ._1rDh5rXSFZJOqCa4UpnI4z > ._1fuML-ekRbTEzgzC597yGP { margin: 10px !important; border: 1px solid var(--edge) !important; border-radius: 6px !important; background: var(--list) !important; overflow: hidden !important; }
 ._1bq4x9pa4-9RLY-dXWUZTp, ._1bq4x9pa4-9RLY-dXWUZTp ._3Mbhnlk1Go2j8yCdjthzc7 { border: 0 !important; box-shadow: none !important; background: none !important; }
 ._1bq4x9pa4-9RLY-dXWUZTp ._3Mbhnlk1Go2j8yCdjthzc7._2KB3yVOsiRCK9qK6mwKl9c { background: rgb(58, 64, 57) !important; }
+/* its small words and thin lines: Steam's faint blue-greys in the panel's own tones */
+._1bq4x9pa4-9RLY-dXWUZTp :is(._1nCT-M7nZcoNzedbVzbXha, ._117rQTHH1RIewY7sSlvg3Z) { color: var(--soft) !important; }
+._1bq4x9pa4-9RLY-dXWUZTp :is(._1dHjjSl-57o1KQsQ1m1HSA, ._1SyggnJY6qbRSmbZpkK3-H, ._1SyggnJY6qbRSmbZpkK3-H *) { color: var(--dim) !important; }
+._1bq4x9pa4-9RLY-dXWUZTp ._1CTr1yKRkOXnJ4gSS1-1A3 { background: var(--edge) !important; }
 ._1fuML-ekRbTEzgzC597yGP .GTdO0X-5EOwChz3fc2iLU, ._1fuML-ekRbTEzgzC597yGP .GTdO0X-5EOwChz3fc2iLU * { font: 400 12px/15px Consolas, "Courier New", monospace !important; color: var(--soft) !important; }
 ._1fuML-ekRbTEzgzC597yGP form { border-top: 1px solid var(--edge) !important; background: none !important; }
 
@@ -448,7 +456,9 @@ body.DesktopUI ._1u7tlq5OcUVR8p7-ic_ZVw > * { height: 100% !important; border-ra
 ._1bGewp3tfzqAF6fVTFFUOz > .UkR3sY319PuaUNuUWks2K ._3izqEKa-zuPIrUDSm1bRvf svg { height: 14px !important; width: auto !important; }
 ._1bGewp3tfzqAF6fVTFFUOz > .UkR3sY319PuaUNuUWks2K ._2m_orETo6AghzAnc0sISCt { height: 18px !important; margin: 0 !important; padding: 0 !important; gap: 4px !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important; background: none !important; }
 ._1bGewp3tfzqAF6fVTFFUOz > .UkR3sY319PuaUNuUWks2K .MZPxEZcxAGtPDf1NYtouS { font: 400 11px/18px var(--font) !important; color: var(--soft) !important; background: none !important; }
-._1bGewp3tfzqAF6fVTFFUOz > ._29p1jfvZ-VdlXK24_7UGsK { position: relative !important; z-index: 1; margin: 1px 8px 8px !important; border: 0 !important; background: none !important; }
+/* Steam gives the web view's box the panel's whole width; with the margins that would push it past
+   the panel's right edge, so the width is left to the margins */
+._1bGewp3tfzqAF6fVTFFUOz > ._29p1jfvZ-VdlXK24_7UGsK { position: relative !important; z-index: 1; width: auto !important; margin: 1px 8px 8px !important; border: 0 !important; background: none !important; }
 ._1bGewp3tfzqAF6fVTFFUOz > ._29p1jfvZ-VdlXK24_7UGsK:first-child { margin-top: 26px !important; }
 ._1J21tLst5SEhBPkVRT53UV { border: 0 !important; border-top: 1px solid var(--edge) !important; box-shadow: none !important; background: var(--face) !important; font: 700 11px/16px var(--font) !important; color: #fff !important; }
 
@@ -544,6 +554,12 @@ body.DesktopUI :is(button.DialogButton, .DialogButton, ._1kCN0pAntrcGCSmcc-vYdk)
 body.DesktopUI :is(button.DialogButton, .DialogButton).Primary { border: 2px solid #000 !important; line-height: 20px !important; }
 body.DesktopUI :is(button.DialogButton, .DialogButton):is(.Disabled, :disabled) { box-shadow: none !important; color: rgb(140, 141, 135) !important; }
 body.DesktopUI :is(button.DialogButton, .DialogButton, ._1kCN0pAntrcGCSmcc-vYdk) * { font: inherit !important; color: inherit !important; }
+/* the Downloads page's picture buttons (its settings; a line's "download now" and "remove"): Steam
+   takes the picture's size from the button's own width, which the buttons' common look replaces, so
+   the picture would be drawn 0 wide: button and picture get their sizes here */
+body.DesktopUI button:is(._3Tfp8-wTAttW3WVa_X9JVC._3Tfp8-wTAttW3WVa_X9JVC, ._3oavRVhIS9tC3vBsFT4Ggi._3oavRVhIS9tC3vBsFT4Ggi) { width: 28px !important; padding: 0 !important; align-items: center !important; justify-content: center !important; }
+body.DesktopUI button:is(._3Tfp8-wTAttW3WVa_X9JVC._3Tfp8-wTAttW3WVa_X9JVC, ._3oavRVhIS9tC3vBsFT4Ggi._3oavRVhIS9tC3vBsFT4Ggi) > svg { flex: none !important; width: 14px !important; height: 14px !important; }
+body.DesktopUI button._3oavRVhIS9tC3vBsFT4Ggi._2xR-V97DWI7svSjgiCb3N-._2xR-V97DWI7svSjgiCb3N- > svg { width: 10px !important; height: 10px !important; }
 body.DesktopUI ._1kCN0pAntrcGCSmcc-vYdk { display: inline-flex !important; align-items: center !important; gap: 5px !important; }
 body.DesktopUI ._1kCN0pAntrcGCSmcc-vYdk svg { position: static !important; width: 12px !important; height: 12px !important; margin: 0 !important; color: inherit !important; fill: currentColor !important; }
 body.DesktopUI :is(textarea, input.DialogInput, input[type="text"], input[type="password"], input[type="search"], input[type="number"]):not(._20QAC4WMXm8qFE8waUT5oo input) {

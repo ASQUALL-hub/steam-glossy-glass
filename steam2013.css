@@ -777,6 +777,10 @@ body.DesktopUI ._1ijTaXJJA5YWl_fW2IxcaT ::-webkit-scrollbar-button:single-button
   backdrop-filter: none !important;
 }
 ._1U7LKpx70kEsz3jJwAFOi- ._2_86QNCjVvJTL3Qe6Xztx_ { display: none !important; }
+/* the cloud status beside the play button: the old client showed no such thing there, and its
+   pile of labels (Steam lays every wording it may show over each other to keep the width) lands
+   on the items next to it */
+._2cRYms-zZc4misk9tj3bt8 { display: none !important; }
 ._1U7LKpx70kEsz3jJwAFOi- ._9EHg918wH6CQCQlD5PWOO {
   height: auto !important;
   min-height: 32px !important;
@@ -1049,6 +1053,12 @@ body.DesktopUI :is(button.DialogButton, .DialogButton, ._1kCN0pAntrcGCSmcc-vYdk,
 body.DesktopUI :is(button.DialogButton, .DialogButton, ._1kCN0pAntrcGCSmcc-vYdk, ._39ZurKJQex6v69aXzvc_nj):active:not(.Disabled, :disabled) { background: linear-gradient(var(--dialog), var(--sheet)) !important; }
 body.DesktopUI :is(button.DialogButton, .DialogButton):is(.Disabled, :disabled) { border-color: var(--border-disabled) !important; color: var(--text-disabled) !important; }
 body.DesktopUI :is(button.DialogButton, .DialogButton, ._1kCN0pAntrcGCSmcc-vYdk) * { font: inherit !important; letter-spacing: 0 !important; color: inherit !important; }
+/* the Downloads page's picture buttons (its settings; a line's "download now" and "remove"): Steam
+   takes the picture's size from the button's own width, which the buttons' common look replaces, so
+   the picture would be drawn 0 wide: button and picture get their sizes here */
+body.DesktopUI button:is(._3Tfp8-wTAttW3WVa_X9JVC._3Tfp8-wTAttW3WVa_X9JVC, ._3oavRVhIS9tC3vBsFT4Ggi._3oavRVhIS9tC3vBsFT4Ggi) { width: 28px !important; padding: 0 !important; align-items: center !important; justify-content: center !important; }
+body.DesktopUI button:is(._3Tfp8-wTAttW3WVa_X9JVC._3Tfp8-wTAttW3WVa_X9JVC, ._3oavRVhIS9tC3vBsFT4Ggi._3oavRVhIS9tC3vBsFT4Ggi) > svg { flex: none !important; width: 14px !important; height: 14px !important; }
+body.DesktopUI button._3oavRVhIS9tC3vBsFT4Ggi._2xR-V97DWI7svSjgiCb3N-._2xR-V97DWI7svSjgiCb3N- > svg { width: 10px !important; height: 10px !important; }
 
 /* ------------------------------------------------------------- more of the details page */
 ._3-V8vjmrwuJM6Ws3tsjFJj, ._3-V8vjmrwuJM6Ws3tsjFJj * { text-align: left !important; }
@@ -1330,6 +1340,7 @@ html:has(> body.ContextMenuPopupBody), body.ContextMenuPopupBody { background: t
 ._1bGewp3tfzqAF6fVTFFUOz > ._29p1jfvZ-VdlXK24_7UGsK {
   position: relative !important;
   z-index: 1;
+  width: auto !important;                /* Steam's own 100% plus the margins would reach past the right edge */
   margin: 1px 10px !important;
   border: 0 !important;
   background: none !important;
