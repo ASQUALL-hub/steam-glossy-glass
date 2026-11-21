@@ -12,3 +12,6 @@ preview/*.jpg
 
 # written beside the source when the helper runs from it
 helper.log
+
+# a second checkout's own headless-browser port (tools/headless.py)
+tools/headless.port

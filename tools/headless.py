@@ -19,7 +19,10 @@ import urllib.request
 
 from cdp import WS
 
-PORT = 9333
+# 9333, or the number in tools/headless.port (not in the repo): a second checkout of this repo that is
+# worked on at the same time keeps a browser of its own that way
+_port_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "headless.port")
+PORT = int(os.environ.get("STEAMGLASS_HEADLESS_PORT") or (open(_port_file).read().strip() if os.path.isfile(_port_file) else 9333))
 BROWSERS = (r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
             r"C:\Program Files\Microsoft\Edge\Application\msedge.exe",
             r"C:\Program Files\Google\Chrome\Application\chrome.exe")
@@ -37,7 +40,7 @@ def start():
     exe = next((p for p in BROWSERS if os.path.isfile(p)), None)
     if not exe:
         raise SystemExit("no Edge or Chrome found")
-    profile = os.path.join(tempfile.gettempdir(), "steam-glass-preview-browser")
+    profile = os.path.join(tempfile.gettempdir(), "steam-glass-preview-browser" + ("" if PORT == 9333 else f"-{PORT}"))
     subprocess.Popen([exe, "--headless=new", f"--remote-debugging-port={PORT}", "--remote-debugging-address=127.0.0.1",
                       f"--user-data-dir={profile}", "--no-first-run", "--no-default-browser-check", "--disable-extensions",
                       "--mute-audio", "--disable-gpu", "--force-device-scale-factor=1", "about:blank"],
